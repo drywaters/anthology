@@ -1,0 +1,17 @@
+# Go
+bin/
+*.log
+coverage.out
+
+# Node / Angular
+web/node_modules/
+web/dist/
+web/.angular/
+web/.sass-cache/
+web/.turbo/
+web/.DS_Store
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
