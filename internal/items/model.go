@@ -1,0 +1,61 @@
+package items
+
+import (
+	"context"
+	"errors"
+	"time"
+
+	"github.com/google/uuid"
+)
+
+// ErrNotFound is returned when an item cannot be located.
+var ErrNotFound = errors.New("item not found")
+
+// ItemType enumerates the primary categories supported by the MVP.
+type ItemType string
+
+const (
+	ItemTypeBook  ItemType = "book"
+	ItemTypeGame  ItemType = "game"
+	ItemTypeMovie ItemType = "movie"
+	ItemTypeMusic ItemType = "music"
+)
+
+// Item represents a catalog entry in Anthology.
+type Item struct {
+	ID          uuid.UUID `db:"id" json:"id"`
+	Title       string    `db:"title" json:"title"`
+	Creator     string    `db:"creator" json:"creator"`
+	ItemType    ItemType  `db:"item_type" json:"itemType"`
+	ReleaseYear *int      `db:"release_year" json:"releaseYear,omitempty"`
+	Notes       string    `db:"notes" json:"notes"`
+	CreatedAt   time.Time `db:"created_at" json:"createdAt"`
+	UpdatedAt   time.Time `db:"updated_at" json:"updatedAt"`
+}
+
+// CreateItemInput captures the data needed to create a new Item.
+type CreateItemInput struct {
+	Title       string
+	Creator     string
+	ItemType    ItemType
+	ReleaseYear *int
+	Notes       string
+}
+
+// UpdateItemInput captures the editable fields for an existing item.
+type UpdateItemInput struct {
+	Title       *string
+	Creator     *string
+	ItemType    *ItemType
+	ReleaseYear **int
+	Notes       *string
+}
+
+// Repository defines persistence operations for Items.
+type Repository interface {
+	Create(ctx context.Context, item Item) (Item, error)
+	Get(ctx context.Context, id uuid.UUID) (Item, error)
+	List(ctx context.Context) ([]Item, error)
+	Update(ctx context.Context, item Item) (Item, error)
+	Delete(ctx context.Context, id uuid.UUID) error
+}

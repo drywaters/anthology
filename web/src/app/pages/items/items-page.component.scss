@@ -1,0 +1,134 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--mat-sys-surface) 90%, white) 0%,
+    var(--mat-sys-surface-container-high) 65%
+  );
+  color: var(--mat-sys-on-surface);
+}
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  gap: 1rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(12px);
+  background-color: color-mix(in srgb, var(--mat-sys-primary) 8%, var(--mat-sys-surface));
+}
+
+.brand {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.layout {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 2rem;
+  padding: 2.5rem clamp(1.5rem, 3vw, 3rem) 3rem;
+  align-items: flex-start;
+}
+
+.items-panel,
+.form-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.items-panel {
+  flex: 2 1 520px;
+}
+
+.form-panel {
+  flex: 1 1 360px;
+}
+
+mat-card {
+  border-radius: 20px;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.14);
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.items-table {
+  width: 100%;
+  border-spacing: 0;
+}
+
+.items-table th {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--mat-sys-on-surface-variant);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.items-table td {
+  padding-block: 1rem;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.items-table tr:last-child td {
+  border-bottom: none;
+}
+
+.items-table tr:hover {
+  background-color: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
+  cursor: pointer;
+}
+
+.item-title {
+  font-weight: 600;
+}
+
+.item-meta {
+  font-size: 0.85rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+.empty-state {
+  padding: 3rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.empty-state mat-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+}
+
+@media (max-width: 960px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .form-panel {
+    order: -1;
+  }
+}
