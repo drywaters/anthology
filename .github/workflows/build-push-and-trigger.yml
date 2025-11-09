@@ -72,7 +72,7 @@ jobs:
         run: |
           set -euo pipefail
           : "${MANAGER_HOST:?Missing vars.MANAGER_HOST repository variable}"
-          : "${MANAGER_REPO_PATH:=/srv/git/anthology.git}"
+          : "${MANAGER_REPO_PATH:=/srv/git/anthology-ci.git}"
           echo "Triggering deploy via ${MANAGER_HOST}:${MANAGER_REPO_PATH}"
           git remote add local "ssh://git@${MANAGER_HOST}/${MANAGER_REPO_PATH}"
           git push --force local HEAD:refs/heads/main
