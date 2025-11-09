@@ -44,6 +44,9 @@ func NewRouter(cfg config.Config, svc *items.Service, logger *slog.Logger) http.
 	})
 
 	handler := NewItemHandler(svc, logger)
+	if strings.TrimSpace(cfg.APIToken) == "" {
+		logger.Warn("API token authentication disabled; /api endpoints are unauthenticated")
+	}
 	r.Route("/api", func(r chi.Router) {
 		r.Use(newTokenAuthMiddleware(cfg.APIToken))
 		r.Route("/items", func(r chi.Router) {

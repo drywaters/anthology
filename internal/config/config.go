@@ -53,6 +53,10 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("DATA_STORE is postgres but DATABASE_URL is not set")
 	}
 
+	if !strings.EqualFold(cfg.Environment, "development") && cfg.APIToken == "" {
+		return Config{}, fmt.Errorf("API_TOKEN is required when APP_ENV=%s", cfg.Environment)
+	}
+
 	return cfg, nil
 }
 

@@ -2,6 +2,7 @@
 bin/
 *.log
 coverage.out
+.cache/
 
 # Node / Angular
 web/node_modules/
