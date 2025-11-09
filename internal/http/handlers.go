@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"log/slog"
@@ -45,8 +46,8 @@ func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Notes       string `json:"notes"`
 	}
 
-	if err := decodeJSON(r, &payload); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+	if err := decodeJSONBody(w, r, &payload); err != nil {
+		writeJSONError(w, err)
 		return
 	}
 
@@ -89,10 +90,8 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	raw := map[string]json.RawMessage{}
-	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&raw); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON payload")
+	if err := decodeJSONBody(w, r, &raw); err != nil {
+		writeJSONError(w, err)
 		return
 	}
 
@@ -174,13 +173,32 @@ func handleServiceError(w http.ResponseWriter, err error) {
 	writeError(w, http.StatusInternalServerError, "unexpected error")
 }
 
-func decodeJSON(r *http.Request, dst any) error {
-	decoder := json.NewDecoder(r.Body)
+const maxJSONBodyBytes int64 = 1 << 20 // 1 MiB
+
+var errPayloadTooLarge = errors.New("payload too large")
+
+func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst any) error {
+	limited := http.MaxBytesReader(w, r.Body, maxJSONBodyBytes)
+	defer limited.Close()
+
+	decoder := json.NewDecoder(limited)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(dst); err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			return fmt.Errorf("%w (max %d bytes)", errPayloadTooLarge, maxErr.Limit)
+		}
 		return err
 	}
 	return nil
+}
+
+func writeJSONError(w http.ResponseWriter, err error) {
+	if errors.Is(err, errPayloadTooLarge) {
+		writeError(w, http.StatusRequestEntityTooLarge, err.Error())
+		return
+	}
+	writeError(w, http.StatusBadRequest, err.Error())
 }
 
 func decodeInto(raw map[string]json.RawMessage, payload any) error {
