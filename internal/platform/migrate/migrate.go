@@ -18,7 +18,15 @@ const schemaMigrationsTable = "schema_migrations"
 
 // Apply runs any pending SQL migrations bundled with the binary.
 func Apply(ctx context.Context, db *sqlx.DB, logger *slog.Logger) error {
-	if _, err := db.ExecContext(ctx, fmt.Sprintf(`
+	tx, err := db.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("migrate: begin tx: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
 			name TEXT PRIMARY KEY,
 			applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -26,7 +34,11 @@ func Apply(ctx context.Context, db *sqlx.DB, logger *slog.Logger) error {
 		return fmt.Errorf("migrate: create schema table: %w", err)
 	}
 
-	applied, err := fetchApplied(ctx, db)
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`LOCK TABLE %s IN EXCLUSIVE MODE`, schemaMigrationsTable)); err != nil {
+		return fmt.Errorf("migrate: lock schema table: %w", err)
+	}
+
+	applied, err := fetchApplied(ctx, tx)
 	if err != nil {
 		return err
 	}
@@ -46,11 +58,11 @@ func Apply(ctx context.Context, db *sqlx.DB, logger *slog.Logger) error {
 			return fmt.Errorf("migrate: read %s: %w", name, err)
 		}
 
-		if _, err := db.ExecContext(ctx, string(src)); err != nil {
+		if _, err := tx.ExecContext(ctx, string(src)); err != nil {
 			return fmt.Errorf("migrate: exec %s: %w", name, err)
 		}
 
-		if _, err := db.ExecContext(ctx,
+		if _, err := tx.ExecContext(ctx,
 			fmt.Sprintf("INSERT INTO %s (name) VALUES ($1)", schemaMigrationsTable),
 			name,
 		); err != nil {
@@ -62,11 +74,15 @@ func Apply(ctx context.Context, db *sqlx.DB, logger *slog.Logger) error {
 		}
 	}
 
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("migrate: commit: %w", err)
+	}
+
 	return nil
 }
 
-func fetchApplied(ctx context.Context, db *sqlx.DB) (map[string]bool, error) {
-	rows, err := db.QueryxContext(ctx, fmt.Sprintf(`SELECT name FROM %s`, schemaMigrationsTable))
+func fetchApplied(ctx context.Context, q sqlx.QueryerContext) (map[string]bool, error) {
+	rows, err := q.QueryxContext(ctx, fmt.Sprintf(`SELECT name FROM %s`, schemaMigrationsTable))
 	if err != nil {
 		// table creation should guarantee existence, so propagate errors here
 		return nil, fmt.Errorf("migrate: fetch applied: %w", err)
