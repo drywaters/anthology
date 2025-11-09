@@ -87,7 +87,7 @@ go test ./...
 
 ```bash
 cd web
-npm install --package-lock=false   # Avoids creating package-lock.json as requested
+npm install
 npm start                           # ng serve --open
 ```
 
@@ -109,7 +109,7 @@ npm run lint
 
 ## Deployment notes
 
-* **Docker**: the repository includes a multi-stage `Dockerfile` that builds the Go binary into a distroless image. Copy `web/` assets into a separate static hosting solution (such as an nginx container) for production.
+* **Docker**: the repository includes a multi-stage `Docker/Dockerfile` that compiles the Go API and Angular app, packaging both the binary and `web/dist` assets into a single Alpine image. Copy the built UI elsewhere if you prefer a dedicated static host.
 * **Environment management**: prefer `.env` files for local overrides (`DATA_STORE`, `DATABASE_URL`, `LOG_LEVEL`). Do not commit secrets.
 * **Migrations**: Ship migrations alongside deployments (e.g., run via `golang-migrate` or `psql`) before starting the API container.
 

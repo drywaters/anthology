@@ -7,12 +7,10 @@ This Angular 20 application provides the catalogue interface for Anthology. It s
 * Node.js 20+
 * Angular CLI (optional, installed as a dev dependency)
 
-> **Tip:** run installs with `npm install --package-lock=false` to avoid generating a `package-lock.json`, as requested by the project brief.
-
 ## Development server
 
 ```bash
-npm install --package-lock=false
+npm install
 npm start
 ```
 
