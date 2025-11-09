@@ -57,14 +57,15 @@ func NewRouter(cfg config.Config, svc *items.Service, logger *slog.Logger) http.
 		})
 	})
 
-	spa := newSPAHandler("web-dist", logger)
+	spa := newSPAHandler(cfg.StaticDir, logger)
 	r.NotFound(spa)
 
 	return r
 }
 
 func newSPAHandler(root string, logger *slog.Logger) http.HandlerFunc {
-	indexPath := filepath.Join(root, "index.html")
+	spaRoot := resolveSPARoot(root, logger)
+	indexPath := filepath.Join(spaRoot, "index.html")
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
@@ -83,7 +84,7 @@ func newSPAHandler(root string, logger *slog.Logger) http.HandlerFunc {
 			return
 		}
 
-		filePath := filepath.Join(root, cleaned)
+		filePath := filepath.Join(spaRoot, cleaned)
 		if info, err := os.Stat(filePath); err == nil && !info.IsDir() {
 			http.ServeFile(w, r, filePath)
 			return
@@ -101,4 +102,20 @@ func newSPAHandler(root string, logger *slog.Logger) http.HandlerFunc {
 
 		http.ServeFile(w, r, indexPath)
 	}
+}
+
+func resolveSPARoot(root string, logger *slog.Logger) string {
+	if root == "" {
+		root = "web/dist/web/browser"
+	}
+	info, err := os.Stat(root)
+	if err == nil && info.IsDir() {
+		if abs, absErr := filepath.Abs(root); absErr == nil {
+			root = abs
+		}
+		logger.Info("serving frontend bundle", "root", root)
+		return root
+	}
+	logger.Warn("frontend bundle directory not found", "path", root, "error", err)
+	return root
 }
