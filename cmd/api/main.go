@@ -18,6 +18,7 @@ import (
 	"anthology/internal/items"
 	"anthology/internal/platform/database"
 	"anthology/internal/platform/logging"
+	"anthology/internal/platform/migrate"
 )
 
 func main() {
@@ -80,6 +81,12 @@ func buildRepository(ctx context.Context, cfg config.Config, logger *slog.Logger
 	cleanup := func() {
 		_ = db.Close()
 	}
+
+	if err := migrate.Apply(ctx, db, logger); err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+
 	logger.Info("connected to postgres")
 	return items.NewPostgresRepository(db), cleanup, nil
 }
