@@ -58,8 +58,7 @@ func NewRouter(cfg config.Config, svc *items.Service, logger *slog.Logger) http.
 	})
 
 	spa := newSPAHandler("web-dist", logger)
-	r.Get("/*", spa)
-	r.Head("/*", spa)
+	r.NotFound(spa)
 
 	return r
 }
