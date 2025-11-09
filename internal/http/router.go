@@ -2,6 +2,10 @@ package http
 
 import (
 	"net/http"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"log/slog"
@@ -53,5 +57,49 @@ func NewRouter(cfg config.Config, svc *items.Service, logger *slog.Logger) http.
 		})
 	})
 
+	spa := newSPAHandler("web-dist", logger)
+	r.Get("/*", spa)
+	r.Head("/*", spa)
+
 	return r
+}
+
+func newSPAHandler(root string, logger *slog.Logger) http.HandlerFunc {
+	indexPath := filepath.Join(root, "index.html")
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			http.NotFound(w, r)
+			return
+		}
+
+		cleaned := path.Clean(r.URL.Path)
+		cleaned = strings.TrimPrefix(cleaned, "/")
+		if cleaned == "" || cleaned == "." {
+			cleaned = "index.html"
+		}
+
+		if strings.Contains(cleaned, "..") {
+			http.NotFound(w, r)
+			return
+		}
+
+		filePath := filepath.Join(root, cleaned)
+		if info, err := os.Stat(filePath); err == nil && !info.IsDir() {
+			http.ServeFile(w, r, filePath)
+			return
+		} else if err != nil && !os.IsNotExist(err) {
+			logger.Error("failed to serve static asset", "path", filePath, "error", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		if _, err := os.Stat(indexPath); err != nil {
+			logger.Error("frontend bundle missing", "path", indexPath, "error", err)
+			http.Error(w, "frontend unavailable", http.StatusInternalServerError)
+			return
+		}
+
+		http.ServeFile(w, r, indexPath)
+	}
 }
