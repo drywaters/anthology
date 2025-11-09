@@ -110,8 +110,53 @@ npm run lint
 ## Deployment notes
 
 * **Docker**: the repository includes a multi-stage `Docker/Dockerfile` that compiles the Go API and Angular app, packaging both the binary and `web/dist` assets into a single Alpine image. Copy the built UI elsewhere if you prefer a dedicated static host.
+* **Secrets**: the API automatically loads `DATABASE_URL` and `API_TOKEN` from either the env var or a `<NAME>_FILE` path. The published Docker image sets `/run/secrets/anthology_database_url` and `/run/secrets/anthology_api_token` as the defaults, so Swarm/Stack secrets are consumed without baking credentials into the image.
 * **Environment management**: prefer `.env` files for local overrides (`DATA_STORE`, `DATABASE_URL`, `LOG_LEVEL`). Do not commit secrets.
 * **Migrations**: Ship migrations alongside deployments (e.g., run via `golang-migrate` or `psql`) before starting the API container.
+
+### Docker secrets quickstart
+
+The container expects two Docker secrets:
+
+| Secret name                       | Environment variable | Description                                      |
+| --------------------------------- | -------------------- | ------------------------------------------------ |
+| `anthology_database_url`          | `DATABASE_URL_FILE`  | Full Postgres connection string                  |
+| `anthology_api_token`             | `API_TOKEN_FILE`     | Bearer token required by the HTTP API            |
+
+Create them once per Swarm and attach them to the stack/service:
+
+```bash
+printf 'postgres://user:pass@db:5432/anthology?sslmode=disable' | docker secret create anthology_database_url -
+printf 'super-secret-token' | docker secret create anthology_api_token -
+
+# example stack deployment
+docker stack deploy -c deploy/docker-compose.yml anthology
+```
+
+Secrets are immutable. To change a value, remove and recreate it, then update the service:
+
+```bash
+docker secret rm anthology_database_url anthology_api_token
+printf 'new-connection-string' | docker secret create anthology_database_url -
+printf 'new-token' | docker secret create anthology_api_token -
+
+docker service update --secret-rm anthology_database_url --secret-rm anthology_api_token \
+  --secret-add source=anthology_database_url,target=anthology_database_url \
+  --secret-add source=anthology_api_token,target=anthology_api_token \
+  anthology_api
+```
+
+Alternatively, override `DATABASE_URL_FILE` / `API_TOKEN_FILE` or set `DATABASE_URL` / `API_TOKEN` directly when not running under Swarm (e.g., local `docker compose up`).
+
+When provisioning Postgres outside of Compose, create the database/user first:
+
+```sql
+CREATE USER anthology WITH PASSWORD 'choose-a-strong-password';
+CREATE DATABASE anthology OWNER anthology;
+GRANT ALL PRIVILEGES ON DATABASE anthology TO anthology;
+```
+
+Use the resulting credentials in your `anthology_database_url` secret (e.g., `postgres://anthology:choose-a-strong-password@db:5432/anthology?sslmode=disable`).
 
 ## Further reading
 

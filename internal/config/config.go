@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -20,13 +21,23 @@ type Config struct {
 
 // Load reads configuration from environment variables with sensible defaults for local development.
 func Load() (Config, error) {
+	databaseURL, err := getEnvOrFile("DATABASE_URL", "/run/secrets/anthology_database_url")
+	if err != nil {
+		return Config{}, err
+	}
+
+	apiToken, err := getEnvOrFile("API_TOKEN", "/run/secrets/anthology_api_token")
+	if err != nil {
+		return Config{}, err
+	}
+
 	cfg := Config{
 		Environment:    getEnv("APP_ENV", "development"),
-		DatabaseURL:    os.Getenv("DATABASE_URL"),
+		DatabaseURL:    databaseURL,
 		DataStore:      strings.ToLower(getEnv("DATA_STORE", "memory")),
 		LogLevel:       strings.ToLower(getEnv("LOG_LEVEL", "info")),
 		AllowedOrigins: parseCSV(getEnv("ALLOWED_ORIGINS", "http://localhost:4200,http://localhost:8080")),
-		APIToken:       strings.TrimSpace(getEnv("API_TOKEN", "")),
+		APIToken:       strings.TrimSpace(apiToken),
 	}
 
 	portValue := getEnv("PORT", getEnv("HTTP_PORT", "8080"))
@@ -70,4 +81,37 @@ func parseCSV(value string) []string {
 		}
 	}
 	return out
+}
+
+func getEnvOrFile(key, defaultPath string) (string, error) {
+	if value := os.Getenv(key); value != "" {
+		return value, nil
+	}
+
+	fileKey := key + "_FILE"
+	if path := os.Getenv(fileKey); path != "" {
+		return readSecret(path, fileKey)
+	}
+
+	if defaultPath != "" {
+		return readSecret(defaultPath, key)
+	}
+
+	return "", nil
+}
+
+func readSecret(path, name string) (string, error) {
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "", nil
+		}
+		return "", fmt.Errorf("config: reading %s (%s): %w", name, path, err)
+	}
+
+	value := strings.TrimSpace(string(contents))
+	if value == "" {
+		return "", fmt.Errorf("config: %s (%s) is empty", name, path)
+	}
+	return value, nil
 }
