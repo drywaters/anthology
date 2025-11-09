@@ -1,0 +1,12 @@
+# Build artifacts
+bin
+web/dist
+
+# Node dependencies are restored during the Docker build
+web/node_modules
+
+# VCS and editor files
+.git
+.gitignore
+.dockerignore
+README.md
