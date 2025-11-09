@@ -81,6 +81,7 @@ go test ./...
 * Styling is powered by [`@angular/material`](https://www.npmjs.com/package/@angular/material) and its Material 3 design tokens. The global theme lives in [`web/src/styles.scss`](web/src/styles.scss).
 * The main page (`ItemsPageComponent`) provides a responsive catalogue view, inline editing, and CRUD actions that call the Go API. A dedicated login screen stores your bearer token locally and the application automatically attaches it to every request.
 * API base URL is resolved from the `<meta name="anthology-api">` tag (defaults to `http://localhost:8080/api`).
+  Deployments can override this without rebuilding by setting `window.NG_APP_API_URL` before the Angular bundle loads (e.g., inject `<script>window.NG_APP_API_URL='https://example.com/api';</script>` in the hosting template).
 * The UI seed data and layout offer a curated catalogue dashboard out of the box.
 
 ### Development workflow
