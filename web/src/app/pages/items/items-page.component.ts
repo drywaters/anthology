@@ -8,10 +8,11 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { Item, ItemForm, ITEM_TYPE_LABELS } from '../../models/item';
+import { AuthService } from '../../services/auth.service';
 import { ItemService } from '../../services/item.service';
 import { ItemFormComponent } from '../../components/item-form/item-form.component';
 
@@ -53,8 +54,10 @@ type FormContext = CreateFormContext | EditFormContext;
 })
 export class ItemsPageComponent {
   private readonly itemService = inject(ItemService);
+  private readonly authService = inject(AuthService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
 
   readonly displayedColumns = ['title', 'creator', 'itemType', 'releaseYear', 'updatedAt', 'actions'] as const;
   readonly items = signal<Item[]>([]);
@@ -67,6 +70,12 @@ export class ItemsPageComponent {
 
   constructor() {
     this.refresh();
+  }
+
+  logout(): void {
+    this.authService.clearToken();
+    this.items.set([]);
+    this.router.navigate(['/login']);
   }
 
   refresh(): void {

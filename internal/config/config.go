@@ -15,6 +15,7 @@ type Config struct {
 	DataStore      string
 	LogLevel       string
 	AllowedOrigins []string
+	APIToken       string
 }
 
 // Load reads configuration from environment variables with sensible defaults for local development.
@@ -25,6 +26,7 @@ func Load() (Config, error) {
 		DataStore:      strings.ToLower(getEnv("DATA_STORE", "memory")),
 		LogLevel:       strings.ToLower(getEnv("LOG_LEVEL", "info")),
 		AllowedOrigins: parseCSV(getEnv("ALLOWED_ORIGINS", "http://localhost:4200,http://localhost:8080")),
+		APIToken:       strings.TrimSpace(getEnv("API_TOKEN", "")),
 	}
 
 	portValue := getEnv("PORT", getEnv("HTTP_PORT", "8080"))
