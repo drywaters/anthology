@@ -41,6 +41,7 @@ func NewRouter(cfg config.Config, svc *items.Service, logger *slog.Logger) http.
 
 	handler := NewItemHandler(svc, logger)
 	r.Route("/api", func(r chi.Router) {
+		r.Use(newTokenAuthMiddleware(cfg.APIToken))
 		r.Route("/items", func(r chi.Router) {
 			r.Get("/", handler.List)
 			r.Post("/", handler.Create)

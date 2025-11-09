@@ -1,6 +1,10 @@
 <mat-toolbar color="primary" class="toolbar">
   <span class="brand">Anthology</span>
   <span class="spacer"></span>
+  <button mat-button type="button" (click)="logout()" data-testid="logout-btn">
+    <mat-icon>logout</mat-icon>
+    Log out
+  </button>
   <button mat-flat-button color="accent" (click)="startCreate()" data-testid="add-item-btn">
     <mat-icon>library_add</mat-icon>
     Add item
