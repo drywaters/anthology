@@ -1,0 +1,14 @@
+bin/
+*.log
+coverage.out
+
+web/node_modules/
+web/dist/
+web/.angular/
+web/.sass-cache/
+web/.turbo/
+web/.DS_Store
+
+.vscode/
+.idea/
+.DS_Store
