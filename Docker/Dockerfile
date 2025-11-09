@@ -23,7 +23,7 @@ RUN apk add --no-cache ca-certificates
 
 COPY --from=api-builder /out/anthology ./anthology
 COPY --from=api-builder /src/migrations ./migrations
-COPY --from=web-builder /web/dist ./web-dist
+COPY --from=web-builder /web/dist ./web/dist
 
 RUN addgroup -S anthology \
     && adduser -S -G anthology anthology \
@@ -33,6 +33,7 @@ ENV PORT=8080
 ENV LOG_LEVEL=${LOG_LEVEL}
 ENV DATABASE_URL_FILE=/run/secrets/anthology_database_url
 ENV API_TOKEN_FILE=/run/secrets/anthology_api_token
+ENV WEB_DIST_PATH=/app/web/dist/web/browser
 
 USER anthology
 

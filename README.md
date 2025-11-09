@@ -107,6 +107,15 @@ npm run lint
 
 (Angular CLI creates the recommended lint configuration out of the box.)
 
+To serve the Angular bundle from the Go API (both locally and in the container), build the production assets so they land in `web/dist/web/browser`:
+
+```bash
+cd web
+npm run build
+```
+
+The server reads static files from `WEB_DIST_PATH` (defaults to `web/dist/web/browser`; the Docker image sets it to `/app/web/dist/web/browser`).
+
 ## Deployment notes
 
 * **Docker**: the repository includes a multi-stage `Docker/Dockerfile` that compiles the Go API and Angular app, packaging both the binary and `web/dist` assets into a single Alpine image. Copy the built UI elsewhere if you prefer a dedicated static host.
