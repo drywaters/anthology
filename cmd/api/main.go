@@ -45,8 +45,13 @@ func main() {
 	router := transporthttp.NewRouter(cfg, svc, logger)
 
 	srv := &http.Server{
-		Addr:    cfg.HTTPAddress(),
-		Handler: router,
+		Addr:              cfg.HTTPAddress(),
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    http.DefaultMaxHeaderBytes,
 	}
 
 	go func() {
