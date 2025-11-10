@@ -45,6 +45,7 @@ func TestLoadAcceptsTokenOutsideDevelopment(t *testing.T) {
 	t.Setenv("DATA_STORE", "memory")
 	t.Setenv("PORT", "8080")
 	t.Setenv("API_TOKEN", "super-secret")
+	t.Setenv("ALLOWED_ORIGINS", "https://example.com")
 	t.Setenv("DATABASE_URL", "")
 
 	cfg, err := Load()
@@ -53,5 +54,39 @@ func TestLoadAcceptsTokenOutsideDevelopment(t *testing.T) {
 	}
 	if cfg.APIToken != "super-secret" {
 		t.Fatalf("expected API token to be preserved, got %q", cfg.APIToken)
+	}
+}
+
+func TestLoadRejectsWildcardOriginsOutsideDevelopment(t *testing.T) {
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("DATA_STORE", "memory")
+	t.Setenv("PORT", "8080")
+	t.Setenv("API_TOKEN", "secret")
+	t.Setenv("ALLOWED_ORIGINS", "https://example.com,*")
+	t.Setenv("DATABASE_URL", "")
+
+	_, err := Load()
+	if err == nil {
+		t.Fatal("expected error when ALLOWED_ORIGINS contains wildcard")
+	}
+	if !strings.Contains(err.Error(), "cannot contain wildcard") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestLoadRequiresAllowedOriginsOutsideDevelopment(t *testing.T) {
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("DATA_STORE", "memory")
+	t.Setenv("PORT", "8080")
+	t.Setenv("API_TOKEN", "secret")
+	t.Setenv("ALLOWED_ORIGINS", "   ")
+	t.Setenv("DATABASE_URL", "")
+
+	_, err := Load()
+	if err == nil {
+		t.Fatal("expected error when ALLOWED_ORIGINS is empty")
+	}
+	if !strings.Contains(err.Error(), "must define at least one origin") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
