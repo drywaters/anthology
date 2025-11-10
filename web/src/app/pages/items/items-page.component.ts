@@ -73,9 +73,18 @@ export class ItemsPageComponent {
   }
 
   logout(): void {
-    this.authService.clearToken();
-    this.items.set([]);
-    this.router.navigate(['/login']);
+    this.authService
+      .logout()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.items.set([]);
+          this.router.navigate(['/login']);
+        },
+        error: () => {
+          this.snackBar.open('We could not clear your session; please try again.', 'Dismiss', { duration: 5000 });
+        },
+      });
   }
 
   refresh(): void {

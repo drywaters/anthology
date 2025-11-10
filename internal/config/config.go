@@ -57,6 +57,12 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("API_TOKEN is required when APP_ENV=%s", cfg.Environment)
 	}
 
+	allowedOrigins, err := sanitizeAllowedOrigins(cfg.AllowedOrigins, cfg.Environment)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.AllowedOrigins = allowedOrigins
+
 	return cfg, nil
 }
 
@@ -87,6 +93,49 @@ func parseCSV(value string) []string {
 		}
 	}
 	return out
+}
+
+func sanitizeAllowedOrigins(origins []string, env string) ([]string, error) {
+	cleaned := make([]string, 0, len(origins))
+	seen := make(map[string]struct{}, len(origins))
+	for _, origin := range enumerateOrigins(origins) {
+		if strings.Contains(origin.value, "*") && !strings.EqualFold(env, "development") {
+			return nil, fmt.Errorf("ALLOWED_ORIGINS cannot contain wildcard %q when APP_ENV=%s", origin.value, env)
+		}
+
+		if _, exists := seen[origin.key]; exists {
+			continue
+		}
+
+		cleaned = append(cleaned, origin.value)
+		seen[origin.key] = struct{}{}
+	}
+
+	if len(cleaned) == 0 {
+		return nil, fmt.Errorf("ALLOWED_ORIGINS must define at least one origin when APP_ENV=%s", env)
+	}
+
+	return cleaned, nil
+}
+
+type originEntry struct {
+	value string
+	key   string
+}
+
+func enumerateOrigins(origins []string) []originEntry {
+	entries := make([]originEntry, 0, len(origins))
+	for _, raw := range origins {
+		trimmed := strings.TrimSpace(raw)
+		if trimmed == "" {
+			continue
+		}
+		entries = append(entries, originEntry{
+			value: trimmed,
+			key:   strings.ToLower(trimmed),
+		})
+	}
+	return entries
 }
 
 func getEnvOrFile(key, defaultPath string) (string, error) {

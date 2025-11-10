@@ -1,56 +1,70 @@
-import { Injectable, inject, PLATFORM_ID } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { inject, Injectable } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
+
+import { environment } from '../config/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly storageKey = 'anthology.apiToken';
-  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
-  private readonly tokenSubject = new BehaviorSubject<string | null>(this.readToken());
+  private readonly http = inject(HttpClient);
+  private readonly sessionUrl = `${environment.apiUrl}/session`;
+  private readonly sessionState = new BehaviorSubject<boolean | null>(null);
 
-  tokenChanges(): Observable<string | null> {
-    return this.tokenSubject.asObservable();
-  }
-
-  getToken(): string | null {
-    return this.tokenSubject.value;
+  sessionChanges(): Observable<boolean | null> {
+    return this.sessionState.asObservable();
   }
 
   isAuthenticated(): boolean {
-    return this.tokenSubject.value !== null;
+    return this.sessionState.value === true;
   }
 
-  setToken(token: string): void {
-    const normalized = token.trim();
-    if (normalized === '') {
-      this.clearToken();
-      return;
+  ensureSession(): Observable<boolean> {
+    const current = this.sessionState.value;
+    if (current !== null) {
+      return of(current);
     }
-
-    this.tokenSubject.next(normalized);
-    if (this.isBrowser) {
-      window.localStorage.setItem(this.storageKey, normalized);
-    }
+    return this.checkSession();
   }
 
-  clearToken(): void {
-    this.tokenSubject.next(null);
-    if (this.isBrowser) {
-      window.localStorage.removeItem(this.storageKey);
-    }
+  login(token: string): Observable<void> {
+    return this.http
+      .post<void>(
+        this.sessionUrl,
+        { token },
+        { withCredentials: true }
+      )
+      .pipe(tap(() => this.sessionState.next(true)));
   }
 
-  private readToken(): string | null {
-    if (!this.isBrowser) {
-      return null;
-    }
+  logout(): Observable<void> {
+    return this.http.delete<void>(this.sessionUrl, { withCredentials: true }).pipe(
+      tap(() => this.sessionState.next(false)),
+      catchError((error: HttpErrorResponse) => {
+        this.sessionState.next(false);
+        if (error.status === 401) {
+          return of(void 0);
+        }
+        return throwError(() => error);
+      })
+    );
+  }
 
-    const stored = window.localStorage.getItem(this.storageKey);
-    if (!stored) {
-      return null;
-    }
+  markUnauthenticated(): void {
+    this.sessionState.next(false);
+  }
 
-    const normalized = stored.trim();
-    return normalized === '' ? null : normalized;
+  private checkSession(): Observable<boolean> {
+    return this.http.get<void>(this.sessionUrl, { withCredentials: true }).pipe(
+      tap(() => this.sessionState.next(true)),
+      map(() => true),
+      catchError((error: HttpErrorResponse) => {
+        if (error.status === 401) {
+          this.sessionState.next(false);
+          return of(false);
+        }
+        return throwError(() => error);
+      })
+    );
   }
 }

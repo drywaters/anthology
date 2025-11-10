@@ -43,19 +43,30 @@ func NewRouter(cfg config.Config, svc *items.Service, logger *slog.Logger) http.
 		})
 	})
 
+	sessionHandler := NewSessionHandler(cfg.APIToken, cfg.Environment)
 	handler := NewItemHandler(svc, logger)
+
 	if strings.TrimSpace(cfg.APIToken) == "" {
 		logger.Warn("API token authentication disabled; /api endpoints are unauthenticated")
 	}
+
 	r.Route("/api", func(r chi.Router) {
-		r.Use(newTokenAuthMiddleware(cfg.APIToken))
-		r.Route("/items", func(r chi.Router) {
-			r.Get("/", handler.List)
-			r.Post("/", handler.Create)
-			r.Route("/{id}", func(r chi.Router) {
-				r.Get("/", handler.Get)
-				r.Put("/", handler.Update)
-				r.Delete("/", handler.Delete)
+		r.Route("/session", func(r chi.Router) {
+			r.Post("/", sessionHandler.Login)
+			r.Get("/", sessionHandler.Status)
+			r.Delete("/", sessionHandler.Logout)
+		})
+
+		r.Group(func(r chi.Router) {
+			r.Use(newTokenAuthMiddleware(cfg.APIToken))
+			r.Route("/items", func(r chi.Router) {
+				r.Get("/", handler.List)
+				r.Post("/", handler.Create)
+				r.Route("/{id}", func(r chi.Router) {
+					r.Get("/", handler.Get)
+					r.Put("/", handler.Update)
+					r.Delete("/", handler.Delete)
+				})
 			})
 		})
 	})
