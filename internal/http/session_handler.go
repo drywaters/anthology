@@ -40,8 +40,8 @@ func (h *SessionHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Token string `json:"token"`
 	}
 
-	if err := decodeJSON(r, &payload); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON payload")
+	if err := decodeJSONBody(w, r, &payload); err != nil {
+		writeJSONError(w, err)
 		return
 	}
 
