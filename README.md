@@ -79,7 +79,7 @@ go test ./...
 
 * Angular 20 standalone application located in `web/`.
 * Styling is powered by [`@angular/material`](https://www.npmjs.com/package/@angular/material) and its Material 3 design tokens. The global theme lives in [`web/src/styles.scss`](web/src/styles.scss).
-* The main page (`ItemsPageComponent`) provides a responsive catalogue view, inline editing, and CRUD actions that call the Go API. A dedicated login screen stores your bearer token locally and the application automatically attaches it to every request.
+* The main page (`ItemsPageComponent`) provides a responsive catalogue view, inline editing, and CRUD actions that call the Go API. A dedicated login screen exchanges your bearer token for an HttpOnly session cookie so browsers send it automatically without exposing it to JavaScript.
 * API base URL is resolved from the `<meta name="anthology-api">` tag (defaults to `http://localhost:8080/api`).
   Deployments can override this without rebuilding by setting `window.NG_APP_API_URL` before the Angular bundle loads (e.g., inject `<script>window.NG_APP_API_URL='https://example.com/api';</script>` in the hosting template).
 * The UI seed data and layout offer a curated catalogue dashboard out of the box.
@@ -94,7 +94,7 @@ npm start                           # ng serve --open
 
 The dev server runs on `http://localhost:4200` and proxies requests directly to the API URL specified in the meta tag. To point at a different backend, update the meta tag in `web/src/index.html` (for local overrides you can edit it before serving).
 
-When you first load the app you will be redirected to the login screen. Paste the same value you configured for `API_TOKEN` on the API server and the Angular client will persist it in `localStorage` for subsequent visits. Use the “Log out” button in the toolbar to clear it at any time.
+When you first load the app you will be redirected to the login screen. Paste the same value you configured for `API_TOKEN` on the API server and the Angular client will call `/api/session` to mint an HttpOnly cookie. Use the “Log out” button in the toolbar to clear it at any time.
 
 ### Testing and linting
 

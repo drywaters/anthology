@@ -9,19 +9,12 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  const token = authService.getToken();
-  if (token) {
-    request = request.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  }
+  request = request.clone({ withCredentials: true });
 
   return next(request).pipe(
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401) {
-        authService.clearToken();
+        authService.markUnauthenticated();
         void router.navigate(['/login'], {
           queryParams: { redirectTo: router.url !== '/login' ? router.url : undefined },
         });
