@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-`cmd/api` hosts the Go entrypoint, while shared domain, transport, and config code lives under `internal/`. SQL migrations sit in `migrations/`, and container build assets live in `Docker/`. The Angular workspace is contained in `web/`, with feature modules under `web/src/app` and global styles in `web/src/styles.scss`.
+`cmd/api` hosts the Go entrypoint, while shared domain, transport, and config code lives under `internal/`. SQL migrations sit in `migrations/`, and container build assets live in `Docker/`. Architectural diagrams live under `docs/architecture/`, and the Angular workspace is contained in `web/`, with feature modules under `web/src/app` and global styles in `web/src/styles.scss`.
 
 ## Build, Test, and Development Commands
 - `go run ./cmd/api` — boots the API with the current `DATA_STORE` configuration.

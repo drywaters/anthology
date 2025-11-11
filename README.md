@@ -161,5 +161,6 @@ Use the resulting credentials in your `anthology_database_url` secret (e.g., `po
 ## Further reading
 
 * [Planning document](docs/planning/anthology.md) for the full multi-phase roadmap.
+* [Go startup flow diagram](docs/architecture/go-startup.md) showing how config, repositories, services, and HTTP components initialize.
 * `internal/items/service_test.go` covers domain validation logic and in-memory repository behaviour.
 * `web/src/app/pages/items/items-page.component.*` contains the main Angular page that ties the experience together.
