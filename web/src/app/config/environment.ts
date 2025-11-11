@@ -9,5 +9,5 @@ const fallbackUrl = isHttpsPage ? locationOrigin : 'http://localhost:8080/api';
 
 // Allow hosts to override the API URL via a global before falling back to the baked-in meta tag.
 export const environment = {
-  apiUrl: globalUrl || safeMetaUrl || fallbackUrl || 'http://localhost:8080/api'
+    apiUrl: globalUrl || safeMetaUrl || fallbackUrl || 'http://localhost:8080/api'
 };

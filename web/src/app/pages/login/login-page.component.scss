@@ -1,42 +1,42 @@
 .login-wrapper {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, rgba(63, 81, 181, 0.1), rgba(103, 58, 183, 0.15));
-  padding: 2rem;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(63, 81, 181, 0.1), rgba(103, 58, 183, 0.15));
+    padding: 2rem;
 }
 
 .login-card {
-  max-width: 420px;
-  width: 100%;
+    max-width: 420px;
+    width: 100%;
 }
 
 .login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 .error {
-  margin: 0;
-  color: #d32f2f;
-  font-size: 0.9rem;
+    margin: 0;
+    color: #d32f2f;
+    font-size: 0.9rem;
 }
 
 .actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
 }
 
 .hint {
-  margin: 0;
-  font-size: 0.85rem;
-  color: rgba(0, 0, 0, 0.6);
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(0, 0, 0, 0.6);
 }
 
 :host ::ng-deep code {
-  font-family: 'Roboto Mono', monospace;
+    font-family: 'Roboto Mono', monospace;
 }
