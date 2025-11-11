@@ -1,19 +1,16 @@
 @use '@angular/material' as mat;
 
-$anthology-theme: mat.define-theme((
-  color: (
-    theme-type: light,
-    primary: mat.$azure-palette,
-    tertiary: mat.$rose-palette,
-  ),
-  typography: (
-    plain-family: ('Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif),
-    brand-family: ('Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif),
-    bold-weight: 700,
-    medium-weight: 600,
-    regular-weight: 400,
-  ),
-));
+$anthology-theme: mat.define-theme((color: (theme-type: light,
+                primary: mat.$azure-palette,
+                tertiary: mat.$rose-palette,
+            ),
+            typography: (plain-family: ('Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif),
+                brand-family: ('Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif),
+                bold-weight: 700,
+                medium-weight: 600,
+                regular-weight: 400,
+            ),
+        ));
 
 @include mat.core();
 @include mat.all-component-themes($anthology-theme);
@@ -21,16 +18,16 @@ $anthology-theme: mat.define-theme((
 
 html,
 body {
-  height: 100%;
+    height: 100%;
 }
 
 body {
-  margin: 0;
-  font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background: var(--mat-sys-surface-container);
-  color: var(--mat-sys-on-surface);
+    margin: 0;
+    font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: var(--mat-sys-surface-container);
+    color: var(--mat-sys-on-surface);
 }
 
 button {
-  text-transform: none;
+    text-transform: none;
 }

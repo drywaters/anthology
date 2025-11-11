@@ -1,0 +1,38 @@
+:host {
+    display: block;
+    min-height: 100vh;
+}
+
+.app-shell {
+    display: flex;
+    min-height: 100vh;
+    background: var(--mat-sys-surface-container-lowest);
+}
+
+.sidebar {
+    flex-shrink: 0;
+}
+
+.content {
+    flex: 1;
+    min-height: 100vh;
+    background: linear-gradient(180deg,
+            color-mix(in srgb, var(--mat-sys-surface) 90%, white) 0%,
+            var(--mat-sys-surface-container-high) 65%);
+    color: var(--mat-sys-on-surface);
+    overflow-y: auto;
+}
+
+.content-inner {
+    min-height: 100vh;
+}
+
+@media (max-width: 960px) {
+    .app-shell {
+        flex-direction: column;
+    }
+
+    .content {
+        min-height: auto;
+    }
+}

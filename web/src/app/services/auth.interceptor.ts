@@ -6,21 +6,21 @@ import { catchError, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
-  const authService = inject(AuthService);
-  const router = inject(Router);
+    const authService = inject(AuthService);
+    const router = inject(Router);
 
-  request = request.clone({ withCredentials: true });
+    request = request.clone({ withCredentials: true });
 
-  return next(request).pipe(
-    catchError((error: HttpErrorResponse) => {
-      if (error.status === 401) {
-        authService.markUnauthenticated();
-        void router.navigate(['/login'], {
-          queryParams: { redirectTo: router.url !== '/login' ? router.url : undefined },
-        });
-      }
+    return next(request).pipe(
+        catchError((error: HttpErrorResponse) => {
+            if (error.status === 401) {
+                authService.markUnauthenticated();
+                void router.navigate(['/login'], {
+                    queryParams: { redirectTo: router.url !== '/login' ? router.url : undefined },
+                });
+            }
 
-      return throwError(() => error);
-    })
-  );
+            return throwError(() => error);
+        })
+    );
 };
