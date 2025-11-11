@@ -2,7 +2,6 @@
 
 BIN_DIR ?= bin
 WEB_DIR ?= web
-DEPLOY_DIR ?= deploy
 
 DATA_STORE ?= memory
 PORT ?= 8080
@@ -10,12 +9,12 @@ ALLOWED_ORIGINS ?= http://localhost:4200,http://localhost:8080
 API_TOKEN ?= local-dev-token
 DATABASE_URL ?= postgres://anthology:anthology@localhost:5432/anthology?sslmode=disable
 
-REGISTRY ?= registry.bitofbytes.io
+REGISTRY ?= registry.example.com
 IMAGE_REPO ?= anthology
 LOG_LEVEL ?= info
 PLATFORMS ?= linux/amd64,linux/arm64/v8
 
-.PHONY: help configure-image ensure-image-tag api-run api-test api-build api-clean fmt tidy web-install web-start web-test web-lint web-build compose-up compose-down compose-logs docker-build docker-push docker-publish docker-buildx build run local clean
+.PHONY: help configure-image ensure-image-tag api-run api-test api-build api-clean fmt tidy web-install web-start web-test web-lint web-build docker-build docker-push docker-publish docker-buildx build run local clean
 
 help: ## Show all available targets.
 	@echo "Anthology targets"
@@ -40,7 +39,7 @@ api-run: ## Run the Go API with in-memory defaults.
 	LOG_LEVEL=$(LOG_LEVEL) \
 	go run ./cmd/api
 
-run: api-run ## Alias for api-run to match the bitofbytes workflow.
+run: api-run ## Alias for api-run to match common tooling expectations.
 
 api-test: ## Execute all Go unit tests.
 	go test ./...
@@ -72,15 +71,6 @@ web-lint: ## Run Angular lint checks.
 
 web-build: ## Build the Angular production bundle.
 	cd $(WEB_DIR) && npm run build
-
-compose-up: ## Build and start the docker compose stack (API + Postgres).
-	cd $(DEPLOY_DIR) && docker compose up --build
-
-compose-down: ## Stop the docker compose stack.
-	cd $(DEPLOY_DIR) && docker compose down
-
-compose-logs: ## Tail docker compose logs.
-	cd $(DEPLOY_DIR) && docker compose logs -f
 
 docker-build: configure-image ## Build the API container image.
 	docker build \

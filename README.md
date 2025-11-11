@@ -9,7 +9,6 @@ Anthology is a two-tier catalogue that combines a Go API (powered by the [`chi`]
 ├── internal               # Go packages (config, HTTP transport, domain logic)
 ├── migrations             # SQL migrations for Postgres
 ├── web                    # Angular workspace (standalone application)
-├── deploy/docker-compose.yml
 └── docs/planning/anthology.md
 ```
 
@@ -59,15 +58,6 @@ psql "$DATABASE_URL" -f migrations/0001_create_items.sql
 
 go run ./cmd/api
 ```
-
-A ready-to-run Compose file is included:
-
-```bash
-cd deploy
-docker compose up --build
-```
-
-This starts Postgres and the API container. The API automatically reads the connection string defined in the Compose file.
 
 ### Tests
 
@@ -139,8 +129,8 @@ Create them once per Swarm and attach them to the stack/service:
 printf 'postgres://user:pass@db:5432/anthology?sslmode=disable' | docker secret create anthology_database_url -
 printf 'super-secret-token' | docker secret create anthology_api_token -
 
-# example stack deployment
-docker stack deploy -c deploy/docker-compose.yml anthology
+# example stack deployment (provide your own stack file)
+docker stack deploy -c stack.yml anthology
 ```
 
 Secrets are immutable. To change a value, remove and recreate it, then update the service:
