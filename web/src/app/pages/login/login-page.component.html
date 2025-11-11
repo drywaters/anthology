@@ -1,39 +1,34 @@
 <div class="login-wrapper">
-  <mat-card class="login-card">
-    <mat-card-header>
-      <mat-card-title>Sign in to Anthology</mat-card-title>
-      <mat-card-subtitle>Provide your personal access token to continue.</mat-card-subtitle>
-    </mat-card-header>
+    <mat-card class="login-card">
+        <mat-card-header>
+            <mat-card-title>Sign in to Anthology</mat-card-title>
+            <mat-card-subtitle>Provide your personal access token to continue.</mat-card-subtitle>
+        </mat-card-header>
 
-    <mat-card-content>
-      <form (ngSubmit)="submit()" [formGroup]="form" class="login-form">
-        <mat-form-field appearance="outline">
-          <mat-label>API token</mat-label>
-          <input
-            matInput
-            type="password"
-            formControlName="token"
-            autocomplete="off"
-            [disabled]="submitting()"
-            required
-          />
-          <mat-error *ngIf="tokenControl.hasError('required')">A token is required.</mat-error>
-          <mat-error *ngIf="tokenControl.hasError('invalid')">That token did not match the API.</mat-error>
-        </mat-form-field>
+        <mat-card-content>
+            <form (ngSubmit)="submit()" [formGroup]="form" class="login-form">
+                <mat-form-field appearance="outline">
+                    <mat-label>API token</mat-label>
+                    <input
+                        matInput
+                        type="password"
+                        formControlName="token"
+                        autocomplete="off"
+                        [disabled]="submitting()"
+                        required
+                    />
+                    <mat-error *ngIf="tokenControl.hasError('required')">A token is required.</mat-error>
+                    <mat-error *ngIf="tokenControl.hasError('invalid')">That token did not match the API.</mat-error>
+                </mat-form-field>
 
-        <p class="error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
+                <p class="error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
 
-        <div class="actions">
-          <button mat-stroked-button type="button" (click)="clearSession()" [disabled]="submitting()">Clear session</button>
-          <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">Continue</button>
-        </div>
-      </form>
-    </mat-card-content>
+                <div class="actions">
+                    <button mat-stroked-button type="button" (click)="clearSession()" [disabled]="submitting()">Clear session</button>
+                    <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">Continue</button>
+                </div>
+            </form>
+        </mat-card-content>
 
-    <mat-card-footer>
-      <p class="hint">
-        Tip: set the <code>API_TOKEN</code> environment variable on the API server and paste the same value here.
-      </p>
-    </mat-card-footer>
-  </mat-card>
+    </mat-card>
 </div>
