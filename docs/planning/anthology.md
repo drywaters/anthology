@@ -22,7 +22,7 @@ Goal: list items (books, records, games) with core metadata via CRUD API and Ang
 - Define Postgres schema using migrations (e.g., `golang-migrate`). Tables: `items`, `item_categories`, `platforms`, `item_formats`, maybe `tags` pivot tables later. For MVP, single `items` table with enum-ish fields (`type`, `title`, `creator`, `release_year`, `notes`, `created_at`, `updated_at`).
 - Build REST API with the [`chi`](https://github.com/go-chi/chi) router. Endpoints: `POST /items`, `GET /items`, `GET /items/{id}`, `PUT /items/{id}`, `DELETE /items/{id}`. Provide validation, error handling, loggers (structured logs). Add configuration via environment variables (12-factor style), support `.env` for local dev.
 - Persistence layer using repository interface, transaction handling, context propagation, unit tests with test containers or mocking DB using `sqlmock`.
-- Containerize API with multi-stage Dockerfile (build binary → minimal runtime). Provide `docker-compose.yml` (for local dev, even if final is swarm) with Go API, Postgres (init scripts), Angular dev container optional.
+- Containerize API with multi-stage Dockerfile (build binary → minimal runtime). Provide make targets or scripts that wire Go API + Postgres locally without needing Compose in-repo.
 
 ### Frontend (Angular)
 - Scaffold Angular app with routing, state management (NgRx optional later), shared module. Minimal layout (toolbar, navigation).
@@ -34,14 +34,14 @@ Goal: list items (books, records, games) with core metadata via CRUD API and Ang
 - Ensure linting (golangci-lint, `ng lint`) passes in CI.
 
 ### Deployment
-- Create Docker Swarm stack file (`deploy/stack.yml`) referencing backend, frontend (served via nginx), Postgres (with persistent volume).
+- Create Docker Swarm stack definition (in infra repo) referencing backend, frontend (served via nginx), Postgres (with persistent volume) and document how to hook Anthology’s Docker image into it.
 - Document local development workflow in README.
 
 :::task-stub{title="MVP: CRUD inventory app"}
 1. Design DB schema and migrations for core item fields; configure Postgres connection pooling.
 2. Implement Go API (routing, handlers, services, repositories) with validation, logging, tests.
 3. Scaffold Angular app with list/detail forms for items, service layer, Angular Material styling.
-4. Containerize services; add docker-compose for dev and swarm stack manifest; update docs.
+4. Containerize services; document local dev workflow and reference the external swarm stack manifest; update docs.
 :::
 
 ---
