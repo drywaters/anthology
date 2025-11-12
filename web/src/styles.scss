@@ -1,11 +1,13 @@
 @use '@angular/material' as mat;
 
+@import url('https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@400;500&family=Alegreya+Sans:wght@500;600;700&family=Alegreya:wght@400;500;600;700&display=swap');
+
 $anthology-theme: mat.define-theme((color: (theme-type: light,
                 primary: mat.$azure-palette,
                 tertiary: mat.$rose-palette,
             ),
-            typography: (plain-family: ('Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif),
-                brand-family: ('Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif),
+            typography: (plain-family: ('Alegreya', 'Georgia', 'Times New Roman', serif),
+                brand-family: ('Alegreya Sans', 'Alegreya', 'Segoe UI', sans-serif),
                 bold-weight: 700,
                 medium-weight: 600,
                 regular-weight: 400,
@@ -23,9 +25,31 @@ body {
 
 body {
     margin: 0;
-    font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Alegreya', 'Georgia', 'Times New Roman', serif;
     background: var(--mat-sys-surface-container);
     color: var(--mat-sys-on-surface);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.mat-h1,
+.mat-h2,
+.mat-h3,
+.mat-h4,
+.mat-h5,
+.mat-h6,
+.mat-subtitle-1,
+.mat-subtitle-2,
+.mat-title-large,
+.mat-title-medium,
+.mat-title-small {
+    font-family: 'Alegreya Sans', 'Alegreya', 'Segoe UI', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.01em;
 }
 
 button {
