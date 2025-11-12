@@ -11,10 +11,12 @@ DATABASE_URL ?= postgres://anthology:anthology@localhost:5432/anthology?sslmode=
 
 REGISTRY ?= registry.example.com
 IMAGE_REPO ?= anthology
+API_IMAGE_REPO ?= anthology-api
+UI_IMAGE_REPO ?= anthology-ui
 LOG_LEVEL ?= info
 PLATFORMS ?= linux/amd64,linux/arm64/v8
 
-.PHONY: help configure-image ensure-image-tag api-run api-test api-build api-clean fmt tidy web-install web-start web-test web-lint web-build docker-build docker-push docker-publish docker-buildx build run local clean
+.PHONY: help configure-image ensure-image-tag api-run api-test api-build api-clean fmt tidy web-install web-start web-test web-lint web-build docker-build docker-build-api docker-build-ui docker-push docker-push-api docker-push-ui docker-publish docker-buildx docker-buildx-api docker-buildx-ui build run local clean
 
 help: ## Show all available targets.
 	@echo "Anthology targets"
@@ -72,31 +74,62 @@ web-lint: ## Run Angular lint checks.
 web-build: ## Build the Angular production bundle.
 	cd $(WEB_DIR) && npm run build
 
-docker-build: configure-image ## Build the API container image.
-	docker build \
-		-f Docker/Dockerfile \
-		--build-arg LOG_LEVEL=$(LOG_LEVEL) \
-		-t $(IMAGE) \
-		.
+docker-build-api: IMAGE_REPO=$(API_IMAGE_REPO)
+docker-build-api: configure-image ## Build the API container image.
+        docker build \
+                -f Docker/Dockerfile.api \
+                --build-arg LOG_LEVEL=$(LOG_LEVEL) \
+                -t $(IMAGE) \
+                .
 
-docker-push: ensure-image-tag ## Push the API container image.
-	docker push $(IMAGE)
+docker-build-ui: IMAGE_REPO=$(UI_IMAGE_REPO)
+docker-build-ui: configure-image ## Build the UI container image.
+        docker build \
+                -f Docker/Dockerfile.ui \
+                -t $(IMAGE) \
+                .
 
-docker-publish: ## Build and push the image locally.
-	$(MAKE) docker-build docker-push
+docker-build: docker-build-api docker-build-ui ## Build both API and UI container images.
 
-docker-buildx: ensure-image-tag ## Build and push a multi-arch image via buildx.
-	@echo ">> Building and pushing $(IMAGE) for $(PLATFORMS)"
-	-docker buildx inspect >/dev/null 2>&1 || docker buildx create --use
-	docker buildx build \
-		-f Docker/Dockerfile \
-		--platform=$(PLATFORMS) \
-		--build-arg LOG_LEVEL=$(LOG_LEVEL) \
-		-t $(IMAGE) \
-		--push \
-		.
+docker-push-api: IMAGE_REPO=$(API_IMAGE_REPO)
+docker-push-api: ensure-image-tag ## Push the API container image.
+        docker push $(IMAGE)
 
-build: api-test web-test docker-build ## Run both test suites then build the container image.
+docker-push-ui: IMAGE_REPO=$(UI_IMAGE_REPO)
+docker-push-ui: ensure-image-tag ## Push the UI container image.
+        docker push $(IMAGE)
+
+docker-push: docker-push-api docker-push-ui ## Push both API and UI container images.
+
+docker-publish: ## Build and push both images locally.
+        $(MAKE) docker-build docker-push
+
+docker-buildx-api: IMAGE_REPO=$(API_IMAGE_REPO)
+docker-buildx-api: ensure-image-tag ## Build and push a multi-arch API image via buildx.
+        @echo ">> Building and pushing $(IMAGE) for $(PLATFORMS)"
+        -docker buildx inspect >/dev/null 2>&1 || docker buildx create --use
+        docker buildx build \
+                -f Docker/Dockerfile.api \
+                --platform=$(PLATFORMS) \
+                --build-arg LOG_LEVEL=$(LOG_LEVEL) \
+                -t $(IMAGE) \
+                --push \
+                .
+
+docker-buildx-ui: IMAGE_REPO=$(UI_IMAGE_REPO)
+docker-buildx-ui: ensure-image-tag ## Build and push a multi-arch UI image via buildx.
+        @echo ">> Building and pushing $(IMAGE) for $(PLATFORMS)"
+        -docker buildx inspect >/dev/null 2>&1 || docker buildx create --use
+        docker buildx build \
+                -f Docker/Dockerfile.ui \
+                --platform=$(PLATFORMS) \
+                -t $(IMAGE) \
+                --push \
+                .
+
+docker-buildx: docker-buildx-api docker-buildx-ui ## Build and push multi-arch API and UI images via buildx.
+
+build: api-test web-test docker-build ## Run both test suites then build the container images.
 
 local: ## Run the API and Angular dev server concurrently.
 	$(MAKE) -j 2 api-run web-start

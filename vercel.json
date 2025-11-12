@@ -1,19 +1,10 @@
 {
-  "builds": [
-    {
-      "src": "cmd/api/main.go",
-      "use": "@vercel/go"
-    }
-  ],
   "buildCommand": "cd web && npm ci && npm run build",
-  "routes": [
+  "outputDirectory": "web/dist/web/browser",
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "cmd/api/main.go"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "cmd/api/main.go"
+      "source": "/api/(.*)",
+      "destination": "https://anthology-staging.bitofbytes.io/api/$1"
     }
   ]
 }

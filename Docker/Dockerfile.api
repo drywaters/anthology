@@ -1,18 +1,15 @@
 # syntax=docker/dockerfile:1
 
-FROM node:20-alpine AS web-builder
-WORKDIR /web
-COPY web/ ./
-RUN npm install \
-    && npm run build
-
-FROM golang:1.22-alpine AS api-builder
+FROM golang:1.22-alpine AS builder
 WORKDIR /src
+
 COPY go.mod go.sum ./
 RUN go mod download
+
 COPY cmd ./cmd
 COPY internal ./internal
 COPY migrations ./migrations
+
 RUN CGO_ENABLED=0 GOOS=linux go build -o /out/anthology ./cmd/api
 
 FROM alpine:3.20
@@ -21,9 +18,8 @@ WORKDIR /app
 
 RUN apk add --no-cache ca-certificates
 
-COPY --from=api-builder /out/anthology ./anthology
-COPY --from=api-builder /src/migrations ./migrations
-COPY --from=web-builder /web/dist ./web/dist
+COPY --from=builder /out/anthology ./anthology
+COPY --from=builder /src/migrations ./migrations
 
 RUN addgroup -S anthology \
     && adduser -S -G anthology anthology \
@@ -33,8 +29,6 @@ ENV PORT=8080
 ENV LOG_LEVEL=${LOG_LEVEL}
 ENV DATABASE_URL_FILE=/run/secrets/anthology_database_url
 ENV API_TOKEN_FILE=/run/secrets/anthology_api_token
-ENV WEB_DIST_PATH=/app/web/dist/web/browser
-
 USER anthology
 
 EXPOSE 8080
