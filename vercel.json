@@ -1,0 +1,12 @@
+{
+  "installCommand": "cd web && npm ci",
+  "buildCommand": "cd web && npm run build",
+  "outputDirectory": "web/dist/web",
+  "framework": "angular",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://anthology-staging.bitofbytes.io/api/:path*"
+    }
+  ]
+}
