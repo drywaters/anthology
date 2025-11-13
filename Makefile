@@ -9,7 +9,7 @@ ALLOWED_ORIGINS ?= http://localhost:4200,http://localhost:8080
 API_TOKEN ?= local-dev-token
 DATABASE_URL ?= postgres://anthology:anthology@localhost:5432/anthology?sslmode=disable
 
-REGISTRY ?= registry.example.com
+REGISTRY ?= registry.bitofbytes.io
 IMAGE_REPO ?= anthology
 API_IMAGE_REPO ?= anthology-api
 UI_IMAGE_REPO ?= anthology-ui
@@ -23,10 +23,10 @@ help: ## Show all available targets.
 	@grep -E '^[a-zA-Z0-9_-]+:.*?##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 configure-image: ## Evaluate container image metadata defaults.
-	$(eval IMAGE_NAME ?= $(REGISTRY)/$(IMAGE_REPO))
 	$(eval SHORT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null))
 	$(eval IMAGE_TAG ?= $(if $(SHORT_SHA),$(SHORT_SHA),dev))
-	$(eval IMAGE := $(IMAGE_NAME):$(IMAGE_TAG))
+	$(eval API_IMAGE := $(REGISTRY)/$(API_IMAGE_REPO):$(IMAGE_TAG))
+	$(eval UI_IMAGE := $(REGISTRY)/$(UI_IMAGE_REPO):$(IMAGE_TAG))
 	@true
 
 ensure-image-tag: configure-image ## Abort if git metadata is unavailable for image tagging.
@@ -76,56 +76,56 @@ web-build: ## Build the Angular production bundle.
 
 docker-build-api: IMAGE_REPO=$(API_IMAGE_REPO)
 docker-build-api: configure-image ## Build the API container image.
-        docker build \
-                -f Docker/Dockerfile.api \
-                --build-arg LOG_LEVEL=$(LOG_LEVEL) \
-                -t $(IMAGE) \
-                .
+	docker build \
+		-f Docker/Dockerfile.api \
+		--build-arg LOG_LEVEL=$(LOG_LEVEL) \
+		-t $(API_IMAGE) \
+		.
 
 docker-build-ui: IMAGE_REPO=$(UI_IMAGE_REPO)
 docker-build-ui: configure-image ## Build the UI container image.
-        docker build \
-                -f Docker/Dockerfile.ui \
-                -t $(IMAGE) \
-                .
+	docker build \
+		-f Docker/Dockerfile.ui \
+		-t $(UI_IMAGE) \
+		.
 
 docker-build: docker-build-api docker-build-ui ## Build both API and UI container images.
 
 docker-push-api: IMAGE_REPO=$(API_IMAGE_REPO)
 docker-push-api: ensure-image-tag ## Push the API container image.
-        docker push $(IMAGE)
+	docker push $(API_IMAGE)
 
 docker-push-ui: IMAGE_REPO=$(UI_IMAGE_REPO)
 docker-push-ui: ensure-image-tag ## Push the UI container image.
-        docker push $(IMAGE)
+	docker push $(UI_IMAGE)
 
 docker-push: docker-push-api docker-push-ui ## Push both API and UI container images.
 
 docker-publish: ## Build and push both images locally.
-        $(MAKE) docker-build docker-push
+	$(MAKE) docker-build docker-push
 
 docker-buildx-api: IMAGE_REPO=$(API_IMAGE_REPO)
 docker-buildx-api: ensure-image-tag ## Build and push a multi-arch API image via buildx.
-        @echo ">> Building and pushing $(IMAGE) for $(PLATFORMS)"
-        -docker buildx inspect >/dev/null 2>&1 || docker buildx create --use
-        docker buildx build \
-                -f Docker/Dockerfile.api \
-                --platform=$(PLATFORMS) \
-                --build-arg LOG_LEVEL=$(LOG_LEVEL) \
-                -t $(IMAGE) \
-                --push \
-                .
+	@echo ">> Building and pushing $(API_IMAGE) for $(PLATFORMS)"
+	-docker buildx inspect >/dev/null 2>&1 || docker buildx create --use
+	docker buildx build \
+		-f Docker/Dockerfile.api \
+		--platform=$(PLATFORMS) \
+		--build-arg LOG_LEVEL=$(LOG_LEVEL) \
+		-t $(API_IMAGE) \
+		--push \
+		.
 
 docker-buildx-ui: IMAGE_REPO=$(UI_IMAGE_REPO)
 docker-buildx-ui: ensure-image-tag ## Build and push a multi-arch UI image via buildx.
-        @echo ">> Building and pushing $(IMAGE) for $(PLATFORMS)"
-        -docker buildx inspect >/dev/null 2>&1 || docker buildx create --use
-        docker buildx build \
-                -f Docker/Dockerfile.ui \
-                --platform=$(PLATFORMS) \
-                -t $(IMAGE) \
-                --push \
-                .
+	@echo ">> Building and pushing $(UI_IMAGE) for $(PLATFORMS)"
+	-docker buildx inspect >/dev/null 2>&1 || docker buildx create --use
+	docker buildx build \
+		-f Docker/Dockerfile.ui \
+		--platform=$(PLATFORMS) \
+		-t $(UI_IMAGE) \
+		--push \
+		.
 
 docker-buildx: docker-buildx-api docker-buildx-ui ## Build and push multi-arch API and UI images via buildx.
 
