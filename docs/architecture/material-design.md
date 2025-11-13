@@ -25,6 +25,6 @@ Before merging any theme or layout update:
 1. **Validate theme tokens** – Update `web/src/styles.scss` only with ASCII-safe edits, run `npm run lint` to catch SCSS import issues, and confirm palettes/typography still follow Material Design guidance.
 2. **Spot-check primary screens** – `npm start`, log in, and skim the items table, form dialog, and login card to ensure Angular Material components pick up the new tokens (surface container, on-surface, etc.).
 3. **Run unit tests** – Execute `npm test -- --watch=false` so visual tweaks do not mask regressions in form validation logic.
-4. **Build for production** – `npm run build` should emit `web/dist/web/browser` with themed CSS. The Go API serves these assets when `WEB_DIST_PATH` points to that directory.
+4. **Build for production** – `npm run build` should emit `web/dist/web/browser` with themed CSS. The nginx-based UI container serves these assets in production.
 
 Following this checklist keeps visual changes grounded in Material Design while ensuring formatting changes ship smoothly.

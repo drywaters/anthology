@@ -71,7 +71,7 @@ go test ./...
 * Styling is powered by [`@angular/material`](https://www.npmjs.com/package/@angular/material) and its Material 3 design tokens. The global theme lives in [`web/src/styles.scss`](web/src/styles.scss).
 * The main page (`ItemsPageComponent`) provides a responsive catalogue view, inline editing, and CRUD actions that call the Go API. A dedicated login screen exchanges your bearer token for an HttpOnly session cookie so browsers send it automatically without exposing it to JavaScript.
 * API base URL is resolved from the `<meta name="anthology-api">` tag (defaults to `http://localhost:8080/api`).
-  Deployments can override this without rebuilding by setting `window.NG_APP_API_URL` before the Angular bundle loads (e.g., inject `<script>window.NG_APP_API_URL='https://example.com/api';</script>` in the hosting template).
+  Deployments can override this without rebuilding by setting `window.NG_APP_API_URL` before the Angular bundle loads (the shipped `assets/runtime-config.js` file is replaced at container start when `NG_APP_API_URL` is defined).
 * The UI seed data and layout offer a curated catalogue dashboard out of the box.
 
 ### Development workflow
@@ -82,7 +82,7 @@ npm install
 npm start                           # ng serve --open
 ```
 
-The dev server runs on `http://localhost:4200` and proxies requests directly to the API URL specified in the meta tag. To point at a different backend, update the meta tag in `web/src/index.html` (for local overrides you can edit it before serving).
+The dev server runs on `http://localhost:4200` and proxies requests directly to the API URL specified in the meta tag. To point at a different backend, update the meta tag in `web/src/index.html` or adjust `web/src/assets/runtime-config.js` before serving. Running `make local` will start both the Go API and Angular dev server together for local testing.
 
 When you first load the app you will be redirected to the login screen. Paste the same value you configured for `API_TOKEN` on the API server and the Angular client will call `/api/session` to mint an HttpOnly cookie. Use the “Log out” button in the toolbar to clear it at any time.
 
@@ -98,18 +98,17 @@ npm run lint
 
 (Angular CLI creates the recommended lint configuration out of the box.)
 
-To serve the Angular bundle from the Go API (both locally and in the container), build the production assets so they land in `web/dist/web/browser`:
+To produce the bundle consumed by the nginx-based UI container, build the production assets so they land in `web/dist/web/browser`:
 
 ```bash
 cd web
 npm run build
 ```
 
-The server reads static files from `WEB_DIST_PATH` (defaults to `web/dist/web/browser`; the Docker image sets it to `/app/web/dist/web/browser`).
 
 ## Deployment notes
 
-* **Docker**: the repository includes a multi-stage `Docker/Dockerfile` that compiles the Go API and Angular app, packaging both the binary and `web/dist` assets into a single Alpine image. Copy the built UI elsewhere if you prefer a dedicated static host.
+* **Docker**: the repository now publishes separate images for the API (`Docker/Dockerfile.api`) and UI (`Docker/Dockerfile.ui`). The Makefile targets `docker-build-api`/`docker-build-ui` (and matching `docker-push`/`docker-buildx` variants) build and publish each image. The UI container writes `assets/runtime-config.js` from the `NG_APP_API_URL` environment variable so preview deployments can point at different backends.
 * **Secrets**: the API automatically loads `DATABASE_URL` and `API_TOKEN` from either the env var or a `<NAME>_FILE` path. The published Docker image sets `/run/secrets/anthology_database_url` and `/run/secrets/anthology_api_token` as the defaults, so Swarm/Stack secrets are consumed without baking credentials into the image.
 * **Environment management**: prefer `.env` files for local overrides (`DATA_STORE`, `DATABASE_URL`, `LOG_LEVEL`). Do not commit secrets.
 * **Migrations**: Ship migrations alongside deployments (e.g., run via `golang-migrate` or `psql`) before starting the API container.
