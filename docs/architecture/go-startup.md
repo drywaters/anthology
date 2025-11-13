@@ -29,5 +29,5 @@ flowchart TD
 - `logging.New()` builds the global `slog.Logger` instance used across packages.
 - `buildRepository()` either seeds an in-memory repo (local/demo) or initializes Postgres, runs migrations, and wires `items.PostgresRepository`.
 - `items.Service` encapsulates validation plus CRUD orchestration; it is injected into HTTP handlers.
-- `http.NewRouter` composes middleware, auth, item endpoints, session handlers, and the SPA file server.
+- `http.NewRouter` composes middleware, auth, session handlers, and item endpoints. Static assets moved to the standalone UI container, so non-API paths return standard 404 responses.
 - The HTTP server runs `ListenAndServe` in a goroutine; the main goroutine blocks on the signal-aware context and then calls `srv.Shutdown` with a timeout to drain connections gracefully.

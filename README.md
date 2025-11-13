@@ -1,14 +1,16 @@
 # Anthology
 
-Anthology is a two-tier catalogue that combines a Go API (powered by the [`chi`](https://github.com/go-chi/chi) router) with an Angular Material frontend. The Phase 1 MVP focuses on managing a personal library of books, games, movies, and music with a polished catalogue presentation.
+Anthology is a two-tier catalogue that combines a Go API (powered by the [`chi`](https://github.com/go-chi/chi) router) with an Angular Material frontend. The API and UI now ship as independently deployable services, making it easy to scale or update either tier without rebuilding the other. The Phase 1 MVP focuses on managing a personal library of books, games, movies, and music with a polished catalogue presentation.
 
 ## Project structure
 
 ```
-├── cmd/api                # Go entrypoint
-├── internal               # Go packages (config, HTTP transport, domain logic)
-├── migrations             # SQL migrations for Postgres
-├── web                    # Angular workspace (standalone application)
+├── cmd/api                       # Go entrypoint
+├── internal                      # Go packages (config, HTTP transport, domain logic)
+├── migrations                    # SQL migrations for Postgres
+├── web                           # Angular workspace (standalone application)
+├── Docker/Dockerfile.api         # Go API container definition
+├── Docker/Dockerfile.ui          # Static Angular UI container (nginx)
 └── docs/planning/anthology.md
 ```
 
@@ -33,7 +35,7 @@ export API_TOKEN="super-secret-token"
 go run ./cmd/api
 ```
 
-The API listens on `http://localhost:8080` and exposes:
+The API listens on `http://localhost:8080` and exposes JSON-only endpoints (the Angular bundle is served by the separate UI container):
 
 | Method | Endpoint       | Description            |
 | ------ | -------------- | ---------------------- |
@@ -43,6 +45,9 @@ The API listens on `http://localhost:8080` and exposes:
 | GET    | `/api/items/{id}` | Retrieve an item   |
 | PUT    | `/api/items/{id}` | Update an item      |
 | DELETE | `/api/items/{id}` | Delete an item      |
+| POST   | `/api/session` | Exchange bearer token for an HttpOnly session cookie |
+| GET    | `/api/session` | Return the active session status |
+| DELETE | `/api/session` | Clear the session cookie |
 
 ### Using Postgres
 
@@ -82,7 +87,7 @@ npm install
 npm start                           # ng serve --open
 ```
 
-The dev server runs on `http://localhost:4200` and proxies requests directly to the API URL specified in the meta tag. To point at a different backend, update the meta tag in `web/src/index.html` or adjust `web/src/assets/runtime-config.js` before serving. Running `make local` will start both the Go API and Angular dev server together for local testing.
+The dev server runs on `http://localhost:4200` and proxies requests directly to the API URL specified in the meta tag. To point at a different backend, update the meta tag in `web/src/index.html` or adjust `web/src/assets/runtime-config.js` before serving. Running `make local` will start both the Go API and Angular dev server together for local testing so you can exercise the split-stack workflow end-to-end.
 
 When you first load the app you will be redirected to the login screen. Paste the same value you configured for `API_TOKEN` on the API server and the Angular client will call `/api/session` to mint an HttpOnly cookie. Use the “Log out” button in the toolbar to clear it at any time.
 
@@ -108,7 +113,7 @@ npm run build
 
 ## Deployment notes
 
-* **Docker**: the repository now publishes separate images for the API (`Docker/Dockerfile.api`) and UI (`Docker/Dockerfile.ui`). The Makefile targets `docker-build-api`/`docker-build-ui` (and matching `docker-push`/`docker-buildx` variants) build and publish each image. The UI container writes `assets/runtime-config.js` from the `NG_APP_API_URL` environment variable so preview deployments can point at different backends.
+* **Docker**: the repository now publishes separate images for the API (`Docker/Dockerfile.api`) and UI (`Docker/Dockerfile.ui`). The Makefile targets `docker-build-api`/`docker-build-ui` (and matching `docker-push`/`docker-buildx` variants) build and publish each image. The UI container writes `assets/runtime-config.js` from the `NG_APP_API_URL` environment variable so preview deployments can point at different backends without rebuilding the Angular assets.
 * **Secrets**: the API automatically loads `DATABASE_URL` and `API_TOKEN` from either the env var or a `<NAME>_FILE` path. The published Docker image sets `/run/secrets/anthology_database_url` and `/run/secrets/anthology_api_token` as the defaults, so Swarm/Stack secrets are consumed without baking credentials into the image.
 * **Environment management**: prefer `.env` files for local overrides (`DATA_STORE`, `DATABASE_URL`, `LOG_LEVEL`). Do not commit secrets.
 * **Migrations**: Ship migrations alongside deployments (e.g., run via `golang-migrate` or `psql`) before starting the API container.

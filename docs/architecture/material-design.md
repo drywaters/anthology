@@ -7,6 +7,7 @@ This note captures how the Anthology frontend applies [Material Design](https://
 - **Design language:** The UI follows Material Design 3; use the Material guidance above for color, typography, and motion decisions.
 - **Component library:** [Angular Material](https://material.angular.io/) is installed via `@angular/material` and drives theming plus the component primitives (table, toolbar, snack-bar, etc.).
 - **Theme definition:** `web/src/styles.scss` imports `@angular/material` with `@use '@angular/material' as mat;` and defines the `$anthology-theme` tokens, including the Azure and Rose palettes along with the Inter/Segoe/Roboto font stack. `mat.core()`, `mat.all-component-themes()`, and `mat.all-component-typographies()` are included globally so standalone components automatically inherit the theme.
+- **Runtime configuration:** Because the UI is deployed independently of the API, `Docker/ui/entrypoint.sh` rewrites `web/dist/web/browser/assets/runtime-config.js` at container start when `NG_APP_API_URL` is present so static hosts can target any Anthology API instance without rebuilding.
 
 ## How the theme is applied
 

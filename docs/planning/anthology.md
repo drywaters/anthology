@@ -20,9 +20,9 @@ Goal: list items (books, records, games) with core metadata via CRUD API and Ang
 ### Backend (Go)
 - Create a Go module (`cmd/api`, `internal/…`) following Clean Architecture or layered structure.
 - Define Postgres schema using migrations (e.g., `golang-migrate`). Tables: `items`, `item_categories`, `platforms`, `item_formats`, maybe `tags` pivot tables later. For MVP, single `items` table with enum-ish fields (`type`, `title`, `creator`, `release_year`, `notes`, `created_at`, `updated_at`).
-- Build REST API with the [`chi`](https://github.com/go-chi/chi) router. Endpoints: `POST /items`, `GET /items`, `GET /items/{id}`, `PUT /items/{id}`, `DELETE /items/{id}`. Provide validation, error handling, loggers (structured logs). Add configuration via environment variables (12-factor style), support `.env` for local dev.
+- Build REST API with the [`chi`](https://github.com/go-chi/chi) router. Endpoints: `POST /items`, `GET /items`, `GET /items/{id}`, `PUT /items/{id}`, `DELETE /items/{id}`. Provide validation, error handling, loggers (structured logs). Add configuration via environment variables (12-factor style), support `.env` for local dev. Keep the API JSON-only—the Angular bundle is served independently.
 - Persistence layer using repository interface, transaction handling, context propagation, unit tests with test containers or mocking DB using `sqlmock`.
-- Containerize API with multi-stage Dockerfile (build binary → minimal runtime). Provide make targets or scripts that wire Go API + Postgres locally without needing Compose in-repo.
+- Containerize API with multi-stage Dockerfile (build binary → minimal runtime). Provide make targets or scripts that wire Go API + Postgres locally without needing Compose in-repo. Package the Angular UI in its own nginx-based image so deployments can update each tier separately.
 
 ### Frontend (Angular)
 - Scaffold Angular app with routing, state management (NgRx optional later), shared module. Minimal layout (toolbar, navigation).
