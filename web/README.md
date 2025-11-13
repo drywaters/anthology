@@ -22,7 +22,7 @@ The client listens on `http://localhost:4200`. API calls target the URL exposed 
 npm run build
 ```
 
-Bundles are emitted under `dist/web/` and can be served by any static host (for example, nginx in front of the Go API).
+Bundles are emitted under `dist/web/` and can be served by any static host (for example, nginx in front of the Go API). The production container defined in `Docker/Dockerfile.ui` rewrites `assets/runtime-config.js` at startup when `NG_APP_API_URL` is set so each deployment can point at a different Anthology API instance without rebuilding.
 
 ## Testing
 
