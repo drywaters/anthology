@@ -51,11 +51,17 @@ type UpdateItemInput struct {
 	Notes       *string
 }
 
+// ListOptions describes filters for listing items.
+type ListOptions struct {
+	ItemType *ItemType
+	Initial  *string
+}
+
 // Repository defines persistence operations for Items.
 type Repository interface {
 	Create(ctx context.Context, item Item) (Item, error)
 	Get(ctx context.Context, id uuid.UUID) (Item, error)
-	List(ctx context.Context) ([]Item, error)
+	List(ctx context.Context, opts ListOptions) ([]Item, error)
 	Update(ctx context.Context, item Item) (Item, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }

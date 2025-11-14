@@ -28,7 +28,7 @@ func TestServiceCreatePersistsItem(t *testing.T) {
 		Creator:     "Andrew Hunt",
 		ItemType:    ItemTypeBook,
 		ReleaseYear: &year,
-                Notes:       "Initial dataset mirrors a curated media catalogue.",
+		Notes:       "Initial dataset mirrors a curated media catalogue.",
 	})
 	if err != nil {
 		t.Fatalf("expected item to be created: %v", err)
@@ -88,7 +88,7 @@ func TestServiceListOrdersByCreatedAt(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 	second, _ := svc.Create(ctx, CreateItemInput{Title: "Second", ItemType: ItemTypeBook})
 
-	items, err := svc.List(ctx)
+	items, err := svc.List(ctx, ListOptions{})
 	if err != nil {
 		t.Fatalf("list failed: %v", err)
 	}
@@ -98,5 +98,35 @@ func TestServiceListOrdersByCreatedAt(t *testing.T) {
 	}
 	if items[0].ID != second.ID {
 		t.Fatalf("expected newest item first")
+	}
+}
+
+func TestServiceListAppliesFilters(t *testing.T) {
+	repo := NewInMemoryRepository(nil)
+	svc := NewService(repo)
+
+	ctx := context.Background()
+
+	_, _ = svc.Create(ctx, CreateItemInput{Title: "Alpha", ItemType: ItemTypeBook})
+	_, _ = svc.Create(ctx, CreateItemInput{Title: "Zulu", ItemType: ItemTypeGame})
+	_, _ = svc.Create(ctx, CreateItemInput{Title: "99 Luftballons", ItemType: ItemTypeMusic})
+
+	letter := "A"
+	items, err := svc.List(ctx, ListOptions{Initial: &letter})
+	if err != nil {
+		t.Fatalf("list with initial failed: %v", err)
+	}
+	if len(items) != 1 || items[0].Title != "Alpha" {
+		t.Fatalf("expected only alpha result, got %#v", items)
+	}
+
+	itemType := ItemTypeMusic
+	hash := "#"
+	items, err = svc.List(ctx, ListOptions{ItemType: &itemType, Initial: &hash})
+	if err != nil {
+		t.Fatalf("list with combined filters failed: %v", err)
+	}
+	if len(items) != 1 || items[0].Title != "99 Luftballons" {
+		t.Fatalf("expected non-alphabetic music result")
 	}
 }

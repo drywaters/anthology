@@ -41,9 +41,9 @@ func (s *Service) Create(ctx context.Context, input CreateItemInput) (Item, erro
 	return s.repo.Create(ctx, item)
 }
 
-// List returns all catalogued items ordered by creation date descending.
-func (s *Service) List(ctx context.Context) ([]Item, error) {
-	items, err := s.repo.List(ctx)
+// List returns catalogued items ordered by creation date descending.
+func (s *Service) List(ctx context.Context, opts ListOptions) ([]Item, error) {
+	items, err := s.repo.List(ctx, opts)
 	if err != nil {
 		return nil, err
 	}

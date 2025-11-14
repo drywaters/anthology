@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"log/slog"
 
@@ -27,13 +29,44 @@ func NewItemHandler(service *items.Service, logger *slog.Logger) *ItemHandler {
 
 // List returns all items.
 func (h *ItemHandler) List(w http.ResponseWriter, r *http.Request) {
-	items, err := h.service.List(r.Context())
+	opts, err := parseListOptions(r.URL.Query())
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	items, err := h.service.List(r.Context(), opts)
 	if err != nil {
 		h.logger.Error("list items", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to list items")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+}
+
+func parseListOptions(values url.Values) (items.ListOptions, error) {
+	opts := items.ListOptions{}
+
+	if rawType := strings.TrimSpace(values.Get("type")); rawType != "" {
+		typeValue := items.ItemType(rawType)
+		switch typeValue {
+		case items.ItemTypeBook, items.ItemTypeGame, items.ItemTypeMovie, items.ItemTypeMusic:
+			opts.ItemType = &typeValue
+		default:
+			return items.ListOptions{}, fmt.Errorf("invalid type filter")
+		}
+	}
+
+	if rawLetter := strings.TrimSpace(values.Get("letter")); rawLetter != "" {
+		letter := strings.ToUpper(rawLetter)
+		if letter == "#" || (len(letter) == 1 && letter[0] >= 'A' && letter[0] <= 'Z') {
+			opts.Initial = &letter
+		} else {
+			return items.ListOptions{}, fmt.Errorf("invalid letter filter")
+		}
+	}
+
+	return opts, nil
 }
 
 // Create stores a new item.

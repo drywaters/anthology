@@ -73,6 +73,43 @@ mat-card {
     overflow-x: auto;
 }
 
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem 0;
+}
+
+.type-select {
+    min-width: 180px;
+}
+
+.letter-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.letter-button {
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--mat-sys-on-surface-variant);
+
+    &.active {
+        color: var(--mat-sys-primary);
+    }
+}
+
+.no-results {
+    padding: 2rem 1.5rem;
+    text-align: center;
+    font-weight: 600;
+    color: var(--mat-sys-on-surface-variant);
+}
+
 .items-table {
     width: 100%;
     border-spacing: 0;
@@ -139,5 +176,11 @@ mat-card {
 
     .page {
         padding-top: 1.5rem;
+    }
+
+    .filters {
+        flex-direction: column;
+        align-items: stretch;
+        padding-inline: 1rem;
     }
 }
