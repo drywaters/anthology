@@ -9,7 +9,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { Router, RouterModule } from '@angular/router';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { EMPTY, catchError, map, switchMap, tap } from 'rxjs';
 
 import { Item, ItemForm, ItemType, ITEM_TYPE_LABELS } from '../../models/item';
 import { ItemService } from '../../services/item.service';
@@ -87,6 +88,7 @@ export class ItemsPageComponent {
     readonly formContext = signal<EditFormContext | null>(null);
     readonly letterFilter = signal<LetterFilter>('ALL');
     readonly typeFilter = signal<ItemTypeFilter>('all');
+    private readonly refreshTick = signal(0);
 
     readonly typeLabels = ITEM_TYPE_LABELS;
     readonly typeOptions: Array<{ value: ItemTypeFilter; label: string }> = [
@@ -133,24 +135,32 @@ export class ItemsPageComponent {
     );
 
     constructor() {
-        this.refresh();
+        const requestParams = computed(() => ({ filters: this.currentFilters(), tick: this.refreshTick() }));
+
+        toObservable(requestParams)
+            .pipe(
+                map(({ filters }) => filters),
+                switchMap((filters) => {
+                    this.loading.set(true);
+                    return this.itemService.list(filters).pipe(
+                        tap((items) => {
+                            this.items.set(items);
+                            this.loading.set(false);
+                        }),
+                        catchError(() => {
+                            this.loading.set(false);
+                            this.snackBar.open('Unable to load your anthology right now.', 'Dismiss', { duration: 5000 });
+                            return EMPTY;
+                        })
+                    );
+                }),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe();
     }
 
     refresh(): void {
-        this.loading.set(true);
-        this.itemService
-            .list(this.currentFilters())
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (items) => {
-                    this.items.set(items);
-                    this.loading.set(false);
-                },
-                error: () => {
-                    this.loading.set(false);
-                    this.snackBar.open('Unable to load your anthology right now.', 'Dismiss', { duration: 5000 });
-                },
-            });
+        this.refreshTick.update((value) => value + 1);
     }
 
     startCreate(): void {
@@ -232,12 +242,10 @@ export class ItemsPageComponent {
 
     setLetterFilter(letter: LetterFilter): void {
         this.letterFilter.set(letter);
-        this.refresh();
     }
 
     setTypeFilter(type: ItemTypeFilter): void {
         this.typeFilter.set(type);
-        this.refresh();
     }
 
     private currentFilters(): { itemType?: ItemType; letter?: string } | undefined {
