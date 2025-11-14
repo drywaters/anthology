@@ -1,8 +1,7 @@
-import { DatePipe, NgFor, NgIf } from '@angular/common';
+import { DatePipe, NgClass, NgFor, NgIf, NgTemplateOutlet } from '@angular/common';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -57,14 +56,15 @@ type AlphabetLetter =
     standalone: true,
     imports: [
         DatePipe,
+        NgClass,
         NgFor,
         NgIf,
+        NgTemplateOutlet,
         ItemFormComponent,
         MatFormFieldModule,
         MatSelectModule,
         MatButtonModule,
         MatCardModule,
-        MatChipsModule,
         MatIconModule,
         MatProgressBarModule,
         MatSnackBarModule,
@@ -220,6 +220,14 @@ export class ItemsPageComponent {
 
     labelFor(item: Item): string {
         return this.typeLabels[item.itemType];
+    }
+
+    chipClassFor(itemType: ItemType): string {
+        return `item-type-chip--${itemType}`;
+    }
+
+    filterByType(itemType: ItemType): void {
+        this.setTypeFilter(itemType);
     }
 
     setLetterFilter(letter: LetterFilter): void {

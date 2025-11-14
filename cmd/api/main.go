@@ -99,6 +99,7 @@ func buildRepository(ctx context.Context, cfg config.Config, logger *slog.Logger
 func seedLocalItems() []items.Item {
 	now := time.Now().UTC()
 	year2013 := 2013
+	year2015 := 2015
 	year2016 := 2016
 
 	return []items.Item{
@@ -121,6 +122,26 @@ func seedLocalItems() []items.Item {
 			Notes:       "Cozy management vibes drawn from community-favourite collections.",
 			CreatedAt:   now.Add(1 * time.Minute),
 			UpdatedAt:   now.Add(1 * time.Minute),
+		},
+		{
+			ID:          uuid.New(),
+			Title:       "Arrival",
+			Creator:     "Denis Villeneuve",
+			ItemType:    items.ItemTypeMovie,
+			ReleaseYear: &year2016,
+			Notes:       "Moody first-contact film that balances cerebral sci-fi with lush visuals.",
+			CreatedAt:   now.Add(2 * time.Minute),
+			UpdatedAt:   now.Add(2 * time.Minute),
+		},
+		{
+			ID:          uuid.New(),
+			Title:       "How Big, How Blue, How Beautiful",
+			Creator:     "Florence + The Machine",
+			ItemType:    items.ItemTypeMusic,
+			ReleaseYear: &year2015,
+			Notes:       "Anthemic art-pop anchor that rounds out the music shelf.",
+			CreatedAt:   now.Add(3 * time.Minute),
+			UpdatedAt:   now.Add(3 * time.Minute),
 		},
 	}
 }
