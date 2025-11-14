@@ -1,7 +1,7 @@
 {
   "installCommand": "cd web && npm ci",
   "buildCommand": "cd web && npm run build",
-  "outputDirectory": "web/dist/web",
+  "outputDirectory": "web/dist/web/browser",
   "framework": "angular",
   "rewrites": [
     {
