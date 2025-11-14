@@ -67,6 +67,15 @@
 mat-card {
     border-radius: 20px;
     box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+    position: relative;
+    overflow: hidden;
+}
+
+mat-progress-bar {
+    position: absolute;
+    inset: 0 0 auto;
+    pointer-events: none;
+    z-index: 1;
 }
 
 .table-wrapper {
