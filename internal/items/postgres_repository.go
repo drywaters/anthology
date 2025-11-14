@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -45,10 +46,35 @@ func (r *PostgresRepository) Get(ctx context.Context, id uuid.UUID) (Item, error
 	return item, nil
 }
 
-// List returns items ordered by creation timestamp descending.
-func (r *PostgresRepository) List(ctx context.Context) ([]Item, error) {
+// List returns items ordered by creation timestamp descending, filtered by the provided options.
+func (r *PostgresRepository) List(ctx context.Context, opts ListOptions) ([]Item, error) {
+	query := baseSelect
+	clauses := []string{}
+	args := []any{}
+
+	if opts.ItemType != nil {
+		clauses = append(clauses, fmt.Sprintf("item_type = $%d", len(args)+1))
+		args = append(args, *opts.ItemType)
+	}
+
+	if opts.Initial != nil {
+		initial := strings.ToUpper(strings.TrimSpace(*opts.Initial))
+		if initial == "#" {
+			clauses = append(clauses, "NOT (upper(substr(trim(title), 1, 1)) BETWEEN 'A' AND 'Z')")
+		} else {
+			clauses = append(clauses, fmt.Sprintf("upper(substr(trim(title), 1, 1)) = $%d", len(args)+1))
+			args = append(args, initial)
+		}
+	}
+
+	if len(clauses) > 0 {
+		query = query + " WHERE " + strings.Join(clauses, " AND ")
+	}
+
+	query = query + " ORDER BY created_at DESC, title ASC"
+
 	items := []Item{}
-	if err := r.db.SelectContext(ctx, &items, baseSelect+" ORDER BY created_at DESC, title ASC"); err != nil {
+	if err := r.db.SelectContext(ctx, &items, query, args...); err != nil {
 		return nil, fmt.Errorf("list items: %w", err)
 	}
 	return items, nil

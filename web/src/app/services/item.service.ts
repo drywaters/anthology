@@ -1,17 +1,27 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 
 import { environment } from '../config/environment';
-import { Item, ItemForm } from '../models/item';
+import { Item, ItemForm, ItemType } from '../models/item';
 
 @Injectable({ providedIn: 'root' })
 export class ItemService {
     private readonly http = inject(HttpClient);
     private readonly baseUrl = `${environment.apiUrl}/items`;
 
-    list(): Observable<Item[]> {
-        return this.http.get<{ items: Item[] }>(this.baseUrl).pipe(map((response) => response.items));
+    list(filters?: { itemType?: ItemType; letter?: string }): Observable<Item[]> {
+        let params = new HttpParams();
+        if (filters?.itemType) {
+            params = params.set('type', filters.itemType);
+        }
+        if (filters?.letter) {
+            params = params.set('letter', filters.letter);
+        }
+
+        return this.http
+            .get<{ items: Item[] }>(this.baseUrl, { params: params.keys().length ? params : undefined })
+            .pipe(map((response) => response.items));
     }
 
     get(id: string): Observable<Item> {

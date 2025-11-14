@@ -73,6 +73,99 @@ mat-card {
     overflow-x: auto;
 }
 
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.18rem;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0.5rem 0.75rem 0.6rem;
+    background: color-mix(in srgb, #e8f5ef 80%, white);
+    border-radius: 1rem;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+    margin-bottom: 0.9rem;
+}
+
+.type-select {
+    min-width: 180px;
+}
+
+.letter-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.0625rem;
+    align-items: center;
+}
+
+.letter-button {
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--mat-sys-on-surface-variant);
+
+    &.active {
+        color: var(--mat-sys-primary);
+    }
+}
+
+.item-type-chip {
+    --chip-bg: color-mix(in srgb, var(--mat-sys-primary) 20%, white);
+    --chip-color: var(--mat-sys-primary);
+    border: none;
+    background: var(--chip-bg);
+    color: var(--chip-color);
+    font: inherit;
+    text-transform: uppercase;
+    font-weight: 600;
+    border-radius: 999px;
+    cursor: pointer;
+    user-select: none;
+    padding: 0.25rem 0.85rem;
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+
+    &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
+    }
+
+    &:focus-visible {
+        outline: 2px solid color-mix(in srgb, var(--mat-sys-primary) 60%, white);
+        outline-offset: 2px;
+    }
+}
+
+.item-type-chip--book {
+    --chip-bg: #ede9fe;
+    --chip-color: #4c1d95;
+}
+
+.item-type-chip--game {
+    --chip-bg: #ecfccb;
+    --chip-color: #3f6212;
+}
+
+.item-type-chip--movie {
+    --chip-bg: #fee2e2;
+    --chip-color: #b91c1c;
+}
+
+.item-type-chip--music {
+    --chip-bg: #cffafe;
+    --chip-color: #0f766e;
+}
+
+.no-results {
+    padding: 2rem 1.5rem;
+    text-align: center;
+    font-weight: 600;
+    color: var(--mat-sys-on-surface-variant);
+}
+
 .items-table {
     width: 100%;
     border-spacing: 0;
@@ -140,4 +233,29 @@ mat-card {
     .page {
         padding-top: 1.5rem;
     }
+
+    .filters {
+        flex-direction: column;
+        align-items: stretch;
+        padding-inline: 1rem;
+    }
+}
+.item-type-chip--book {
+    --chip-bg: #ede9fe;
+    --chip-color: #4c1d95;
+}
+
+.item-type-chip--game {
+    --chip-bg: #ecfccb;
+    --chip-color: #3f6212;
+}
+
+.item-type-chip--movie {
+    --chip-bg: #fee2e2;
+    --chip-color: #b91c1c;
+}
+
+.item-type-chip--music {
+    --chip-bg: #cffafe;
+    --chip-color: #0f766e;
 }

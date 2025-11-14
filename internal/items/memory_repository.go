@@ -2,6 +2,7 @@ package items
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -47,14 +48,37 @@ func (r *InMemoryRepository) Get(_ context.Context, id uuid.UUID) (Item, error) 
 	return item, nil
 }
 
-// List returns all stored items.
-func (r *InMemoryRepository) List(_ context.Context) ([]Item, error) {
+// List returns stored items matching the supplied options.
+func (r *InMemoryRepository) List(_ context.Context, opts ListOptions) ([]Item, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
 	items := make([]Item, 0, len(r.order))
 	for _, id := range r.order {
 		if item, ok := r.data[id]; ok {
+			if opts.ItemType != nil && item.ItemType != *opts.ItemType {
+				continue
+			}
+
+			if opts.Initial != nil {
+				initial := strings.ToUpper(strings.TrimSpace(*opts.Initial))
+				titleInitial := ""
+				trimmed := strings.TrimSpace(item.Title)
+				if len(trimmed) > 0 {
+					titleInitial = strings.ToUpper(string(trimmed[0]))
+				}
+
+				if initial == "#" {
+					if titleInitial >= "A" && titleInitial <= "Z" {
+						continue
+					}
+				} else {
+					if titleInitial != initial {
+						continue
+					}
+				}
+			}
+
 			items = append(items, item)
 		}
 	}
