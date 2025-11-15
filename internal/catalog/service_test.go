@@ -118,3 +118,17 @@ func TestServiceLookupUnsupportedCategory(t *testing.T) {
 		t.Fatalf("expected ErrUnsupportedCategory, got %v", err)
 	}
 }
+
+func TestFirstSentenceMapValue(t *testing.T) {
+	text := firstSentence(map[string]any{"value": "  Nested opening.  "})
+	if text != "Nested opening." {
+		t.Fatalf("expected to derive description from map value, got %q", text)
+	}
+}
+
+func TestFirstSentenceNestedValue(t *testing.T) {
+	text := firstSentence(map[string]any{"value": map[string]string{"value": "Layered start."}})
+	if text != "Layered start." {
+		t.Fatalf("expected recursive extraction from nested map, got %q", text)
+	}
+}

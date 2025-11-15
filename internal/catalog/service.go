@@ -223,6 +223,19 @@ func firstSentence(raw any) string {
 				}
 			}
 		}
+	case map[string]any:
+		if text, ok := value["value"]; ok {
+			if trimmed := firstSentence(text); trimmed != "" {
+				return trimmed
+			}
+		}
+	case map[string]string:
+		if text, ok := value["value"]; ok {
+			trimmed := strings.TrimSpace(text)
+			if trimmed != "" {
+				return trimmed
+			}
+		}
 	}
 	return ""
 }
