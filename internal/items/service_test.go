@@ -23,12 +23,17 @@ func TestServiceCreatePersistsItem(t *testing.T) {
 	repo := NewInMemoryRepository(nil)
 	svc := NewService(repo)
 	year := 2023
+	pages := 352
 
 	item, err := svc.Create(context.Background(), CreateItemInput{
 		Title:       "The Pragmatic Programmer",
 		Creator:     "Andrew Hunt",
 		ItemType:    ItemTypeBook,
 		ReleaseYear: &year,
+		PageCount:   &pages,
+		ISBN13:      "9780135957059",
+		ISBN10:      "0135957052",
+		Description: "Practical advice for software craftspeople.",
 		Notes:       "Initial dataset mirrors a curated media catalogue.",
 	})
 	if err != nil {
@@ -44,6 +49,18 @@ func TestServiceCreatePersistsItem(t *testing.T) {
 	if item.ReleaseYear == nil || *item.ReleaseYear != year {
 		t.Fatalf("expected release year to persist")
 	}
+	if item.PageCount == nil || *item.PageCount != pages {
+		t.Fatalf("expected page count to persist")
+	}
+	if item.ISBN13 != "9780135957059" {
+		t.Fatalf("expected isbn13 to persist")
+	}
+	if item.ISBN10 != "0135957052" {
+		t.Fatalf("expected isbn10 to persist")
+	}
+	if item.Description != "Practical advice for software craftspeople." {
+		t.Fatalf("expected description to persist")
+	}
 }
 
 func TestServiceUpdate(t *testing.T) {
@@ -58,11 +75,20 @@ func TestServiceUpdate(t *testing.T) {
 	title := "Updated"
 	notes := "Now includes expansion content"
 	itemType := ItemTypeGame
+	newDescription := "Updated overview"
+	isbn13 := "9781984801265"
+	isbn10 := "1984801263"
+	pageCountValue := 640
+	pageCountPtr := &pageCountValue
 
 	updated, err := svc.Update(context.Background(), created.ID, UpdateItemInput{
-		Title:    &title,
-		Notes:    &notes,
-		ItemType: &itemType,
+		Title:       &title,
+		Notes:       &notes,
+		ItemType:    &itemType,
+		Description: &newDescription,
+		ISBN13:      &isbn13,
+		ISBN10:      &isbn10,
+		PageCount:   &pageCountPtr,
 	})
 	if err != nil {
 		t.Fatalf("update failed: %v", err)
@@ -73,6 +99,15 @@ func TestServiceUpdate(t *testing.T) {
 	}
 	if updated.Notes != notes {
 		t.Fatalf("expected notes to be updated")
+	}
+	if updated.Description != newDescription {
+		t.Fatalf("expected description update")
+	}
+	if updated.ISBN13 != isbn13 || updated.ISBN10 != isbn10 {
+		t.Fatalf("expected isbn values to update")
+	}
+	if updated.PageCount == nil || *updated.PageCount != pageCountValue {
+		t.Fatalf("expected page count update")
 	}
 	if !updated.UpdatedAt.After(created.UpdatedAt) {
 		t.Fatalf("expected updated timestamp to increase")
@@ -137,11 +172,19 @@ func TestServiceCreateTrimsInputAndNormalizesYear(t *testing.T) {
 	svc := NewService(repo)
 
 	negativeYear := -1990
+	negativePages := -10
+	isbn13 := " 9780441172719 "
+	isbn10 := " 0441172717"
+	description := "  Classic sci-fi  "
 	item, err := svc.Create(context.Background(), CreateItemInput{
 		Title:       "  Dune  ",
 		Creator:     "  Frank Herbert ",
 		ItemType:    ItemTypeBook,
 		ReleaseYear: &negativeYear,
+		PageCount:   &negativePages,
+		ISBN13:      isbn13,
+		ISBN10:      isbn10,
+		Description: description,
 		Notes:       "  Classic sci-fi  ",
 	})
 	if err != nil {
@@ -159,6 +202,18 @@ func TestServiceCreateTrimsInputAndNormalizesYear(t *testing.T) {
 	}
 	if item.Notes != "Classic sci-fi" {
 		t.Fatalf("expected trimmed notes, got %q", item.Notes)
+	}
+	if item.PageCount != nil {
+		t.Fatalf("expected invalid page count to normalize to nil")
+	}
+	if item.ISBN13 != "9780441172719" {
+		t.Fatalf("expected isbn13 to be trimmed")
+	}
+	if item.ISBN10 != "0441172717" {
+		t.Fatalf("expected isbn10 to be trimmed")
+	}
+	if item.Description != "Classic sci-fi" {
+		t.Fatalf("expected description to be trimmed, got %q", item.Description)
 	}
 }
 

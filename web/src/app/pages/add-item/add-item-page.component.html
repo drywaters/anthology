@@ -81,6 +81,45 @@
                                 {{ lastLookupSummary() }}
                             </div>
                         </div>
+
+                        <div class="lookup-preview" *ngIf="lookupPreview() as preview">
+                            <div class="preview-header">
+                                <h3>Metadata preview</h3>
+                                <p>Review the fetched details before saving from the Manual Entry tab.</p>
+                            </div>
+
+                            <div class="preview-grid">
+                                <div class="preview-field">
+                                    <span class="label">Title</span>
+                                    <span class="value">{{ preview.title || '—' }}</span>
+                                </div>
+                                <div class="preview-field">
+                                    <span class="label">Creator</span>
+                                    <span class="value">{{ preview.creator || '—' }}</span>
+                                </div>
+                                <div class="preview-field">
+                                    <span class="label">Release year</span>
+                                    <span class="value">{{ preview.releaseYear ?? '—' }}</span>
+                                </div>
+                                <div class="preview-field">
+                                    <span class="label">Number of pages</span>
+                                    <span class="value">{{ preview.pageCount ?? '—' }}</span>
+                                </div>
+                                <div class="preview-field">
+                                    <span class="label">EAN / ISBN13</span>
+                                    <span class="value">{{ preview.isbn13 || '—' }}</span>
+                                </div>
+                                <div class="preview-field">
+                                    <span class="label">UPC / ISBN10</span>
+                                    <span class="value">{{ preview.isbn10 || '—' }}</span>
+                                </div>
+                            </div>
+
+                            <div class="preview-description" *ngIf="preview.description">
+                                <h4>Description</h4>
+                                <p>{{ preview.description }}</p>
+                            </div>
+                        </div>
                     </div>
                 </mat-tab>
                 <mat-tab label="Manual Entry">

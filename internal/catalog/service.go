@@ -43,6 +43,10 @@ type Metadata struct {
 	Creator     string         `json:"creator"`
 	ItemType    items.ItemType `json:"itemType"`
 	ReleaseYear *int           `json:"releaseYear,omitempty"`
+	PageCount   *int           `json:"pageCount,omitempty"`
+	ISBN13      string         `json:"isbn13"`
+	ISBN10      string         `json:"isbn10"`
+	Description string         `json:"description"`
 	Notes       string         `json:"notes"`
 }
 
@@ -105,6 +109,10 @@ type openLibrarySearchResponse struct {
 		AuthorName       []string `json:"author_name"`
 		FirstPublishYear *int     `json:"first_publish_year"`
 		PublishYear      []int    `json:"publish_year"`
+		NumberOfPages    *int     `json:"number_of_pages_median"`
+		ISBN             []string `json:"isbn"`
+		FirstSentence    any      `json:"first_sentence"`
+		Subtitle         string   `json:"subtitle"`
 	} `json:"docs"`
 }
 
@@ -155,11 +163,18 @@ func (s *Service) lookupBook(ctx context.Context, query string) (Metadata, error
 		return Metadata{}, ErrNotFound
 	}
 
+	isbn13, isbn10 := selectISBNs(doc.ISBN)
+	description := deriveDescription(doc.FirstSentence, doc.Subtitle)
+
 	metadata := Metadata{
-		Title:    title,
-		Creator:  creator,
-		ItemType: items.ItemTypeBook,
-		Notes:    "",
+		Title:       title,
+		Creator:     creator,
+		ItemType:    items.ItemTypeBook,
+		PageCount:   doc.NumberOfPages,
+		ISBN13:      isbn13,
+		ISBN10:      isbn10,
+		Description: description,
+		Notes:       "",
 	}
 
 	if doc.FirstPublishYear != nil {
@@ -170,6 +185,59 @@ func (s *Service) lookupBook(ctx context.Context, query string) (Metadata, error
 	}
 
 	return metadata, nil
+}
+
+func selectISBNs(values []string) (string, string) {
+	var isbn13 string
+	var isbn10 string
+	for _, value := range values {
+		clean := strings.TrimSpace(value)
+		if len(clean) == 13 && isbn13 == "" {
+			isbn13 = clean
+			continue
+		}
+		if len(clean) == 10 && isbn10 == "" {
+			isbn10 = clean
+		}
+	}
+	return isbn13, isbn10
+}
+
+func deriveDescription(raw any, subtitle string) string {
+	if text := firstSentence(raw); text != "" {
+		return text
+	}
+	return strings.TrimSpace(subtitle)
+}
+
+func firstSentence(raw any) string {
+	switch value := raw.(type) {
+	case string:
+		return strings.TrimSpace(value)
+	case []any:
+		for _, entry := range value {
+			if text, ok := entry.(string); ok {
+				trimmed := strings.TrimSpace(text)
+				if trimmed != "" {
+					return trimmed
+				}
+			}
+		}
+	case map[string]any:
+		if text, ok := value["value"]; ok {
+			if trimmed := firstSentence(text); trimmed != "" {
+				return trimmed
+			}
+		}
+	case map[string]string:
+		if text, ok := value["value"]; ok {
+			trimmed := strings.TrimSpace(text)
+			if trimmed != "" {
+				return trimmed
+			}
+		}
+	}
+	return ""
 }
 
 func normalizeISBN(value string) string {

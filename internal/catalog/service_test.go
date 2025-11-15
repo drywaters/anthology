@@ -16,7 +16,7 @@ func TestServiceLookupBookByISBN(t *testing.T) {
 		receivedPath = r.URL.Path
 		receivedISBN = r.URL.Query().Get("isbn")
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"docs":[{"title":"Test Title","author_name":["Author One"],"first_publish_year":1999}]}`))
+		_, _ = w.Write([]byte(`{"docs":[{"title":"Test Title","author_name":["Author One"],"first_publish_year":1999,"number_of_pages_median":464,"isbn":["9780385534796","0385534795"],"first_sentence":["A chilling opening line."]}]}`))
 	}))
 	defer server.Close()
 
@@ -47,6 +47,18 @@ func TestServiceLookupBookByISBN(t *testing.T) {
 	}
 	if metadata.ReleaseYear == nil || *metadata.ReleaseYear != 1999 {
 		t.Fatalf("expected release year 1999, got %v", metadata.ReleaseYear)
+	}
+	if metadata.PageCount == nil || *metadata.PageCount != 464 {
+		t.Fatalf("expected page count 464, got %v", metadata.PageCount)
+	}
+	if metadata.ISBN13 != "9780385534796" {
+		t.Fatalf("expected isbn13 to be populated, got %q", metadata.ISBN13)
+	}
+	if metadata.ISBN10 != "0385534795" {
+		t.Fatalf("expected isbn10 to be populated, got %q", metadata.ISBN10)
+	}
+	if metadata.Description != "A chilling opening line." {
+		t.Fatalf("expected description from first sentence, got %q", metadata.Description)
 	}
 }
 
@@ -104,5 +116,19 @@ func TestServiceLookupUnsupportedCategory(t *testing.T) {
 	svc := NewService(nil)
 	if _, err := svc.Lookup(context.Background(), "query", CategoryGame); !errors.Is(err, ErrUnsupportedCategory) {
 		t.Fatalf("expected ErrUnsupportedCategory, got %v", err)
+	}
+}
+
+func TestFirstSentenceMapValue(t *testing.T) {
+	text := firstSentence(map[string]any{"value": "  Nested opening.  "})
+	if text != "Nested opening." {
+		t.Fatalf("expected to derive description from map value, got %q", text)
+	}
+}
+
+func TestFirstSentenceNestedValue(t *testing.T) {
+	text := firstSentence(map[string]any{"value": map[string]string{"value": "Layered start."}})
+	if text != "Layered start." {
+		t.Fatalf("expected recursive extraction from nested map, got %q", text)
 	}
 }

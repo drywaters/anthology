@@ -28,6 +28,10 @@ type Item struct {
 	Creator     string    `db:"creator" json:"creator"`
 	ItemType    ItemType  `db:"item_type" json:"itemType"`
 	ReleaseYear *int      `db:"release_year" json:"releaseYear,omitempty"`
+	PageCount   *int      `db:"page_count" json:"pageCount,omitempty"`
+	ISBN13      string    `db:"isbn_13" json:"isbn13"`
+	ISBN10      string    `db:"isbn_10" json:"isbn10"`
+	Description string    `db:"description" json:"description"`
 	Notes       string    `db:"notes" json:"notes"`
 	CreatedAt   time.Time `db:"created_at" json:"createdAt"`
 	UpdatedAt   time.Time `db:"updated_at" json:"updatedAt"`
@@ -39,6 +43,10 @@ type CreateItemInput struct {
 	Creator     string
 	ItemType    ItemType
 	ReleaseYear *int
+	PageCount   *int
+	ISBN13      string
+	ISBN10      string
+	Description string
 	Notes       string
 }
 
@@ -48,6 +56,10 @@ type UpdateItemInput struct {
 	Creator     *string
 	ItemType    *ItemType
 	ReleaseYear **int
+	PageCount   **int
+	ISBN13      *string
+	ISBN10      *string
+	Description *string
 	Notes       *string
 }
 

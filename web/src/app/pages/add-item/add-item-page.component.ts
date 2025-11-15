@@ -97,6 +97,7 @@ export class AddItemPageComponent {
     readonly busy = signal(false);
     readonly lookupBusy = signal(false);
     readonly lookupError = signal<string | null>(null);
+    readonly lookupPreview = signal<ItemForm | null>(null);
     readonly manualDraft = signal<ItemForm | null>(null);
     readonly manualDraftSource = signal<{ query: string; label: string } | null>(null);
     readonly lastLookupSummary = signal<string | null>(null);
@@ -170,6 +171,7 @@ export class AddItemPageComponent {
 
         this.lookupBusy.set(true);
         this.lookupError.set(null);
+        this.lookupPreview.set(null);
         this.lastLookupSummary.set(null);
 
         this.itemLookupService
@@ -179,6 +181,7 @@ export class AddItemPageComponent {
                 next: (result) => {
                     this.lookupBusy.set(false);
                     const draft = this.composeDraft(result, category);
+                    this.lookupPreview.set(draft);
                     this.manualDraft.set({ ...draft });
                     this.manualDraftSource.set({
                         query,
@@ -191,6 +194,7 @@ export class AddItemPageComponent {
                     this.lookupBusy.set(false);
                     this.manualDraft.set(null);
                     this.manualDraftSource.set(null);
+                    this.lookupPreview.set(null);
 
                     let message = 'We couldn’t find a match. Try another ISBN or UPC.';
                     if (error instanceof HttpErrorResponse) {
@@ -214,6 +218,7 @@ export class AddItemPageComponent {
     clearManualDraft(): void {
         this.manualDraft.set(null);
         this.manualDraftSource.set(null);
+        this.lookupPreview.set(null);
     }
 
     private getCategoryConfig(value: SearchCategoryValue): SearchCategoryConfig {
@@ -226,6 +231,8 @@ export class AddItemPageComponent {
     private composeDraft(partial: Partial<ItemForm>, category: SearchCategoryConfig): ItemForm {
         const releaseYear = partial.releaseYear;
         let normalizedReleaseYear: number | null = null;
+        const pageCount = partial.pageCount;
+        let normalizedPageCount: number | null = null;
 
         if (typeof releaseYear === 'number') {
             normalizedReleaseYear = releaseYear;
@@ -234,11 +241,22 @@ export class AddItemPageComponent {
             normalizedReleaseYear = Number.isNaN(parsed) ? null : parsed;
         }
 
+        if (typeof pageCount === 'number') {
+            normalizedPageCount = pageCount;
+        } else if (typeof pageCount === 'string') {
+            const parsed = Number.parseInt(pageCount, 10);
+            normalizedPageCount = Number.isNaN(parsed) ? null : parsed;
+        }
+
         return {
             title: partial.title ?? '',
             creator: partial.creator ?? '',
             itemType: category.itemType,
             releaseYear: normalizedReleaseYear,
+            pageCount: normalizedPageCount,
+            isbn13: partial.isbn13 ?? '',
+            isbn10: partial.isbn10 ?? '',
+            description: partial.description ?? '',
             notes: partial.notes ?? '',
         };
     }

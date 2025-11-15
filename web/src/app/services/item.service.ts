@@ -52,6 +52,16 @@ export class ItemService {
                 payload['releaseYear'] = Number.parseInt(releaseYear, 10);
             }
         }
+
+        if ('pageCount' in payload) {
+            const pageCount = payload['pageCount'];
+            if (pageCount === '' || pageCount === null) {
+                payload['pageCount'] = null;
+            } else if (typeof pageCount === 'string') {
+                payload['pageCount'] = Number.parseInt(pageCount, 10);
+            }
+        }
+
         return payload;
     }
 }

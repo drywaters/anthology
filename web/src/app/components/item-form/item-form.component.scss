@@ -4,6 +4,69 @@
     gap: 1.5rem;
 }
 
+.book-details {
+    padding: 1rem 1.25rem 1.5rem;
+    border: 1px solid color-mix(in srgb, var(--mat-sys-primary) 15%, white);
+    border-radius: 1.25rem;
+    background: color-mix(in srgb, var(--mat-sys-primary) 6%, white);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.book-details-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    h3 {
+        margin: 0;
+        font-size: clamp(1.25rem, 1.8vw, 1.6rem);
+    }
+}
+
+.section-eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.7rem;
+    color: color-mix(in srgb, var(--mat-sys-primary) 80%, black);
+    margin: 0;
+}
+
+.book-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.description-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.description-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+
+    h4 {
+        margin: 0;
+        font-size: 1.1rem;
+    }
+}
+
+.description-highlight {
+    width: 90px;
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #16a34a, #4ade80);
+}
+
+.description-field textarea {
+    min-height: 140px;
+}
+
 .form-actions {
     display: flex;
     justify-content: flex-end;
