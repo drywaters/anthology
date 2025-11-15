@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { fakeAsync, flush, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { Router } from '@angular/router';
@@ -8,20 +9,24 @@ import { of, throwError } from 'rxjs';
 import { AddItemPageComponent } from './add-item-page.component';
 import { ItemService } from '../../services/item.service';
 import { Item } from '../../models/item';
+import { ItemLookupService } from '../../services/item-lookup.service';
 
 describe(AddItemPageComponent.name, () => {
     let itemServiceSpy: jasmine.SpyObj<ItemService>;
     let snackBarSpy: jasmine.SpyObj<MatSnackBar>;
+    let itemLookupServiceSpy: jasmine.SpyObj<ItemLookupService>;
 
     beforeEach(async () => {
         itemServiceSpy = jasmine.createSpyObj<ItemService>('ItemService', ['create']);
         snackBarSpy = jasmine.createSpyObj<MatSnackBar>('MatSnackBar', ['open']);
+        itemLookupServiceSpy = jasmine.createSpyObj<ItemLookupService>('ItemLookupService', ['lookup']);
 
         await TestBed.configureTestingModule({
             imports: [AddItemPageComponent],
             providers: [
                 provideNoopAnimations(),
                 { provide: ItemService, useValue: itemServiceSpy },
+                { provide: ItemLookupService, useValue: itemLookupServiceSpy },
                 provideRouter([], withDisabledInitialNavigation()),
                 { provide: MatSnackBar, useValue: snackBarSpy },
             ],
@@ -100,4 +105,54 @@ describe(AddItemPageComponent.name, () => {
         fixture.componentInstance.handleCancel();
         expect(navigateSpy).not.toHaveBeenCalled();
     });
+
+    it('looks up metadata and pre-fills manual entry on success', fakeAsync(() => {
+        itemLookupServiceSpy.lookup.and.returnValue(
+            of({ title: 'Metadata Title', creator: 'Someone', releaseYear: 2001, notes: 'From lookup' })
+        );
+
+        const fixture = createComponent();
+        fixture.componentInstance.searchForm.setValue({ category: 'book', query: '9780000000002' });
+        fixture.componentInstance.handleLookupSubmit();
+        flush();
+
+        expect(itemLookupServiceSpy.lookup).toHaveBeenCalledWith('9780000000002', 'book');
+        expect(fixture.componentInstance.manualDraft()?.title).toBe('Metadata Title');
+        expect(fixture.componentInstance.manualDraft()?.creator).toBe('Someone');
+        expect(fixture.componentInstance.selectedTab()).toBe(1);
+        expect(fixture.componentInstance.manualDraftSource()).toEqual({ query: '9780000000002', label: 'Book' });
+    }));
+
+    it('stores an error when lookup fails', fakeAsync(() => {
+        itemLookupServiceSpy.lookup.and.returnValue(throwError(() => new Error('network error')));
+
+        const fixture = createComponent();
+        fixture.componentInstance.searchForm.setValue({ category: 'book', query: 'bad' });
+        fixture.componentInstance.handleLookupSubmit();
+        flush();
+
+        expect(itemLookupServiceSpy.lookup).toHaveBeenCalled();
+        expect(fixture.componentInstance.lookupError()).toBeTruthy();
+        expect(fixture.componentInstance.manualDraft()).toBeNull();
+    }));
+
+    it('uses the server-provided error message when available', fakeAsync(() => {
+        itemLookupServiceSpy.lookup.and.returnValue(
+            throwError(
+                () =>
+                    new HttpErrorResponse({
+                        status: 400,
+                        error: { error: 'metadata lookups for this category are not available yet' },
+                    })
+            )
+        );
+
+        const fixture = createComponent();
+        fixture.componentInstance.searchForm.setValue({ category: 'game', query: '123456789' });
+        fixture.componentInstance.handleLookupSubmit();
+        flush();
+
+        expect(fixture.componentInstance.lookupError()).toBe('metadata lookups for this category are not available yet');
+        expect(fixture.componentInstance.manualDraft()).toBeNull();
+    }));
 });

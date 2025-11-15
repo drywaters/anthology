@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"anthology/internal/catalog"
 	"anthology/internal/config"
 	transporthttp "anthology/internal/http"
 	"anthology/internal/items"
@@ -42,7 +43,9 @@ func main() {
 	}
 
 	svc := items.NewService(repo)
-	router := transporthttp.NewRouter(cfg, svc, logger)
+	lookupClient := &http.Client{Timeout: 12 * time.Second}
+	catalogSvc := catalog.NewService(lookupClient)
+	router := transporthttp.NewRouter(cfg, svc, catalogSvc, logger)
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddress(),

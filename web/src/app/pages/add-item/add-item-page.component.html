@@ -7,16 +7,124 @@
     <mat-card>
         <mat-card-header>
             <mat-card-title>Add a new item</mat-card-title>
-            <mat-card-subtitle>Give it a title, format, and any notes before saving.</mat-card-subtitle>
+            <mat-card-subtitle>Search for metadata or enter details manually.</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
-            <app-item-form
-                [item]="null"
-                mode="create"
-                [busy]="busy()"
-                (save)="handleSave($event)"
-                (cancelled)="handleCancel()"
-            ></app-item-form>
+            <mat-tab-group [selectedIndex]="selectedTab()" (selectedIndexChange)="handleTabChange($event)">
+                <mat-tab label="Search">
+                    <div class="tab-body search-tab">
+                        <form class="search-form" [formGroup]="searchForm" (ngSubmit)="handleLookupSubmit()" novalidate>
+                            <div class="category-section">
+                                <h3>Select item type</h3>
+                                <p>Look up an item by ISBN or UPC to auto-fill the form.</p>
+                                <mat-radio-group formControlName="category" class="category-options">
+                                    <mat-radio-button
+                                        class="category-option"
+                                        *ngFor="let option of searchCategories"
+                                        [value]="option.value"
+                                    >
+                                        <span class="category-label">{{ option.label }}</span>
+                                        <span class="category-description">{{ option.description }}</span>
+                                    </mat-radio-button>
+                                </mat-radio-group>
+                            </div>
+
+                            <div class="search-field">
+                                <h3>{{ activeCategory().inputLabel }}</h3>
+                                <mat-form-field appearance="outline" class="search-input">
+                                    <mat-label>{{ activeCategory().placeholder }}</mat-label>
+                                    <input
+                                        matInput
+                                        formControlName="query"
+                                        [placeholder]="activeCategory().placeholder"
+                                        autocomplete="off"
+                                    />
+                                    <button
+                                        mat-icon-button
+                                        matSuffix
+                                        type="button"
+                                        aria-label="Clear search"
+                                        *ngIf="searchForm.get('query')?.value"
+                                        (click)="searchForm.get('query')?.reset('')"
+                                    >
+                                        <mat-icon>close</mat-icon>
+                                    </button>
+                                    <mat-hint>At least three characters; ISBN searches work best with numbers only.</mat-hint>
+                                    <mat-error *ngIf="searchForm.get('query')?.hasError('required')">
+                                        Enter an ISBN, UPC, or keyword.
+                                    </mat-error>
+                                    <mat-error *ngIf="searchForm.get('query')?.hasError('minlength')">
+                                        Use at least three characters.
+                                    </mat-error>
+                                </mat-form-field>
+                                <div class="search-actions">
+                                    <button
+                                        mat-flat-button
+                                        color="primary"
+                                        type="submit"
+                                        [disabled]="lookupBusy() || searchForm.invalid"
+                                    >
+                                        <span class="button-label">Search</span>
+                                        <mat-progress-spinner
+                                            *ngIf="lookupBusy()"
+                                            mode="indeterminate"
+                                            diameter="18"
+                                        ></mat-progress-spinner>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <div class="lookup-feedback" *ngIf="lookupError() || lastLookupSummary()">
+                            <div class="error" *ngIf="lookupError()">{{ lookupError() }}</div>
+                            <div class="success" *ngIf="!lookupError() && lastLookupSummary()">
+                                {{ lastLookupSummary() }}
+                            </div>
+                        </div>
+                    </div>
+                </mat-tab>
+                <mat-tab label="Manual Entry">
+                    <div class="tab-body manual-entry">
+                        <div class="manual-entry-header">
+                            <div>
+                                <h3>Manual entry</h3>
+                                <p>Fill in each field and save to add the item to your collection.</p>
+                            </div>
+                            <button
+                                mat-stroked-button
+                                type="button"
+                                (click)="clearManualDraft()"
+                                *ngIf="manualDraftSource()"
+                            >
+                                Start fresh
+                            </button>
+                        </div>
+
+                        <div class="lookup-summary" *ngIf="manualDraftSource() as source">
+                            <mat-icon aria-hidden="true">check_circle</mat-icon>
+                            <span>
+                                Pre-filled from {{ source.label }} search for “{{ source.query }}”. Update anything before
+                                saving.
+                            </span>
+                        </div>
+
+                        <app-item-form
+                            [item]="null"
+                            [draft]="manualDraft()"
+                            mode="create"
+                            [busy]="busy()"
+                            (save)="handleSave($event)"
+                            (cancelled)="handleCancel()"
+                        ></app-item-form>
+                    </div>
+                </mat-tab>
+                <mat-tab label="CSV Import">
+                    <div class="tab-body csv-tab">
+                        <h3>Bulk import (coming soon)</h3>
+                        <p>We’re building CSV import to help you load large collections. Check back soon!</p>
+                    </div>
+                </mat-tab>
+            </mat-tab-group>
         </mat-card-content>
     </mat-card>
 </section>

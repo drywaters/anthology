@@ -11,12 +11,13 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 
+	"anthology/internal/catalog"
 	"anthology/internal/config"
 	"anthology/internal/items"
 )
 
 // NewRouter wires application routes and middleware using chi.
-func NewRouter(cfg config.Config, svc *items.Service, logger *slog.Logger) http.Handler {
+func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Service, logger *slog.Logger) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -42,6 +43,7 @@ func NewRouter(cfg config.Config, svc *items.Service, logger *slog.Logger) http.
 
 	sessionHandler := NewSessionHandler(cfg.APIToken, cfg.Environment)
 	handler := NewItemHandler(svc, logger)
+	catalogHandler := NewCatalogHandler(catalogSvc, logger)
 
 	if strings.TrimSpace(cfg.APIToken) == "" {
 		logger.Warn("API token authentication disabled; /api endpoints are unauthenticated")
@@ -64,6 +66,9 @@ func NewRouter(cfg config.Config, svc *items.Service, logger *slog.Logger) http.
 					r.Put("/", handler.Update)
 					r.Delete("/", handler.Delete)
 				})
+			})
+			r.Route("/catalog", func(r chi.Router) {
+				r.Get("/lookup", catalogHandler.Lookup)
 			})
 		})
 	})
