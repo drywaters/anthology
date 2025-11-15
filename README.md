@@ -103,6 +103,16 @@ npm run lint
 
 (Angular CLI creates the recommended lint configuration out of the box.)
 
+### Commit-time lint checks
+
+Copy the shared `pre-commit` hook into your local `.git/hooks` directory so commits are blocked unless both lint suites succeed:
+
+```bash
+cp githooks/pre-commit .git/hooks/pre-commit
+```
+
+The `pre-commit` hook runs `golangci-lint run ./...` and `npm run lint` from `web/`. Set `SKIP_PRECOMMIT_LINT=1` when invoking `git commit` to temporarily bypass the check (for example, when working offline and planning to lint later).
+
 To produce the bundle consumed by the nginx-based UI container, build the production assets so they land in `web/dist/web/browser`:
 
 ```bash

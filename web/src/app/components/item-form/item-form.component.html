@@ -36,7 +36,7 @@
     </mat-form-field>
 
     <div class="form-actions">
-        <button mat-stroked-button type="button" (click)="cancel.emit()" [disabled]="busy">
+        <button mat-stroked-button type="button" (click)="cancelled.emit()" [disabled]="busy">
            Cancel
         </button>
         <button mat-flat-button color="primary" type="submit" [disabled]="busy">
