@@ -16,8 +16,12 @@ Go files are auto-formatted with `gofmt`; keep imports sorted and favor short, d
 ## Testing Guidelines
 Backend tests rely on the Go standard library; place new specs beside the code (`*_test.go`) and cover validation plus repository behaviours. Frontend uses Jasmine/Karma; test files mirror the component path with `.spec.ts`. Aim for meaningful assertions around API integration and UI state. Run both `go test ./...` and `npm test -- --watch=false` before pushing.
 
+Always validate UI changes in the running Angular app with Playwright MCP: capture at least one screenshot that demonstrates the change (scrolling states when relevant) and note any console/network errors. Use the dev server at `http://localhost:4200` for these checks whenever possible.
+
 ## Commit & Pull Request Guidelines
 Commits should stay short, imperative, and scoped (see `Add bearer token authentication` in history). Reference related issues in the body when helpful. PRs need a summary of the change, manual-test notes, and screenshots/GIFs for UI updates. Link deployment or migration steps when relevant, and confirm both API and Angular test suites were run.
 
 ## Security & Configuration Tips
 Never check secrets into Git; rely on local `.env` files for `DATABASE_URL`, `API_TOKEN`, etc. Lock down CORS origins through `ALLOWED_ORIGINS` and enable bearer auth outside of local demos. When using Postgres, run migrations (`psql "$DATABASE_URL" -f migrations/0001_create_items.sql`) before starting the API so schema drift does not break requests.
+
+For local testing, reuse the `API_TOKEN` default defined in the `Makefile` (`API_TOKEN ?= local-dev-token`). Use that token in the login screen or in automated flows unless overriding via environment variables.

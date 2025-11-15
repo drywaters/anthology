@@ -2,6 +2,7 @@ package items
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -128,5 +129,59 @@ func TestServiceListAppliesFilters(t *testing.T) {
 	}
 	if len(items) != 1 || items[0].Title != "99 Luftballons" {
 		t.Fatalf("expected non-alphabetic music result")
+	}
+}
+
+func TestServiceCreateTrimsInputAndNormalizesYear(t *testing.T) {
+	repo := NewInMemoryRepository(nil)
+	svc := NewService(repo)
+
+	negativeYear := -1990
+	item, err := svc.Create(context.Background(), CreateItemInput{
+		Title:       "  Dune  ",
+		Creator:     "  Frank Herbert ",
+		ItemType:    ItemTypeBook,
+		ReleaseYear: &negativeYear,
+		Notes:       "  Classic sci-fi  ",
+	})
+	if err != nil {
+		t.Fatalf("create failed: %v", err)
+	}
+
+	if item.Title != "Dune" {
+		t.Fatalf("expected trimmed title, got %q", item.Title)
+	}
+	if item.Creator != "Frank Herbert" {
+		t.Fatalf("expected trimmed creator, got %q", item.Creator)
+	}
+	if item.ReleaseYear != nil {
+		t.Fatalf("expected negative year to be normalized to nil, got %v", item.ReleaseYear)
+	}
+	if item.Notes != "Classic sci-fi" {
+		t.Fatalf("expected trimmed notes, got %q", item.Notes)
+	}
+}
+
+func TestServiceUpdateRejectsBlankTitleOrItemType(t *testing.T) {
+	repo := NewInMemoryRepository(nil)
+	svc := NewService(repo)
+
+	item, err := svc.Create(context.Background(), CreateItemInput{Title: "Initial", ItemType: ItemTypeBook})
+	if err != nil {
+		t.Fatalf("create failed: %v", err)
+	}
+
+	ctx := context.Background()
+
+	blank := "   "
+	_, err = svc.Update(ctx, item.ID, UpdateItemInput{Title: &blank})
+	if err == nil || !strings.Contains(err.Error(), "title is required") {
+		t.Fatalf("expected title validation error, got %v", err)
+	}
+
+	emptyType := ItemType("")
+	_, err = svc.Update(ctx, item.ID, UpdateItemInput{ItemType: &emptyType})
+	if err == nil || !strings.Contains(err.Error(), "itemType is required") {
+		t.Fatalf("expected itemType validation error, got %v", err)
 	}
 }
