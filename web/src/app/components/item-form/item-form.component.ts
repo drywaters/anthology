@@ -28,6 +28,7 @@ export class ItemFormComponent implements OnChanges {
     private readonly fb = inject(FormBuilder);
 
     @Input() item: Item | null = null;
+    @Input() draft: Partial<ItemForm> | null = null;
     @Input() mode: 'create' | 'edit' = 'create';
     @Input() busy = false;
 
@@ -45,22 +46,41 @@ export class ItemFormComponent implements OnChanges {
     });
 
     ngOnChanges(changes: SimpleChanges): void {
-        if (changes['item']) {
-            const next = this.item
-                ? {
-                    title: this.item.title,
-                    creator: this.item.creator,
-                    itemType: this.item.itemType,
-                    releaseYear: this.item.releaseYear ?? null,
-                    notes: this.item.notes,
+        if (changes['item'] || changes['draft']) {
+            const next: ItemForm = {
+                title: '',
+                creator: '',
+                itemType: 'book',
+                releaseYear: null,
+                notes: '',
+            };
+
+            if (this.draft) {
+                next.title = this.draft.title ?? next.title;
+                next.creator = this.draft.creator ?? next.creator;
+                next.itemType = this.draft.itemType ?? next.itemType;
+
+                const draftReleaseYear = this.draft.releaseYear;
+                if (draftReleaseYear === undefined || draftReleaseYear === null) {
+                    next.releaseYear = null;
+                } else if (typeof draftReleaseYear === 'string') {
+                    const parsed = Number.parseInt(draftReleaseYear, 10);
+                    next.releaseYear = Number.isNaN(parsed) ? null : parsed;
+                } else {
+                    next.releaseYear = draftReleaseYear;
                 }
-                : {
-                    title: '',
-                    creator: '',
-                    itemType: 'book' as ItemType,
-                    releaseYear: null,
-                    notes: '',
-                };
+
+                next.notes = this.draft.notes ?? next.notes;
+            }
+
+            if (this.item) {
+                next.title = this.item.title;
+                next.creator = this.item.creator;
+                next.itemType = this.item.itemType;
+                next.releaseYear = this.item.releaseYear ?? null;
+                next.notes = this.item.notes;
+            }
+
             this.form.reset(next);
         }
     }
