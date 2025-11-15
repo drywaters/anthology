@@ -15,8 +15,6 @@
                     <div class="tab-body search-tab">
                         <form class="search-form" [formGroup]="searchForm" (ngSubmit)="handleLookupSubmit()" novalidate>
                             <div class="category-section">
-                                <h3>Select item type</h3>
-                                <p>Look up an item by ISBN or UPC to auto-fill the form.</p>
                                 <mat-radio-group formControlName="category" class="category-options">
                                     <mat-radio-button
                                         class="category-option"
@@ -77,15 +75,16 @@
 
                         <div class="lookup-feedback" *ngIf="lookupError() || lastLookupSummary()">
                             <div class="error" *ngIf="lookupError()">{{ lookupError() }}</div>
-                            <div class="success" *ngIf="!lookupError() && lastLookupSummary()">
-                                {{ lastLookupSummary() }}
-                            </div>
+                            <div class="success" *ngIf="!lookupError() && lastLookupSummary()">{{ lastLookupSummary() }}</div>
                         </div>
 
                         <div class="lookup-preview" *ngIf="lookupPreview() as preview">
                             <div class="preview-header">
                                 <h3>Metadata preview</h3>
-                                <p>Review the fetched details before saving from the Manual Entry tab.</p>
+                                <p>
+                                    Review the fetched details, add them directly to your collection, or keep editing from the
+                                    Manual Entry tab.
+                                </p>
                             </div>
 
                             <div class="preview-grid">
@@ -118,6 +117,19 @@
                             <div class="preview-description" *ngIf="preview.description">
                                 <h4>Description</h4>
                                 <p>{{ preview.description }}</p>
+                            </div>
+
+                            <div class="preview-actions">
+                                <button
+                                    mat-flat-button
+                                    color="primary"
+                                    type="button"
+                                    class="preview-add"
+                                    (click)="handleQuickAdd()"
+                                    [disabled]="busy()"
+                                >
+                                    Add to collection
+                                </button>
                             </div>
                         </div>
                     </div>
