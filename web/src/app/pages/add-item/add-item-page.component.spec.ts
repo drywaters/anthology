@@ -156,6 +156,8 @@ describe(AddItemPageComponent.name, () => {
 
         itemServiceSpy.create.and.returnValue(of(mockItem));
         const fixture = createComponent();
+        const router = TestBed.inject(Router);
+        const navigateSpy = spyOn(router, 'navigate').and.resolveTo(true);
         const draft: ItemForm = {
             title: 'Metadata Title',
             creator: 'Someone',
@@ -173,6 +175,7 @@ describe(AddItemPageComponent.name, () => {
         flush();
 
         expect(itemServiceSpy.create).toHaveBeenCalledWith(draft);
+        expect(navigateSpy).toHaveBeenCalledWith(['/']);
     }));
 
     it('stores an error when lookup fails', fakeAsync(() => {
