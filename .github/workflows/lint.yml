@@ -1,7 +1,6 @@
 name: Lint UI and API
 
 on:
-  push:
   pull_request:
 
 permissions:
