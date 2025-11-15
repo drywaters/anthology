@@ -3,7 +3,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@400;500&family=Alegreya+Sans:wght@500;600;700&family=Alegreya:wght@400;500;600;700&display=swap');
 
 $anthology-theme: mat.define-theme((color: (theme-type: light,
-                primary: mat.$azure-palette,
+                primary: mat.$spring-green-palette,
                 tertiary: mat.$rose-palette,
             ),
             typography: (plain-family: ('Alegreya', 'Georgia', 'Times New Roman', serif),
@@ -54,4 +54,20 @@ h6,
 
 button {
     text-transform: none;
+}
+
+:root {
+    --mat-sys-primary: #0e5b3c;
+    --mat-sys-on-primary: #ffffff;
+    --mat-sys-primary-container: #d5ede2;
+    --mat-sys-on-primary-container: #082e1b;
+    --mat-sys-secondary: #4d6354;
+    --mat-sys-on-secondary: #ffffff;
+    --mat-sys-secondary-container: #d0e8d4;
+    --mat-sys-on-secondary-container: #0c1f13;
+    --mdc-theme-primary: var(--mat-sys-primary);
+    --mdc-filled-button-container-color: var(--mat-sys-primary);
+    --mdc-filled-button-label-text-color: var(--mat-sys-on-primary);
+    --mdc-protected-button-container-color: color-mix(in srgb, var(--mat-sys-primary) 12%, white);
+    --mdc-protected-button-label-text-color: var(--mat-sys-primary);
 }

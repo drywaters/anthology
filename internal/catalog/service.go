@@ -20,10 +20,8 @@ type Category string
 const (
 	// CategoryBook resolves metadata for books via Open Library.
 	CategoryBook Category = "book"
-	// CategoryBoardGame is reserved for future expansion.
-	CategoryBoardGame Category = "board-game"
-	// CategoryVideoGame is reserved for future expansion.
-	CategoryVideoGame Category = "video-game"
+	// CategoryGame is reserved for future expansion.
+	CategoryGame Category = "game"
 	// CategoryMovie is reserved for future expansion.
 	CategoryMovie Category = "movie"
 	// CategoryMusic is reserved for future expansion.
@@ -94,7 +92,7 @@ func (s *Service) Lookup(ctx context.Context, query string, category Category) (
 	switch category {
 	case CategoryBook:
 		return s.lookupBook(ctx, cleaned)
-	case CategoryBoardGame, CategoryVideoGame, CategoryMovie, CategoryMusic:
+	case CategoryGame, CategoryMovie, CategoryMusic:
 		return Metadata{}, ErrUnsupportedCategory
 	default:
 		return Metadata{}, ErrUnsupportedCategory

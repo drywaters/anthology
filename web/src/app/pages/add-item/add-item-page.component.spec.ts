@@ -120,7 +120,7 @@ describe(AddItemPageComponent.name, () => {
         expect(fixture.componentInstance.manualDraft()?.title).toBe('Metadata Title');
         expect(fixture.componentInstance.manualDraft()?.creator).toBe('Someone');
         expect(fixture.componentInstance.selectedTab()).toBe(1);
-        expect(fixture.componentInstance.manualDraftSource()).toEqual({ query: '9780000000002', label: 'Books' });
+        expect(fixture.componentInstance.manualDraftSource()).toEqual({ query: '9780000000002', label: 'Book' });
     }));
 
     it('stores an error when lookup fails', fakeAsync(() => {
@@ -148,7 +148,7 @@ describe(AddItemPageComponent.name, () => {
         );
 
         const fixture = createComponent();
-        fixture.componentInstance.searchForm.setValue({ category: 'board-game', query: '123456789' });
+        fixture.componentInstance.searchForm.setValue({ category: 'game', query: '123456789' });
         fixture.componentInstance.handleLookupSubmit();
         flush();
 

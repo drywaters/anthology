@@ -102,7 +102,7 @@ func TestServiceLookupInvalidQuery(t *testing.T) {
 
 func TestServiceLookupUnsupportedCategory(t *testing.T) {
 	svc := NewService(nil)
-	if _, err := svc.Lookup(context.Background(), "query", CategoryBoardGame); !errors.Is(err, ErrUnsupportedCategory) {
+	if _, err := svc.Lookup(context.Background(), "query", CategoryGame); !errors.Is(err, ErrUnsupportedCategory) {
 		t.Fatalf("expected ErrUnsupportedCategory, got %v", err)
 	}
 }

@@ -94,7 +94,7 @@ func TestCatalogHandlerLookupNotFound(t *testing.T) {
 func TestCatalogHandlerLookupUnsupported(t *testing.T) {
 	handler := NewCatalogHandler(&mockCatalogService{err: catalog.ErrUnsupportedCategory}, newTestLogger())
 
-	req := httptest.NewRequest(http.MethodGet, "/api/catalog/lookup?query=test&category=board-game", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/catalog/lookup?query=test&category=game", nil)
 	rr := httptest.NewRecorder()
 
 	handler.Lookup(rr, req)

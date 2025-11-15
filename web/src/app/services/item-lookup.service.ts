@@ -5,7 +5,7 @@ import { map, Observable } from 'rxjs';
 import { environment } from '../config/environment';
 import { ItemForm } from '../models/item';
 
-export type ItemLookupCategory = 'book' | 'board-game' | 'video-game' | 'movie' | 'music';
+export type ItemLookupCategory = 'book' | 'game' | 'movie' | 'music';
 
 @Injectable({ providedIn: 'root' })
 export class ItemLookupService {
