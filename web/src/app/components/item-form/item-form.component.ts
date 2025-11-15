@@ -32,7 +32,7 @@ export class ItemFormComponent implements OnChanges {
     @Input() busy = false;
 
     @Output() readonly save = new EventEmitter<ItemForm>();
-    @Output() readonly cancel = new EventEmitter<void>();
+    @Output() readonly cancelled = new EventEmitter<void>();
 
     readonly itemTypeOptions = Object.entries(ITEM_TYPE_LABELS) as [ItemType, string][];
 

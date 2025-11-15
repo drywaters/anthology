@@ -138,7 +138,7 @@
                         mode="edit"
                         [busy]="mutationInFlight()"
                         (save)="handleSave($event)"
-                        (cancel)="closeForm()"
+                        (cancelled)="closeForm()"
                     ></app-item-form>
                 </mat-card-content>
                 <mat-card-actions align="end" *ngIf="ctx.item">

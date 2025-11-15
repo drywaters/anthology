@@ -211,8 +211,10 @@ const maxJSONBodyBytes int64 = 1 << 20 // 1 MiB
 var errPayloadTooLarge = errors.New("payload too large")
 
 func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst any) error {
-	limited := http.MaxBytesReader(w, r.Body, maxJSONBodyBytes)
-	defer limited.Close()
+        limited := http.MaxBytesReader(w, r.Body, maxJSONBodyBytes)
+        defer func() {
+                _ = limited.Close()
+        }()
 
 	decoder := json.NewDecoder(limited)
 	decoder.DisallowUnknownFields()

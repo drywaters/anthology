@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+run_go_lint() {
+  if ! command -v golangci-lint >/dev/null 2>&1; then
+    echo "golangci-lint is required for commits. Install from https://golangci-lint.run/usage/install/" >&2
+    exit 1
+  fi
+
+  echo "→ Running golangci-lint"
+  golangci-lint run ./...
+}
+
+run_ui_lint() {
+  if ! command -v npm >/dev/null 2>&1; then
+    echo "npm is required to lint the Angular workspace." >&2
+    exit 1
+  fi
+
+  echo "→ Running Angular lint"
+  (cd web && npm run lint)
+}
+
+if [ "${SKIP_PRECOMMIT_LINT:-}" = "1" ]; then
+  echo "Skipping lint checks because SKIP_PRECOMMIT_LINT=1"
+  exit 0
+fi
+
+run_go_lint
+run_ui_lint
