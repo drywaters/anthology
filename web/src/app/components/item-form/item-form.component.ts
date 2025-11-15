@@ -42,8 +42,16 @@ export class ItemFormComponent implements OnChanges {
         creator: ['', [Validators.maxLength(120)]],
         itemType: ['book' as ItemType, Validators.required],
         releaseYear: [null, [Validators.min(0)]],
+        pageCount: [null, [Validators.min(1)]],
+        isbn13: ['', [Validators.maxLength(20)]],
+        isbn10: ['', [Validators.maxLength(20)]],
+        description: ['', [Validators.maxLength(2000)]],
         notes: ['', [Validators.maxLength(500)]],
     });
+
+    get isBook(): boolean {
+        return this.form.get('itemType')?.value === 'book';
+    }
 
     ngOnChanges(changes: SimpleChanges): void {
         if (changes['item'] || changes['draft']) {
@@ -52,6 +60,10 @@ export class ItemFormComponent implements OnChanges {
                 creator: '',
                 itemType: 'book',
                 releaseYear: null,
+                pageCount: null,
+                isbn13: '',
+                isbn10: '',
+                description: '',
                 notes: '',
             };
 
@@ -70,7 +82,20 @@ export class ItemFormComponent implements OnChanges {
                     next.releaseYear = draftReleaseYear;
                 }
 
+                const draftPageCount = this.draft.pageCount;
+                if (draftPageCount === undefined || draftPageCount === null) {
+                    next.pageCount = null;
+                } else if (typeof draftPageCount === 'string') {
+                    const parsed = Number.parseInt(draftPageCount, 10);
+                    next.pageCount = Number.isNaN(parsed) ? null : parsed;
+                } else {
+                    next.pageCount = draftPageCount;
+                }
+
                 next.notes = this.draft.notes ?? next.notes;
+                next.isbn13 = this.draft.isbn13 ?? next.isbn13;
+                next.isbn10 = this.draft.isbn10 ?? next.isbn10;
+                next.description = this.draft.description ?? next.description;
             }
 
             if (this.item) {
@@ -78,6 +103,10 @@ export class ItemFormComponent implements OnChanges {
                 next.creator = this.item.creator;
                 next.itemType = this.item.itemType;
                 next.releaseYear = this.item.releaseYear ?? null;
+                next.pageCount = this.item.pageCount ?? null;
+                next.isbn13 = this.item.isbn13 ?? '';
+                next.isbn10 = this.item.isbn10 ?? '';
+                next.description = this.item.description ?? '';
                 next.notes = this.item.notes;
             }
 
@@ -95,10 +124,18 @@ export class ItemFormComponent implements OnChanges {
         this.save.emit({
             ...value,
             releaseYear: value.releaseYear === null || value.releaseYear === undefined ? null : value.releaseYear,
+            pageCount: value.pageCount === null || value.pageCount === undefined ? null : value.pageCount,
+            description: value.description ?? '',
+            isbn13: value.isbn13 ?? '',
+            isbn10: value.isbn10 ?? '',
         });
     }
 
     clearReleaseYear(): void {
         this.form.patchValue({ releaseYear: null });
+    }
+
+    clearPageCount(): void {
+        this.form.patchValue({ pageCount: null });
     }
 }

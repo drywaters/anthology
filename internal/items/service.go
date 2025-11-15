@@ -33,6 +33,10 @@ func (s *Service) Create(ctx context.Context, input CreateItemInput) (Item, erro
 		Creator:     strings.TrimSpace(input.Creator),
 		ItemType:    input.ItemType,
 		ReleaseYear: normalizeYear(input.ReleaseYear),
+		PageCount:   normalizePositiveInt(input.PageCount),
+		ISBN13:      strings.TrimSpace(input.ISBN13),
+		ISBN10:      strings.TrimSpace(input.ISBN10),
+		Description: strings.TrimSpace(input.Description),
 		Notes:       strings.TrimSpace(input.Notes),
 		CreatedAt:   now,
 		UpdatedAt:   now,
@@ -96,8 +100,24 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, input UpdateItemInpu
 		existing.ReleaseYear = normalizeYear(*input.ReleaseYear)
 	}
 
+	if input.PageCount != nil {
+		existing.PageCount = normalizePositiveInt(*input.PageCount)
+	}
+
 	if input.Notes != nil {
 		existing.Notes = strings.TrimSpace(*input.Notes)
+	}
+
+	if input.ISBN13 != nil {
+		existing.ISBN13 = strings.TrimSpace(*input.ISBN13)
+	}
+
+	if input.ISBN10 != nil {
+		existing.ISBN10 = strings.TrimSpace(*input.ISBN10)
+	}
+
+	if input.Description != nil {
+		existing.Description = strings.TrimSpace(*input.Description)
 	}
 
 	existing.UpdatedAt = time.Now().UTC()
@@ -129,4 +149,15 @@ func normalizeYear(year *int) *int {
 	}
 	value := *year
 	return &value
+}
+
+func normalizePositiveInt(value *int) *int {
+	if value == nil {
+		return nil
+	}
+	if *value <= 0 {
+		return nil
+	}
+	v := *value
+	return &v
 }

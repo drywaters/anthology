@@ -1,4 +1,10 @@
 <form [formGroup]="form" (ngSubmit)="submit()" class="item-form" novalidate>
+    <div class="form-intro">
+        <p class="form-eyebrow">Library item</p>
+        <h2>Add rich details</h2>
+        <p class="form-subtitle">Document author, release info, and book-specific metadata.</p>
+    </div>
+
     <mat-form-field appearance="fill">
         <mat-label>Title</mat-label>
         <input matInput formControlName="title" maxlength="120" required />
@@ -28,6 +34,49 @@
           <mat-icon>close</mat-icon>
         </button>
     </mat-form-field>
+
+    <section class="book-details" *ngIf="isBook">
+        <div class="book-details-header">
+            <p class="section-eyebrow">Book details</p>
+            <h3>Edition specifics</h3>
+        </div>
+
+        <div class="book-grid">
+            <mat-form-field appearance="fill">
+                <mat-label>Number of pages</mat-label>
+                <input matInput formControlName="pageCount" type="number" min="1" />
+                <button mat-icon-button matSuffix type="button" (click)="clearPageCount()" aria-label="Clear page count">
+                    <mat-icon>close</mat-icon>
+                </button>
+                <mat-hint>Total printed pages for the edition you own.</mat-hint>
+                <mat-error *ngIf="form.get('pageCount')?.hasError('min')">Use at least one page.</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill">
+                <mat-label>EAN / ISBN13</mat-label>
+                <input matInput formControlName="isbn13" maxlength="20" />
+                <mat-hint>13-digit ISBN printed near the barcode.</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill">
+                <mat-label>UPC / ISBN10</mat-label>
+                <input matInput formControlName="isbn10" maxlength="20" />
+                <mat-hint>10-digit code for older editions.</mat-hint>
+            </mat-form-field>
+        </div>
+
+        <div class="description-section">
+            <div class="description-heading">
+                <h4>Description</h4>
+                <span class="description-highlight" aria-hidden="true"></span>
+            </div>
+            <mat-form-field appearance="fill" class="description-field">
+                <mat-label>Book description</mat-label>
+                <textarea matInput rows="5" formControlName="description" maxlength="2000"></textarea>
+                <mat-hint align="end">{{ form.get('description')?.value?.length || 0 }}/2000</mat-hint>
+            </mat-form-field>
+        </div>
+    </section>
 
     <mat-form-field appearance="fill">
         <mat-label>Notes</mat-label>

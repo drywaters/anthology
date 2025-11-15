@@ -6,6 +6,10 @@ export interface Item {
     creator: string;
     itemType: ItemType;
     releaseYear?: number;
+    pageCount?: number | null;
+    isbn13?: string;
+    isbn10?: string;
+    description?: string;
     notes: string;
     createdAt: string;
     updatedAt: string;
@@ -16,6 +20,10 @@ export interface ItemForm {
     creator: string;
     itemType: ItemType;
     releaseYear?: number | null;
+    pageCount?: number | null;
+    isbn13?: string;
+    isbn10?: string;
+    description: string;
     notes: string;
 }
 

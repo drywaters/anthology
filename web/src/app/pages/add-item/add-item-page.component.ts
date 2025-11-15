@@ -226,6 +226,8 @@ export class AddItemPageComponent {
     private composeDraft(partial: Partial<ItemForm>, category: SearchCategoryConfig): ItemForm {
         const releaseYear = partial.releaseYear;
         let normalizedReleaseYear: number | null = null;
+        const pageCount = partial.pageCount;
+        let normalizedPageCount: number | null = null;
 
         if (typeof releaseYear === 'number') {
             normalizedReleaseYear = releaseYear;
@@ -234,11 +236,22 @@ export class AddItemPageComponent {
             normalizedReleaseYear = Number.isNaN(parsed) ? null : parsed;
         }
 
+        if (typeof pageCount === 'number') {
+            normalizedPageCount = pageCount;
+        } else if (typeof pageCount === 'string') {
+            const parsed = Number.parseInt(pageCount, 10);
+            normalizedPageCount = Number.isNaN(parsed) ? null : parsed;
+        }
+
         return {
             title: partial.title ?? '',
             creator: partial.creator ?? '',
             itemType: category.itemType,
             releaseYear: normalizedReleaseYear,
+            pageCount: normalizedPageCount,
+            isbn13: partial.isbn13 ?? '',
+            isbn10: partial.isbn10 ?? '',
+            description: partial.description ?? '',
             notes: partial.notes ?? '',
         };
     }

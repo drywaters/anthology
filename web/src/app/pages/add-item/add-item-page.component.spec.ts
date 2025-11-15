@@ -62,6 +62,10 @@ describe(AddItemPageComponent.name, () => {
             creator: 'Me',
             itemType: 'book',
             releaseYear: null,
+            pageCount: null,
+            isbn13: '',
+            isbn10: '',
+            description: '',
             notes: '',
         });
         flush();
@@ -81,6 +85,10 @@ describe(AddItemPageComponent.name, () => {
             creator: 'Me',
             itemType: 'book',
             releaseYear: null,
+            pageCount: null,
+            isbn13: '',
+            isbn10: '',
+            description: '',
             notes: '',
         });
         flush();
@@ -108,7 +116,16 @@ describe(AddItemPageComponent.name, () => {
 
     it('looks up metadata and pre-fills manual entry on success', fakeAsync(() => {
         itemLookupServiceSpy.lookup.and.returnValue(
-            of({ title: 'Metadata Title', creator: 'Someone', releaseYear: 2001, notes: 'From lookup' })
+            of({
+                title: 'Metadata Title',
+                creator: 'Someone',
+                releaseYear: 2001,
+                pageCount: 320,
+                isbn13: '9780000000002',
+                isbn10: '0000000002',
+                description: 'From lookup',
+                notes: 'From lookup',
+            })
         );
 
         const fixture = createComponent();
@@ -119,6 +136,8 @@ describe(AddItemPageComponent.name, () => {
         expect(itemLookupServiceSpy.lookup).toHaveBeenCalledWith('9780000000002', 'book');
         expect(fixture.componentInstance.manualDraft()?.title).toBe('Metadata Title');
         expect(fixture.componentInstance.manualDraft()?.creator).toBe('Someone');
+        expect(fixture.componentInstance.manualDraft()?.pageCount).toBe(320);
+        expect(fixture.componentInstance.manualDraft()?.description).toBe('From lookup');
         expect(fixture.componentInstance.selectedTab()).toBe(1);
         expect(fixture.componentInstance.manualDraftSource()).toEqual({ query: '9780000000002', label: 'Book' });
     }));

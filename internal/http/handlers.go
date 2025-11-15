@@ -76,6 +76,10 @@ func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Creator     string `json:"creator"`
 		ItemType    string `json:"itemType"`
 		ReleaseYear *int   `json:"releaseYear"`
+		PageCount   *int   `json:"pageCount"`
+		ISBN13      string `json:"isbn13"`
+		ISBN10      string `json:"isbn10"`
+		Description string `json:"description"`
 		Notes       string `json:"notes"`
 	}
 
@@ -89,6 +93,10 @@ func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Creator:     payload.Creator,
 		ItemType:    items.ItemType(payload.ItemType),
 		ReleaseYear: payload.ReleaseYear,
+		PageCount:   payload.PageCount,
+		ISBN13:      payload.ISBN13,
+		ISBN10:      payload.ISBN10,
+		Description: payload.Description,
 		Notes:       payload.Notes,
 	})
 	if err != nil {
@@ -133,6 +141,10 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 		Creator     *string `json:"creator"`
 		ItemType    *string `json:"itemType"`
 		ReleaseYear *int    `json:"releaseYear"`
+		PageCount   *int    `json:"pageCount"`
+		ISBN13      *string `json:"isbn13"`
+		ISBN10      *string `json:"isbn10"`
+		Description *string `json:"description"`
 		Notes       *string `json:"notes"`
 	}
 
@@ -160,8 +172,21 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 		value := payload.ReleaseYear
 		input.ReleaseYear = &value
 	}
+	if _, ok := raw["pageCount"]; ok {
+		value := payload.PageCount
+		input.PageCount = &value
+	}
 	if _, ok := raw["notes"]; ok {
 		input.Notes = payload.Notes
+	}
+	if _, ok := raw["isbn13"]; ok {
+		input.ISBN13 = payload.ISBN13
+	}
+	if _, ok := raw["isbn10"]; ok {
+		input.ISBN10 = payload.ISBN10
+	}
+	if _, ok := raw["description"]; ok {
+		input.Description = payload.Description
 	}
 
 	item, err := h.service.Update(r.Context(), id, input)
@@ -211,10 +236,10 @@ const maxJSONBodyBytes int64 = 1 << 20 // 1 MiB
 var errPayloadTooLarge = errors.New("payload too large")
 
 func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst any) error {
-        limited := http.MaxBytesReader(w, r.Body, maxJSONBodyBytes)
-        defer func() {
-                _ = limited.Close()
-        }()
+	limited := http.MaxBytesReader(w, r.Body, maxJSONBodyBytes)
+	defer func() {
+		_ = limited.Close()
+	}()
 
 	decoder := json.NewDecoder(limited)
 	decoder.DisallowUnknownFields()

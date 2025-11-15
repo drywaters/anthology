@@ -104,6 +104,7 @@ func seedLocalItems() []items.Item {
 	year2013 := 2013
 	year2015 := 2015
 	year2016 := 2016
+	pageCount := 464
 
 	return []items.Item{
 		{
@@ -112,6 +113,10 @@ func seedLocalItems() []items.Item {
 			Creator:     "Erin Morgenstern",
 			ItemType:    items.ItemTypeBook,
 			ReleaseYear: &year2013,
+			PageCount:   &pageCount,
+			ISBN13:      "9780385534796",
+			ISBN10:      "0385534795",
+			Description: "A phantasmagorical circus romance that rewards slow reading.",
 			Notes:       "Dreamlike storytelling that anchors the curated fantasy shelf.",
 			CreatedAt:   now,
 			UpdatedAt:   now,

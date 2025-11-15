@@ -26,6 +26,10 @@ describe(ItemFormComponent.name, () => {
             creator: 'William Gibson',
             itemType: 'book',
             releaseYear: 1984,
+            pageCount: 271,
+            isbn13: '9780441569595',
+            isbn10: '0441569595',
+            description: 'Cyberpunk classic',
             notes: 'Cyberpunk classic',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -42,6 +46,10 @@ describe(ItemFormComponent.name, () => {
                 creator: 'William Gibson',
                 itemType: 'book',
                 releaseYear: 1984,
+                pageCount: 271,
+                isbn13: '9780441569595',
+                isbn10: '0441569595',
+                description: 'Cyberpunk classic',
                 notes: 'Cyberpunk classic',
             })
         );
@@ -68,6 +76,10 @@ describe(ItemFormComponent.name, () => {
             creator: 'Denis Villeneuve',
             itemType: 'movie',
             releaseYear: null,
+            pageCount: null,
+            isbn13: '',
+            isbn10: '',
+            description: '',
             notes: '',
         });
 
@@ -77,6 +89,7 @@ describe(ItemFormComponent.name, () => {
             jasmine.objectContaining({
                 title: 'Arrival',
                 releaseYear: null,
+                pageCount: null,
             })
         );
     });
@@ -89,5 +102,15 @@ describe(ItemFormComponent.name, () => {
         component.clearReleaseYear();
 
         expect(component.form.get('releaseYear')?.value).toBeNull();
+    });
+
+    it('clears the page count when requested', () => {
+        const fixture = createComponent();
+        const component = fixture.componentInstance;
+        component.form.patchValue({ pageCount: 400 });
+
+        component.clearPageCount();
+
+        expect(component.form.get('pageCount')?.value).toBeNull();
     });
 });
