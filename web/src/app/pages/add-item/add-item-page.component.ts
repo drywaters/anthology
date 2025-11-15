@@ -97,6 +97,7 @@ export class AddItemPageComponent {
     readonly busy = signal(false);
     readonly lookupBusy = signal(false);
     readonly lookupError = signal<string | null>(null);
+    readonly lookupPreview = signal<ItemForm | null>(null);
     readonly manualDraft = signal<ItemForm | null>(null);
     readonly manualDraftSource = signal<{ query: string; label: string } | null>(null);
     readonly lastLookupSummary = signal<string | null>(null);
@@ -170,6 +171,7 @@ export class AddItemPageComponent {
 
         this.lookupBusy.set(true);
         this.lookupError.set(null);
+        this.lookupPreview.set(null);
         this.lastLookupSummary.set(null);
 
         this.itemLookupService
@@ -179,6 +181,7 @@ export class AddItemPageComponent {
                 next: (result) => {
                     this.lookupBusy.set(false);
                     const draft = this.composeDraft(result, category);
+                    this.lookupPreview.set(draft);
                     this.manualDraft.set({ ...draft });
                     this.manualDraftSource.set({
                         query,
@@ -191,6 +194,7 @@ export class AddItemPageComponent {
                     this.lookupBusy.set(false);
                     this.manualDraft.set(null);
                     this.manualDraftSource.set(null);
+                    this.lookupPreview.set(null);
 
                     let message = 'We couldn’t find a match. Try another ISBN or UPC.';
                     if (error instanceof HttpErrorResponse) {
@@ -214,6 +218,7 @@ export class AddItemPageComponent {
     clearManualDraft(): void {
         this.manualDraft.set(null);
         this.manualDraftSource.set(null);
+        this.lookupPreview.set(null);
     }
 
     private getCategoryConfig(value: SearchCategoryValue): SearchCategoryConfig {

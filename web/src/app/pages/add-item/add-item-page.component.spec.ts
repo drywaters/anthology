@@ -138,6 +138,7 @@ describe(AddItemPageComponent.name, () => {
         expect(fixture.componentInstance.manualDraft()?.creator).toBe('Someone');
         expect(fixture.componentInstance.manualDraft()?.pageCount).toBe(320);
         expect(fixture.componentInstance.manualDraft()?.description).toBe('From lookup');
+        expect(fixture.componentInstance.lookupPreview()?.isbn13).toBe('9780000000002');
         expect(fixture.componentInstance.selectedTab()).toBe(1);
         expect(fixture.componentInstance.manualDraftSource()).toEqual({ query: '9780000000002', label: 'Book' });
     }));
@@ -152,6 +153,25 @@ describe(AddItemPageComponent.name, () => {
 
         expect(itemLookupServiceSpy.lookup).toHaveBeenCalled();
         expect(fixture.componentInstance.lookupError()).toBeTruthy();
+        expect(fixture.componentInstance.manualDraft()).toBeNull();
+        expect(fixture.componentInstance.lookupPreview()).toBeNull();
+    }));
+
+    it('clears the lookup preview when starting fresh', fakeAsync(() => {
+        itemLookupServiceSpy.lookup.and.returnValue(
+            of({ title: 'Metadata Title', creator: 'Someone', releaseYear: 2001 })
+        );
+
+        const fixture = createComponent();
+        fixture.componentInstance.searchForm.setValue({ category: 'book', query: 'test' });
+        fixture.componentInstance.handleLookupSubmit();
+        flush();
+
+        expect(fixture.componentInstance.lookupPreview()).not.toBeNull();
+
+        fixture.componentInstance.clearManualDraft();
+
+        expect(fixture.componentInstance.lookupPreview()).toBeNull();
         expect(fixture.componentInstance.manualDraft()).toBeNull();
     }));
 
