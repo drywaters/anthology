@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 	"unicode"
@@ -113,10 +114,123 @@ type openLibrarySearchResponse struct {
 		ISBN             []string `json:"isbn"`
 		FirstSentence    any      `json:"first_sentence"`
 		Subtitle         string   `json:"subtitle"`
+		Key              string   `json:"key"`
 	} `json:"docs"`
 }
 
+type openLibraryBookDataResponse map[string]openLibraryBookDataEntry
+
+type openLibraryBookDataEntry struct {
+	Title         string              `json:"title"`
+	Subtitle      string              `json:"subtitle"`
+	NumberOfPages *int                `json:"number_of_pages"`
+	PublishDate   string              `json:"publish_date"`
+	Authors       []openLibraryAuthor `json:"authors"`
+	Identifiers   map[string][]string `json:"identifiers"`
+	Description   any                 `json:"description"`
+	Notes         any                 `json:"notes"`
+}
+
+type openLibraryAuthor struct {
+	Name string `json:"name"`
+}
+
 func (s *Service) lookupBook(ctx context.Context, query string) (Metadata, error) {
+	if isbn := normalizeISBN(query); isbn != "" {
+		metadata, err := s.lookupBookByISBN(ctx, isbn)
+		if err == nil {
+			return metadata, nil
+		}
+		if !errors.Is(err, ErrNotFound) {
+			return Metadata{}, err
+		}
+		return s.lookupBookBySearch(ctx, isbn)
+	}
+
+	return s.lookupBookBySearch(ctx, query)
+}
+
+func (s *Service) lookupBookByISBN(ctx context.Context, isbn string) (Metadata, error) {
+	endpoint, err := url.Parse(s.openLibraryURL + "/api/books")
+	if err != nil {
+		return Metadata{}, fmt.Errorf("build open library book url: %w", err)
+	}
+
+	values := url.Values{}
+	values.Set("bibkeys", "ISBN:"+isbn)
+	values.Set("format", "json")
+	values.Set("jscmd", "data")
+	endpoint.RawQuery = values.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
+	if err != nil {
+		return Metadata{}, fmt.Errorf("create open library book request: %w", err)
+	}
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return Metadata{}, fmt.Errorf("call open library book api: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return Metadata{}, fmt.Errorf("open library returned status %d", resp.StatusCode)
+	}
+
+	var payload openLibraryBookDataResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return Metadata{}, fmt.Errorf("decode open library book response: %w", err)
+	}
+
+	entry, ok := payload["ISBN:"+isbn]
+	if !ok {
+		return Metadata{}, ErrNotFound
+	}
+
+	title := strings.TrimSpace(entry.Title)
+	creator := strings.TrimSpace(joinAuthorNames(entry.Authors))
+	if title == "" && creator == "" {
+		return Metadata{}, ErrNotFound
+	}
+
+	isbn13, isbn10 := selectISBNs(append(entry.Identifiers["isbn_13"], entry.Identifiers["isbn_10"]...))
+	if isbn13 == "" && len(isbn) == 13 {
+		isbn13 = isbn
+	}
+	if isbn10 == "" {
+		if alt := firstIdentifier(entry.Identifiers["isbn_10"]); alt != "" {
+			isbn10 = alt
+		} else if len(isbn) == 10 {
+			isbn10 = isbn
+		}
+	}
+
+	description := textValue(entry.Description)
+	if description == "" {
+		description = strings.TrimSpace(entry.Subtitle)
+	}
+
+	notes := textValue(entry.Notes)
+
+	metadata := Metadata{
+		Title:       title,
+		Creator:     creator,
+		ItemType:    items.ItemTypeBook,
+		PageCount:   entry.NumberOfPages,
+		ISBN13:      isbn13,
+		ISBN10:      isbn10,
+		Description: description,
+		Notes:       notes,
+	}
+
+	if year := parsePublishYear(entry.PublishDate); year != nil {
+		metadata.ReleaseYear = year
+	}
+
+	return metadata, nil
+}
+
+func (s *Service) lookupBookBySearch(ctx context.Context, query string) (Metadata, error) {
 	endpoint, err := url.Parse(s.openLibraryURL + "/search.json")
 	if err != nil {
 		return Metadata{}, fmt.Errorf("build open library url: %w", err)
@@ -204,30 +318,25 @@ func selectISBNs(values []string) (string, string) {
 }
 
 func deriveDescription(raw any, subtitle string) string {
-	if text := firstSentence(raw); text != "" {
+	if text := textValue(raw); text != "" {
 		return text
 	}
 	return strings.TrimSpace(subtitle)
 }
 
-func firstSentence(raw any) string {
+func textValue(raw any) string {
 	switch value := raw.(type) {
 	case string:
 		return strings.TrimSpace(value)
 	case []any:
 		for _, entry := range value {
-			if text, ok := entry.(string); ok {
-				trimmed := strings.TrimSpace(text)
-				if trimmed != "" {
-					return trimmed
-				}
+			if text := textValue(entry); text != "" {
+				return text
 			}
 		}
 	case map[string]any:
 		if text, ok := value["value"]; ok {
-			if trimmed := firstSentence(text); trimmed != "" {
-				return trimmed
-			}
+			return textValue(text)
 		}
 	case map[string]string:
 		if text, ok := value["value"]; ok {
@@ -235,6 +344,42 @@ func firstSentence(raw any) string {
 			if trimmed != "" {
 				return trimmed
 			}
+		}
+	}
+	return ""
+}
+
+func joinAuthorNames(authors []openLibraryAuthor) string {
+	names := make([]string, 0, len(authors))
+	for _, author := range authors {
+		trimmed := strings.TrimSpace(author.Name)
+		if trimmed != "" {
+			names = append(names, trimmed)
+		}
+	}
+	return strings.Join(names, ", ")
+}
+
+var publishYearPattern = regexp.MustCompile(`(1[0-9]{3}|20[0-9]{2})`)
+
+func parsePublishYear(raw string) *int {
+	match := publishYearPattern.FindString(raw)
+	if match == "" {
+		return nil
+	}
+	year := 0
+	_, err := fmt.Sscanf(match, "%d", &year)
+	if err != nil {
+		return nil
+	}
+	return &year
+}
+
+func firstIdentifier(values []string) string {
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed != "" {
+			return trimmed
 		}
 	}
 	return ""

@@ -8,7 +8,7 @@ import { of, throwError } from 'rxjs';
 
 import { AddItemPageComponent } from './add-item-page.component';
 import { ItemService } from '../../services/item.service';
-import { Item } from '../../models/item';
+import { Item, ItemForm } from '../../models/item';
 import { ItemLookupService } from '../../services/item-lookup.service';
 
 describe(AddItemPageComponent.name, () => {
@@ -139,8 +139,43 @@ describe(AddItemPageComponent.name, () => {
         expect(fixture.componentInstance.manualDraft()?.pageCount).toBe(320);
         expect(fixture.componentInstance.manualDraft()?.description).toBe('From lookup');
         expect(fixture.componentInstance.lookupPreview()?.isbn13).toBe('9780000000002');
-        expect(fixture.componentInstance.selectedTab()).toBe(1);
+        expect(fixture.componentInstance.selectedTab()).toBe(0);
         expect(fixture.componentInstance.manualDraftSource()).toEqual({ query: '9780000000002', label: 'Book' });
+    }));
+
+    it('adds a lookup preview directly to the collection', fakeAsync(() => {
+        const mockItem = {
+            id: 'item-1',
+            title: 'Metadata Title',
+            creator: 'Someone',
+            itemType: 'book',
+            notes: '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        } satisfies Item;
+
+        itemServiceSpy.create.and.returnValue(of(mockItem));
+        const fixture = createComponent();
+        const router = TestBed.inject(Router);
+        const navigateSpy = spyOn(router, 'navigate').and.resolveTo(true);
+        const draft: ItemForm = {
+            title: 'Metadata Title',
+            creator: 'Someone',
+            itemType: 'book',
+            releaseYear: 2001,
+            pageCount: 320,
+            isbn13: '9780000000002',
+            isbn10: '0000000002',
+            description: 'From lookup',
+            notes: '',
+        } satisfies ItemForm;
+
+        fixture.componentInstance.lookupPreview.set(draft);
+        fixture.componentInstance.handleQuickAdd();
+        flush();
+
+        expect(itemServiceSpy.create).toHaveBeenCalledWith(draft);
+        expect(navigateSpy).toHaveBeenCalledWith(['/']);
     }));
 
     it('stores an error when lookup fails', fakeAsync(() => {

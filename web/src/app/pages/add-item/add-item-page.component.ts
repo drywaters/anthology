@@ -187,8 +187,7 @@ export class AddItemPageComponent {
                         query,
                         label: category.label,
                     });
-                    this.lastLookupSummary.set(`Metadata loaded for “${query}”. Review and save from the Manual Entry tab.`);
-                    this.selectedTab.set(1);
+                    this.lastLookupSummary.set(`Metadata loaded for “${query}”.`);
                 },
                 error: (error) => {
                     this.lookupBusy.set(false);
@@ -219,6 +218,15 @@ export class AddItemPageComponent {
         this.manualDraft.set(null);
         this.manualDraftSource.set(null);
         this.lookupPreview.set(null);
+    }
+
+    handleQuickAdd(): void {
+        const preview = this.lookupPreview();
+        if (!preview) {
+            return;
+        }
+
+        this.handleSave({ ...preview });
     }
 
     private getCategoryConfig(value: SearchCategoryValue): SearchCategoryConfig {

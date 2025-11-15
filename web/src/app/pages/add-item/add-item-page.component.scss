@@ -180,6 +180,15 @@ mat-card {
     white-space: pre-line;
 }
 
+.preview-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.preview-add {
+    align-self: flex-end;
+}
+
 .manual-entry {
     gap: 1.5rem;
 }

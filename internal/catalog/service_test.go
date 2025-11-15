@@ -5,18 +5,26 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 )
 
 func TestServiceLookupBookByISBN(t *testing.T) {
 	var receivedPath string
-	var receivedISBN string
+	var receivedQuery string
+	var searchHits int
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		receivedPath = r.URL.Path
-		receivedISBN = r.URL.Query().Get("isbn")
+		receivedQuery = r.URL.RawQuery
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"docs":[{"title":"Test Title","author_name":["Author One"],"first_publish_year":1999,"number_of_pages_median":464,"isbn":["9780385534796","0385534795"],"first_sentence":["A chilling opening line."]}]}`))
+		if strings.HasPrefix(r.URL.Path, "/api/books") {
+			_, _ = w.Write([]byte(`{"ISBN:9780140328721":{"title":"Test Title","subtitle":"An extra note","publish_date":"May 2012","number_of_pages":464,"authors":[{"name":"Author One"}],"identifiers":{"isbn_13":["9780385534796"],"isbn_10":["0385534795"]},"description":{"value":"Rich description."},"notes":"Remember to re-read."}}`))
+			return
+		}
+		searchHits++
+		_, _ = w.Write([]byte(`{"docs":[]}`))
 	}))
 	defer server.Close()
 
@@ -28,12 +36,20 @@ func TestServiceLookupBookByISBN(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if receivedPath != "/search.json" {
-		t.Fatalf("expected request to /search.json, got %s", receivedPath)
+	if receivedPath != "/api/books" {
+		t.Fatalf("expected request to /api/books, got %s", receivedPath)
 	}
 
-	if receivedISBN != "9780140328721" {
-		t.Fatalf("expected isbn parameter to be forwarded, got %s", receivedISBN)
+	values, err := url.ParseQuery(receivedQuery)
+	if err != nil {
+		t.Fatalf("failed to parse query: %v", err)
+	}
+	if values.Get("bibkeys") != "ISBN:9780140328721" {
+		t.Fatalf("expected ISBN bibkey to be sent, got %s", values.Get("bibkeys"))
+	}
+
+	if searchHits != 0 {
+		t.Fatalf("expected book lookup to avoid search fallback, got %d search hits", searchHits)
 	}
 
 	if metadata.Title != "Test Title" {
@@ -45,8 +61,8 @@ func TestServiceLookupBookByISBN(t *testing.T) {
 	if metadata.ItemType != "book" {
 		t.Errorf("expected item type to be book, got %q", metadata.ItemType)
 	}
-	if metadata.ReleaseYear == nil || *metadata.ReleaseYear != 1999 {
-		t.Fatalf("expected release year 1999, got %v", metadata.ReleaseYear)
+	if metadata.ReleaseYear == nil || *metadata.ReleaseYear != 2012 {
+		t.Fatalf("expected release year 2012, got %v", metadata.ReleaseYear)
 	}
 	if metadata.PageCount == nil || *metadata.PageCount != 464 {
 		t.Fatalf("expected page count 464, got %v", metadata.PageCount)
@@ -57,8 +73,42 @@ func TestServiceLookupBookByISBN(t *testing.T) {
 	if metadata.ISBN10 != "0385534795" {
 		t.Fatalf("expected isbn10 to be populated, got %q", metadata.ISBN10)
 	}
-	if metadata.Description != "A chilling opening line." {
-		t.Fatalf("expected description from first sentence, got %q", metadata.Description)
+	if metadata.Description != "Rich description." {
+		t.Fatalf("expected description from book data, got %q", metadata.Description)
+	}
+	if metadata.Notes != "Remember to re-read." {
+		t.Fatalf("expected notes from book data, got %q", metadata.Notes)
+	}
+}
+
+func TestServiceLookupBookByISBNFallsBackToSearch(t *testing.T) {
+	var searchCalled bool
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.HasPrefix(r.URL.Path, "/api/books") {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		searchCalled = true
+		_, _ = w.Write([]byte(`{"docs":[{"title":"Fallback","author_name":["Someone"],"publish_year":[2003],"isbn":["9780000000002","0000000002"]}]}`))
+	}))
+	defer server.Close()
+
+	client := server.Client()
+	svc := NewService(client, WithOpenLibraryURL(server.URL))
+
+	metadata, err := svc.Lookup(context.Background(), "9780000000002", CategoryBook)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if !searchCalled {
+		t.Fatalf("expected fallback search to be invoked")
+	}
+
+	if metadata.Title != "Fallback" {
+		t.Fatalf("expected fallback metadata, got %q", metadata.Title)
 	}
 }
 
@@ -119,15 +169,15 @@ func TestServiceLookupUnsupportedCategory(t *testing.T) {
 	}
 }
 
-func TestFirstSentenceMapValue(t *testing.T) {
-	text := firstSentence(map[string]any{"value": "  Nested opening.  "})
+func TestTextValueMapValue(t *testing.T) {
+	text := textValue(map[string]any{"value": "  Nested opening.  "})
 	if text != "Nested opening." {
 		t.Fatalf("expected to derive description from map value, got %q", text)
 	}
 }
 
-func TestFirstSentenceNestedValue(t *testing.T) {
-	text := firstSentence(map[string]any{"value": map[string]string{"value": "Layered start."}})
+func TestTextValueNestedValue(t *testing.T) {
+	text := textValue(map[string]any{"value": map[string]string{"value": "Layered start."}})
 	if text != "Layered start." {
 		t.Fatalf("expected recursive extraction from nested map, got %q", text)
 	}
