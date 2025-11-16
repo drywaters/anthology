@@ -104,19 +104,33 @@ func (s *Service) Lookup(ctx context.Context, query string, category Category) (
 	}
 }
 
-type openLibrarySearchResponse struct {
-	Docs []struct {
-		Title            string   `json:"title"`
-		AuthorName       []string `json:"author_name"`
-		FirstPublishYear *int     `json:"first_publish_year"`
-		PublishYear      []int    `json:"publish_year"`
-		NumberOfPages    *int     `json:"number_of_pages_median"`
-		ISBN             []string `json:"isbn"`
-		FirstSentence    any      `json:"first_sentence"`
-		Subtitle         string   `json:"subtitle"`
-		Key              string   `json:"key"`
-	} `json:"docs"`
+type openLibrarySearchDoc struct {
+	Title            string   `json:"title"`
+	AuthorName       []string `json:"author_name"`
+	FirstPublishYear *int     `json:"first_publish_year"`
+	PublishYear      []int    `json:"publish_year"`
+	NumberOfPages    *int     `json:"number_of_pages_median"`
+	ISBN             []string `json:"isbn"`
+	FirstSentence    any      `json:"first_sentence"`
+	Subtitle         string   `json:"subtitle"`
+	Key              string   `json:"key"`
 }
+
+type openLibrarySearchResponse struct {
+	Docs []openLibrarySearchDoc `json:"docs"`
+}
+
+var openLibrarySearchFields = strings.Join([]string{
+	"title",
+	"author_name",
+	"first_publish_year",
+	"publish_year",
+	"number_of_pages_median",
+	"isbn",
+	"first_sentence",
+	"subtitle",
+	"key",
+}, ",")
 
 type openLibraryBookDataResponse map[string]openLibraryBookDataEntry
 
@@ -243,6 +257,7 @@ func (s *Service) lookupBookBySearch(ctx context.Context, query string) (Metadat
 		values.Set("q", query)
 	}
 	values.Set("limit", "1")
+	values.Set("fields", openLibrarySearchFields)
 	endpoint.RawQuery = values.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
@@ -280,6 +295,14 @@ func (s *Service) lookupBookBySearch(ctx context.Context, query string) (Metadat
 	isbn13, isbn10 := selectISBNs(doc.ISBN)
 	description := deriveDescription(doc.FirstSentence, doc.Subtitle)
 
+	releaseYear := releaseYearFromDoc(doc)
+
+	if enriched, err := s.enrichMetadataFromISBN(ctx, isbn13, isbn10, releaseYear); err == nil {
+		return enriched, nil
+	} else if err != nil && !errors.Is(err, ErrNotFound) {
+		return Metadata{}, err
+	}
+
 	metadata := Metadata{
 		Title:       title,
 		Creator:     creator,
@@ -291,14 +314,52 @@ func (s *Service) lookupBookBySearch(ctx context.Context, query string) (Metadat
 		Notes:       "",
 	}
 
-	if doc.FirstPublishYear != nil {
-		metadata.ReleaseYear = doc.FirstPublishYear
-	} else if len(doc.PublishYear) > 0 {
-		year := doc.PublishYear[0]
-		metadata.ReleaseYear = &year
+	if releaseYear != nil {
+		metadata.ReleaseYear = releaseYear
 	}
 
 	return metadata, nil
+}
+
+func (s *Service) enrichMetadataFromISBN(ctx context.Context, isbn13, isbn10 string, releaseYear *int) (Metadata, error) {
+	tryISBN := func(isbn string, fallback func(*Metadata)) (Metadata, error) {
+		if isbn == "" {
+			return Metadata{}, ErrNotFound
+		}
+		metadata, err := s.lookupBookByISBN(ctx, isbn)
+		if err != nil {
+			return Metadata{}, err
+		}
+		if releaseYear != nil && metadata.ReleaseYear == nil {
+			metadata.ReleaseYear = releaseYear
+		}
+		if fallback != nil {
+			fallback(&metadata)
+		}
+		return metadata, nil
+	}
+
+	metadata, err := tryISBN(isbn13, func(metadata *Metadata) {
+		if metadata.ISBN10 == "" {
+			metadata.ISBN10 = isbn10
+		}
+	})
+	if err == nil {
+		return metadata, nil
+	}
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return Metadata{}, err
+	}
+
+	metadata, err = tryISBN(isbn10, func(metadata *Metadata) {
+		if metadata.ISBN13 == "" {
+			metadata.ISBN13 = isbn13
+		}
+	})
+	if err == nil {
+		return metadata, nil
+	}
+	return Metadata{}, err
 }
 
 func selectISBNs(values []string) (string, string) {
@@ -420,4 +481,15 @@ func normalizeISBN(value string) string {
 	}
 
 	return string(cleaned)
+}
+
+func releaseYearFromDoc(doc openLibrarySearchDoc) *int {
+	if doc.FirstPublishYear != nil {
+		return doc.FirstPublishYear
+	}
+	if len(doc.PublishYear) > 0 {
+		year := doc.PublishYear[0]
+		return &year
+	}
+	return nil
 }
