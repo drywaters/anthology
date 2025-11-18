@@ -3,54 +3,25 @@
 }
 
 .page {
+    --layout-gap: 2rem;
     min-height: 100%;
-    padding: 2.5rem clamp(1.5rem, 3vw, 4rem) 3rem;
+    padding: var(--layout-gap) clamp(1.5rem, 3vw, 4rem) 3rem;
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: var(--layout-gap);
 }
 
-.page-header {
+.filters-panel {
+    padding-block: 0.25rem;
     display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1.5rem;
-}
-
-.add-button {
-    align-self: center;
-    white-space: nowrap;
-}
-
-.page-heading {
-    max-width: 560px;
-}
-
-.eyebrow {
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.18em;
-    font-weight: 600;
-    margin: 0 0 0.25rem;
-    color: var(--mat-sys-on-surface-variant);
-}
-
-.page-header h1 {
-    margin: 0;
-    font-size: clamp(1.75rem, 2.4vw, 2.5rem);
-}
-
-.subtitle {
-    margin: 0.35rem 0 0;
-    color: var(--mat-sys-on-surface-variant);
+    justify-content: flex-start;
 }
 
 .layout {
     display: flex;
     flex: 1 1 auto;
     flex-wrap: wrap;
-    gap: 2rem;
+    gap: var(--layout-gap);
     align-items: flex-start;
 }
 
@@ -97,7 +68,6 @@ mat-progress-bar {
     background: color-mix(in srgb, #e8f5ef 80%, white);
     border-radius: 1rem;
     box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
-    margin-bottom: 0.9rem;
 }
 
 .type-select {

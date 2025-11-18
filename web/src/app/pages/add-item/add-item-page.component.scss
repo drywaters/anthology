@@ -3,20 +3,16 @@
 }
 
 .add-item-page {
+    --page-gutter: clamp(1.5rem, 3vw, 4rem);
     width: 100%;
     max-width: 1120px;
     margin: 0 auto;
-    padding: 2.5rem clamp(1.5rem, 3vw, 4rem) 3rem;
+    padding: var(--page-gutter) var(--page-gutter) 3rem;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
     color: var(--mat-sys-on-surface);
-}
-
-.back-link {
-    width: fit-content;
-    color: var(--mat-sys-on-surface-variant);
 }
 
 mat-card {
