@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -18,6 +18,7 @@ import { ItemFormComponent } from '../../components/item-form/item-form.componen
 import { ItemForm } from '../../models/item';
 import { ItemService } from '../../services/item.service';
 import { ItemLookupCategory, ItemLookupService } from '../../services/item-lookup.service';
+import { CsvImportSummary } from '../../models/import';
 
 type SearchCategoryValue = ItemLookupCategory;
 
@@ -92,6 +93,17 @@ export class AddItemPageComponent {
     ];
 
     private static readonly MANUAL_ENTRY_TAB_INDEX = 1;
+    private static readonly CSV_FIELDS = [
+        'title',
+        'creator',
+        'itemType',
+        'releaseYear',
+        'pageCount',
+        'isbn13',
+        'isbn10',
+        'description',
+        'notes',
+    ];
 
     private readonly itemService = inject(ItemService);
     private readonly itemLookupService = inject(ItemLookupService);
@@ -99,6 +111,8 @@ export class AddItemPageComponent {
     private readonly snackBar = inject(MatSnackBar);
     private readonly destroyRef = inject(DestroyRef);
     private readonly fb = inject(FormBuilder);
+
+    @ViewChild('csvInput') csvInput?: ElementRef<HTMLInputElement>;
 
     readonly busy = signal(false);
     readonly lookupBusy = signal(false);
@@ -108,8 +122,14 @@ readonly manualDraft = signal<ItemForm | null>(null);
     readonly manualDraftSource = signal<{ query: string; label: string } | null>(null);
     readonly lastLookupSummary = signal<string | null>(null);
     readonly selectedTab = signal(0);
+    readonly importBusy = signal(false);
+    readonly importError = signal<string | null>(null);
+    readonly importSummary = signal<CsvImportSummary | null>(null);
+    readonly selectedCsvFile = signal<File | null>(null);
 
     readonly searchCategories = AddItemPageComponent.SEARCH_CATEGORIES;
+    readonly csvFields = AddItemPageComponent.CSV_FIELDS;
+    readonly csvTemplateUrl = '/csv-import-template.csv';
 
     readonly searchForm = this.fb.group({
         category: [AddItemPageComponent.SEARCH_CATEGORIES[0].value as SearchCategoryValue, Validators.required],
@@ -252,9 +272,70 @@ this.handleSave({ ...preview });
         const source = this.manualDraftSource();
         this.manualDraft.set({ ...preview });
         if (source) {
-            this.manualDraftSource.set({ ...source });
+        this.manualDraftSource.set({ ...source });
         }
         this.selectedTab.set(AddItemPageComponent.MANUAL_ENTRY_TAB_INDEX);
+    }
+
+    handleCsvFileChange(event: Event): void {
+        const input = event.target as HTMLInputElement | null;
+        const file = input?.files?.[0] ?? null;
+        this.selectedCsvFile.set(file);
+        this.importError.set(null);
+        this.importSummary.set(null);
+    }
+
+    handleImportSubmit(): void {
+        const file = this.selectedCsvFile();
+        if (!file || this.importBusy()) {
+            return;
+        }
+
+        this.importBusy.set(true);
+        this.importError.set(null);
+        this.importSummary.set(null);
+
+        this.itemService
+            .importCsv(file)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (summary: CsvImportSummary) => {
+                    this.importBusy.set(false);
+                    this.importSummary.set(summary);
+                    this.snackBar.open(
+                        `Imported ${summary.imported} of ${summary.totalRows} rows`,
+                        'Dismiss',
+                        { duration: 5000 }
+                    );
+                    this.selectedCsvFile.set(null);
+                    this.resetCsvInput();
+                },
+                error: (error) => {
+                    this.importBusy.set(false);
+                    let message = 'Import failed. Confirm the CSV matches the template.';
+                    if (error instanceof HttpErrorResponse) {
+                        const serverMessage =
+                            typeof error.error?.error === 'string' ? error.error.error.trim() : '';
+                        if (serverMessage) {
+                            message = serverMessage;
+                        }
+                    }
+                    this.importError.set(message);
+                },
+            });
+    }
+
+    handleImportReset(): void {
+        this.selectedCsvFile.set(null);
+        this.importSummary.set(null);
+        this.importError.set(null);
+        this.resetCsvInput();
+    }
+
+    private resetCsvInput(): void {
+        if (this.csvInput?.nativeElement) {
+            this.csvInput.nativeElement.value = '';
+        }
     }
 
     private getCategoryConfig(value: SearchCategoryValue): SearchCategoryConfig {

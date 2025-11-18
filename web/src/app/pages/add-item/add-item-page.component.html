@@ -178,8 +178,104 @@ Use for manual entry
                 </mat-tab>
                 <mat-tab label="CSV Import">
                     <div class="tab-body csv-tab">
-                        <h3>Bulk import (coming soon)</h3>
-                        <p>We’re building CSV import to help you load large collections. Check back soon!</p>
+                        <div class="csv-header">
+                            <div>
+                                <h3>Bulk import</h3>
+                                <p>Upload the Anthology CSV template to add multiple items at once.</p>
+                            </div>
+                            <a
+                                class="template-link"
+                                [href]="csvTemplateUrl"
+                                download="anthology-import-template.csv"
+                            >
+                                Download template
+                            </a>
+                        </div>
+
+                        <div class="csv-instructions">
+                            <h4>Required columns</h4>
+                            <p>
+                                Make sure your CSV includes this header row. Keep the column names lowercase to
+                                avoid validation errors.
+                            </p>
+                            <div class="field-list">
+                                <span class="field" *ngFor="let field of csvFields">{{ field }}</span>
+                            </div>
+                            <p class="hint">
+                                For books, you can leave the title blank if you include an ISBN or UPC. We’ll fetch the
+                                metadata automatically. Duplicate titles or ISBNs are skipped and reported below.
+                            </p>
+                        </div>
+
+                        <form class="csv-form" (ngSubmit)="handleImportSubmit()" novalidate>
+                            <label class="file-input">
+                                <span class="label">CSV file</span>
+                                <input
+                                    #csvInput
+                                    type="file"
+                                    accept=".csv,text/csv"
+                                    (change)="handleCsvFileChange($event)"
+                                    [disabled]="importBusy()"
+                                />
+                                <div class="file-meta" *ngIf="selectedCsvFile() as file">
+                                    <mat-icon aria-hidden="true">attach_file</mat-icon>
+                                    <span>{{ file.name }}</span>
+                                </div>
+                            </label>
+                            <div class="csv-actions">
+                                <button
+                                    mat-flat-button
+                                    color="primary"
+                                    type="submit"
+                                    [disabled]="!selectedCsvFile() || importBusy()"
+                                >
+                                    <span *ngIf="!importBusy()">Upload CSV</span>
+                                    <mat-progress-spinner
+                                        *ngIf="importBusy()"
+                                        diameter="18"
+                                        mode="indeterminate"
+                                    ></mat-progress-spinner>
+                                </button>
+                                <button
+                                    mat-stroked-button
+                                    type="button"
+                                    (click)="handleImportReset()"
+                                    [disabled]="importBusy() || (!selectedCsvFile() && !importSummary())"
+                                >
+                                    Clear
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="csv-feedback" *ngIf="importError()">
+                            <mat-icon aria-hidden="true">error</mat-icon>
+                            <span>{{ importError() }}</span>
+                        </div>
+
+                        <div class="csv-summary" *ngIf="importSummary() as summary">
+                            <h4>Import summary</h4>
+                            <p>Imported {{ summary.imported }} of {{ summary.totalRows }} rows.</p>
+
+                            <div class="summary-section" *ngIf="summary.skippedDuplicates.length">
+                                <h5>Skipped duplicates</h5>
+                                <ul>
+                                    <li *ngFor="let entry of summary.skippedDuplicates">
+                                        Row {{ entry.row }} · {{ entry.title || entry.identifier || 'Untitled item' }} —
+                                        {{ entry.reason }}
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div class="summary-section" *ngIf="summary.failed.length">
+                                <h5>Rows with errors</h5>
+                                <ul>
+                                    <li *ngFor="let entry of summary.failed">
+                                        Row {{ entry.row }} · {{ entry.title || entry.identifier || 'Untitled item' }}:
+                                        {{ entry.error }}
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </mat-tab>
             </mat-tab-group>

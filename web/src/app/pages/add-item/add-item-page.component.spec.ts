@@ -9,6 +9,7 @@ import { of, throwError } from 'rxjs';
 import { AddItemPageComponent } from './add-item-page.component';
 import { ItemService } from '../../services/item.service';
 import { Item, ItemForm } from '../../models/item';
+import { CsvImportSummary } from '../../models/import';
 import { ItemLookupService } from '../../services/item-lookup.service';
 
 describe(AddItemPageComponent.name, () => {
@@ -17,7 +18,7 @@ describe(AddItemPageComponent.name, () => {
     let itemLookupServiceSpy: jasmine.SpyObj<ItemLookupService>;
 
     beforeEach(async () => {
-        itemServiceSpy = jasmine.createSpyObj<ItemService>('ItemService', ['create']);
+        itemServiceSpy = jasmine.createSpyObj<ItemService>('ItemService', ['create', 'importCsv']);
         snackBarSpy = jasmine.createSpyObj<MatSnackBar>('MatSnackBar', ['open']);
         itemLookupServiceSpy = jasmine.createSpyObj<ItemLookupService>('ItemLookupService', ['lookup']);
 
@@ -254,5 +255,36 @@ expect(fixture.componentInstance.lookupResults().length).toBe(0);
 
         expect(fixture.componentInstance.lookupError()).toBe('metadata lookups for this category are not available yet');
         expect(fixture.componentInstance.manualDraft()).toBeNull();
+    }));
+
+    it('uploads a CSV file and stores the summary', fakeAsync(() => {
+        const summary = {
+            totalRows: 2,
+            imported: 2,
+            skippedDuplicates: [],
+            failed: [],
+        } satisfies CsvImportSummary;
+        itemServiceSpy.importCsv.and.returnValue(of(summary));
+        const fixture = createComponent();
+        fixture.componentInstance.selectedCsvFile.set(new File(['title'], 'import.csv', { type: 'text/csv' }));
+        fixture.componentInstance.handleImportSubmit();
+        flush();
+
+        expect(itemServiceSpy.importCsv).toHaveBeenCalled();
+        expect(fixture.componentInstance.importSummary()).toEqual(summary);
+    }));
+
+    it('captures CSV import errors from the server', fakeAsync(() => {
+        itemServiceSpy.importCsv.and.returnValue(
+            throwError(
+                () => new HttpErrorResponse({ status: 400, error: { error: 'missing required columns' } })
+            )
+        );
+        const fixture = createComponent();
+        fixture.componentInstance.selectedCsvFile.set(new File(['title'], 'import.csv', { type: 'text/csv' }));
+        fixture.componentInstance.handleImportSubmit();
+        flush();
+
+        expect(fixture.componentInstance.importError()).toBe('missing required columns');
     }));
 });

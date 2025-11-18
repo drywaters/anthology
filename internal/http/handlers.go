@@ -13,18 +13,20 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
+	"anthology/internal/importer"
 	"anthology/internal/items"
 )
 
 // ItemHandler exposes item CRUD endpoints.
 type ItemHandler struct {
-	service *items.Service
-	logger  *slog.Logger
+	service  *items.Service
+	importer *importer.CSVImporter
+	logger   *slog.Logger
 }
 
 // NewItemHandler creates a handler.
-func NewItemHandler(service *items.Service, logger *slog.Logger) *ItemHandler {
-	return &ItemHandler{service: service, logger: logger}
+func NewItemHandler(service *items.Service, importer *importer.CSVImporter, logger *slog.Logger) *ItemHandler {
+	return &ItemHandler{service: service, importer: importer, logger: logger}
 }
 
 // List returns all items.
@@ -211,6 +213,52 @@ func (h *ItemHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+const maxCSVUploadBytes int64 = 5 << 20
+
+// ImportCSV ingests a CSV file of catalog items.
+func (h *ItemHandler) ImportCSV(w http.ResponseWriter, r *http.Request) {
+	if h.importer == nil {
+		writeError(w, http.StatusNotImplemented, "CSV import is not available")
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, maxCSVUploadBytes)
+	if err := r.ParseMultipartForm(maxCSVUploadBytes); err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			writeError(w, http.StatusRequestEntityTooLarge, fmt.Sprintf("CSV upload is too large (max %d bytes)", maxErr.Limit))
+			return
+		}
+		writeError(w, http.StatusBadRequest, "invalid CSV upload")
+		return
+	}
+	defer func() {
+		if r.MultipartForm != nil {
+			_ = r.MultipartForm.RemoveAll()
+		}
+	}()
+
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "CSV file is required")
+		return
+	}
+	defer file.Close()
+
+	summary, err := h.importer.Import(r.Context(), file)
+	if err != nil {
+		if errors.Is(err, importer.ErrInvalidCSV) {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		h.logger.Error("csv import failed", "error", err)
+		writeError(w, http.StatusInternalServerError, "bulk import failed")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, summary)
 }
 
 func parseUUIDParam(w http.ResponseWriter, r *http.Request, key string) (uuid.UUID, bool) {
