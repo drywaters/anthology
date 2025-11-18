@@ -13,7 +13,7 @@ import (
 
 // CatalogLookup describes the catalog service dependency used by the handler.
 type CatalogLookup interface {
-	Lookup(ctx context.Context, query string, category catalog.Category) (catalog.Metadata, error)
+	Lookup(ctx context.Context, query string, category catalog.Category) ([]catalog.Metadata, error)
 }
 
 // CatalogHandler exposes catalog lookup endpoints.
@@ -59,6 +59,6 @@ func (h *CatalogHandler) Lookup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"item": metadata,
+		"items": metadata,
 	})
 }

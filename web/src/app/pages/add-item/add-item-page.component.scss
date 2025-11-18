@@ -118,13 +118,28 @@ mat-card {
 }
 
 .lookup-preview {
-    border: 1px solid color-mix(in srgb, var(--mat-sys-primary) 40%, transparent);
-    border-radius: 20px;
-    padding: 1.25rem 1.5rem;
-    background: color-mix(in srgb, var(--mat-sys-primary) 6%, white);
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+border: 1px solid color-mix(in srgb, var(--mat-sys-primary) 40%, transparent);
+border-radius: 20px;
+padding: 1.25rem 1.5rem;
+background: color-mix(in srgb, var(--mat-sys-primary) 6%, white);
+display: flex;
+flex-direction: column;
+gap: 1rem;
+}
+
+.preview-list {
+display: grid;
+gap: 1rem;
+}
+
+.preview-card {
+background: white;
+border-radius: 16px;
+box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+padding: 1rem 1.25rem;
+display: flex;
+flex-direction: column;
+gap: 1rem;
 }
 
 .preview-header {
@@ -180,13 +195,16 @@ mat-card {
     white-space: pre-line;
 }
 
+
 .preview-actions {
-    display: flex;
-    justify-content: flex-end;
+display: flex;
+justify-content: flex-end;
+gap: 0.75rem;
+flex-wrap: wrap;
 }
 
 .preview-add {
-    align-self: flex-end;
+align-self: flex-end;
 }
 
 .manual-entry {
