@@ -97,8 +97,8 @@ export class AddItemPageComponent {
     readonly busy = signal(false);
     readonly lookupBusy = signal(false);
     readonly lookupError = signal<string | null>(null);
-    readonly lookupPreview = signal<ItemForm | null>(null);
-    readonly manualDraft = signal<ItemForm | null>(null);
+readonly lookupResults = signal<ItemForm[]>([]);
+readonly manualDraft = signal<ItemForm | null>(null);
     readonly manualDraftSource = signal<{ query: string; label: string } | null>(null);
     readonly lastLookupSummary = signal<string | null>(null);
     readonly selectedTab = signal(0);
@@ -171,31 +171,41 @@ export class AddItemPageComponent {
 
         this.lookupBusy.set(true);
         this.lookupError.set(null);
-        this.lookupPreview.set(null);
-        this.lastLookupSummary.set(null);
+this.lookupResults.set([]);
+this.lastLookupSummary.set(null);
 
-        this.itemLookupService
-            .lookup(query, rawCategory)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (result) => {
-                    this.lookupBusy.set(false);
-                    const draft = this.composeDraft(result, category);
-                    this.lookupPreview.set(draft);
-                    this.manualDraft.set({ ...draft });
-                    this.manualDraftSource.set({
-                        query,
-                        label: category.label,
-                    });
-                    this.lastLookupSummary.set(`Metadata loaded for “${query}”.`);
-                },
-                error: (error) => {
-                    this.lookupBusy.set(false);
-                    this.manualDraft.set(null);
-                    this.manualDraftSource.set(null);
-                    this.lookupPreview.set(null);
+this.itemLookupService
+.lookup(query, rawCategory)
+.pipe(takeUntilDestroyed(this.destroyRef))
+.subscribe({
+next: (results) => {
+this.lookupBusy.set(false);
+const drafts = results.map((partial) => this.composeDraft(partial, category));
+this.lookupResults.set(drafts);
+if (drafts.length > 0) {
+this.manualDraft.set({ ...drafts[0] });
+this.manualDraftSource.set({
+query,
+label: category.label,
+});
+const summary =
+drafts.length > 1
+? `Loaded ${drafts.length} matches for “${query}”. Choose one below.`
+: `Metadata loaded for “${query}”.`;
+this.lastLookupSummary.set(summary);
+} else {
+this.manualDraft.set(null);
+this.manualDraftSource.set(null);
+this.lastLookupSummary.set(null);
+}
+},
+error: (error) => {
+this.lookupBusy.set(false);
+this.manualDraft.set(null);
+this.manualDraftSource.set(null);
+this.lookupResults.set([]);
 
-                    let message = 'We couldn’t find a match. Try another ISBN or UPC.';
+let message = 'We couldn’t find a match. Try another ISBN or UPC.';
                     if (error instanceof HttpErrorResponse) {
                         const serverMessage = typeof error.error?.error === 'string' ? error.error.error.trim() : '';
                         if (serverMessage) {
@@ -217,17 +227,28 @@ export class AddItemPageComponent {
     clearManualDraft(): void {
         this.manualDraft.set(null);
         this.manualDraftSource.set(null);
-        this.lookupPreview.set(null);
-    }
+this.lookupResults.set([]);
+}
 
-    handleQuickAdd(): void {
-        const preview = this.lookupPreview();
-        if (!preview) {
-            return;
-        }
+handleQuickAdd(preview: ItemForm): void {
+if (!preview) {
+return;
+}
 
-        this.handleSave({ ...preview });
-    }
+this.handleSave({ ...preview });
+}
+
+handleUseForManual(preview: ItemForm): void {
+if (!preview) {
+return;
+}
+
+const source = this.manualDraftSource();
+this.manualDraft.set({ ...preview });
+if (source) {
+this.manualDraftSource.set({ ...source });
+}
+}
 
     private getCategoryConfig(value: SearchCategoryValue): SearchCategoryConfig {
         return (

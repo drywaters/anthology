@@ -14,14 +14,14 @@ import (
 )
 
 type mockCatalogService struct {
-	metadata     catalog.Metadata
+	metadata     []catalog.Metadata
 	err          error
 	lastCtx      context.Context
 	lastQuery    string
 	lastCategory catalog.Category
 }
 
-func (m *mockCatalogService) Lookup(ctx context.Context, query string, category catalog.Category) (catalog.Metadata, error) {
+func (m *mockCatalogService) Lookup(ctx context.Context, query string, category catalog.Category) ([]catalog.Metadata, error) {
 	m.lastCtx = ctx
 	m.lastQuery = query
 	m.lastCategory = category
@@ -34,7 +34,7 @@ func newTestLogger() *slog.Logger {
 
 func TestCatalogHandlerLookupSuccess(t *testing.T) {
 	mockService := &mockCatalogService{
-		metadata: catalog.Metadata{Title: "Title", Creator: "Author", ItemType: "book"},
+		metadata: []catalog.Metadata{{Title: "Title", Creator: "Author", ItemType: "book"}},
 	}
 	handler := NewCatalogHandler(mockService, newTestLogger())
 

@@ -114,19 +114,20 @@ describe(AddItemPageComponent.name, () => {
         expect(navigateSpy).not.toHaveBeenCalled();
     });
 
-    it('looks up metadata and pre-fills manual entry on success', fakeAsync(() => {
-        itemLookupServiceSpy.lookup.and.returnValue(
-            of({
-                title: 'Metadata Title',
-                creator: 'Someone',
-                releaseYear: 2001,
-                pageCount: 320,
-                isbn13: '9780000000002',
-                isbn10: '0000000002',
-                description: 'From lookup',
-                notes: 'From lookup',
-            })
-        );
+it('looks up metadata and pre-fills manual entry on success', fakeAsync(() => {
+itemLookupServiceSpy.lookup.and.returnValue(
+of([
+{
+title: 'Metadata Title',
+creator: 'Someone',
+releaseYear: 2001,
+pageCount: 320,
+isbn13: '9780000000002',
+isbn10: '0000000002',
+description: 'From lookup',
+},
+])
+);
 
         const fixture = createComponent();
         fixture.componentInstance.searchForm.setValue({ category: 'book', query: '9780000000002' });
@@ -138,12 +139,13 @@ describe(AddItemPageComponent.name, () => {
         expect(fixture.componentInstance.manualDraft()?.creator).toBe('Someone');
         expect(fixture.componentInstance.manualDraft()?.pageCount).toBe(320);
         expect(fixture.componentInstance.manualDraft()?.description).toBe('From lookup');
-        expect(fixture.componentInstance.lookupPreview()?.isbn13).toBe('9780000000002');
+expect(fixture.componentInstance.lookupResults().length).toBe(1);
+expect(fixture.componentInstance.lookupResults()[0]?.isbn13).toBe('9780000000002');
         expect(fixture.componentInstance.selectedTab()).toBe(0);
         expect(fixture.componentInstance.manualDraftSource()).toEqual({ query: '9780000000002', label: 'Book' });
     }));
 
-    it('adds a lookup preview directly to the collection', fakeAsync(() => {
+it('adds a lookup result directly to the collection', fakeAsync(() => {
         const mockItem = {
             id: 'item-1',
             title: 'Metadata Title',
@@ -170,8 +172,7 @@ describe(AddItemPageComponent.name, () => {
             notes: '',
         } satisfies ItemForm;
 
-        fixture.componentInstance.lookupPreview.set(draft);
-        fixture.componentInstance.handleQuickAdd();
+fixture.componentInstance.handleQuickAdd(draft);
         flush();
 
         expect(itemServiceSpy.create).toHaveBeenCalledWith(draft);
@@ -179,7 +180,7 @@ describe(AddItemPageComponent.name, () => {
     }));
 
     it('stores an error when lookup fails', fakeAsync(() => {
-        itemLookupServiceSpy.lookup.and.returnValue(throwError(() => new Error('network error')));
+itemLookupServiceSpy.lookup.and.returnValue(throwError(() => new Error('network error')));
 
         const fixture = createComponent();
         fixture.componentInstance.searchForm.setValue({ category: 'book', query: 'bad' });
@@ -189,24 +190,24 @@ describe(AddItemPageComponent.name, () => {
         expect(itemLookupServiceSpy.lookup).toHaveBeenCalled();
         expect(fixture.componentInstance.lookupError()).toBeTruthy();
         expect(fixture.componentInstance.manualDraft()).toBeNull();
-        expect(fixture.componentInstance.lookupPreview()).toBeNull();
+expect(fixture.componentInstance.lookupResults().length).toBe(0);
     }));
 
     it('clears the lookup preview when starting fresh', fakeAsync(() => {
-        itemLookupServiceSpy.lookup.and.returnValue(
-            of({ title: 'Metadata Title', creator: 'Someone', releaseYear: 2001 })
-        );
+itemLookupServiceSpy.lookup.and.returnValue(
+of([{ title: 'Metadata Title', creator: 'Someone', releaseYear: 2001 }])
+);
 
         const fixture = createComponent();
         fixture.componentInstance.searchForm.setValue({ category: 'book', query: 'test' });
         fixture.componentInstance.handleLookupSubmit();
         flush();
 
-        expect(fixture.componentInstance.lookupPreview()).not.toBeNull();
+expect(fixture.componentInstance.lookupResults().length).toBe(1);
 
         fixture.componentInstance.clearManualDraft();
 
-        expect(fixture.componentInstance.lookupPreview()).toBeNull();
+expect(fixture.componentInstance.lookupResults().length).toBe(0);
         expect(fixture.componentInstance.manualDraft()).toBeNull();
     }));
 
