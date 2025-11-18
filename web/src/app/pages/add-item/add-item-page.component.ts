@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,13 +13,23 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { finalize } from 'rxjs/operators';
 
 import { ItemFormComponent } from '../../components/item-form/item-form.component';
 import { ItemForm } from '../../models/item';
 import { ItemService } from '../../services/item.service';
 import { ItemLookupCategory, ItemLookupService } from '../../services/item-lookup.service';
+import { CsvImportSummary } from '../../models/import';
 
 type SearchCategoryValue = ItemLookupCategory;
+
+type CsvImportStatusLevel = 'info' | 'success' | 'warning' | 'error';
+
+interface CsvImportStatus {
+    level: CsvImportStatusLevel;
+    icon: string;
+    message: string;
+}
 
 interface SearchCategoryConfig {
     value: SearchCategoryValue;
@@ -92,6 +102,18 @@ export class AddItemPageComponent {
     ];
 
     private static readonly MANUAL_ENTRY_TAB_INDEX = 1;
+    private static readonly CSV_IMPORT_TAB_INDEX = 2;
+    private static readonly CSV_FIELDS = [
+        'title',
+        'creator',
+        'itemType',
+        'releaseYear',
+        'pageCount',
+        'isbn13',
+        'isbn10',
+        'description',
+        'notes',
+    ];
 
     private readonly itemService = inject(ItemService);
     private readonly itemLookupService = inject(ItemLookupService);
@@ -99,6 +121,8 @@ export class AddItemPageComponent {
     private readonly snackBar = inject(MatSnackBar);
     private readonly destroyRef = inject(DestroyRef);
     private readonly fb = inject(FormBuilder);
+
+    @ViewChild('csvInput') csvInput?: ElementRef<HTMLInputElement>;
 
     readonly busy = signal(false);
     readonly lookupBusy = signal(false);
@@ -108,8 +132,56 @@ readonly manualDraft = signal<ItemForm | null>(null);
     readonly manualDraftSource = signal<{ query: string; label: string } | null>(null);
     readonly lastLookupSummary = signal<string | null>(null);
     readonly selectedTab = signal(0);
+    readonly importBusy = signal(false);
+    readonly importError = signal<string | null>(null);
+    readonly importSummary = signal<CsvImportSummary | null>(null);
+    readonly selectedCsvFile = signal<File | null>(null);
+    readonly csvImportStatus = computed<CsvImportStatus | null>(() => {
+        if (this.importBusy()) {
+            return {
+                level: 'info',
+                icon: 'autorenew',
+                message: 'Importing CSV...',
+            };
+        }
+
+        const error = this.importError();
+        if (error) {
+            return {
+                level: 'error',
+                icon: 'error',
+                message: error,
+            };
+        }
+
+        const summary = this.importSummary();
+        if (summary) {
+            const totalRows = summary.totalRows ?? 0;
+            const imported = summary.imported ?? 0;
+            const notImported = Math.max(totalRows - imported, 0);
+            const baseMessage = `Imported ${imported} of ${totalRows} rows.`;
+
+            if (notImported > 0) {
+                return {
+                    level: 'warning',
+                    icon: 'error_outline',
+                    message: `${baseMessage} Not imported ${notImported} rows.`,
+                };
+            }
+
+            return {
+                level: 'success',
+                icon: 'check_circle',
+                message: baseMessage,
+            };
+        }
+
+        return null;
+    });
 
     readonly searchCategories = AddItemPageComponent.SEARCH_CATEGORIES;
+    readonly csvFields = AddItemPageComponent.CSV_FIELDS;
+    readonly csvTemplateUrl = '/csv-import-template.csv';
 
     readonly searchForm = this.fb.group({
         category: [AddItemPageComponent.SEARCH_CATEGORIES[0].value as SearchCategoryValue, Validators.required],
@@ -236,13 +308,13 @@ let message = 'We couldn’t find a match. Try another ISBN or UPC.';
 this.lookupResults.set([]);
 }
 
-handleQuickAdd(preview: ItemForm): void {
-if (!preview) {
-return;
-}
+    handleQuickAdd(preview: ItemForm): void {
+        if (!preview) {
+            return;
+        }
 
-this.handleSave({ ...preview });
-}
+        this.handleSave({ ...preview });
+    }
 
     handleUseForManual(preview: ItemForm): void {
         if (!preview) {
@@ -255,6 +327,81 @@ this.handleSave({ ...preview });
             this.manualDraftSource.set({ ...source });
         }
         this.selectedTab.set(AddItemPageComponent.MANUAL_ENTRY_TAB_INDEX);
+    }
+
+    handleCsvFileChange(event: Event): void {
+        const input = event.target as HTMLInputElement | null;
+        const file = input?.files?.[0] ?? null;
+        this.selectedCsvFile.set(file);
+        this.importError.set(null);
+        this.importSummary.set(null);
+        this.activateCsvImportTab();
+    }
+
+    handleImportSubmit(event?: Event): void {
+        event?.preventDefault();
+        event?.stopPropagation();
+
+        const fileFromInput = this.csvInput?.nativeElement?.files?.[0] ?? null;
+        const file = this.selectedCsvFile() ?? fileFromInput;
+        if (!file || this.importBusy()) {
+            return;
+        }
+        this.selectedCsvFile.set(file);
+
+        this.activateCsvImportTab();
+
+        this.importBusy.set(true);
+        this.importError.set(null);
+        this.importSummary.set(null);
+
+        this.itemService
+            .importCsv(file)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .pipe(finalize(() => this.importBusy.set(false)))
+            .subscribe({
+                next: (summary: CsvImportSummary) => {
+                    const normalizedSummary: CsvImportSummary = {
+                        ...summary,
+                        skippedDuplicates: summary.skippedDuplicates ?? [],
+                        failed: summary.failed ?? [],
+                    };
+                    this.importSummary.set(normalizedSummary);
+                    this.selectedCsvFile.set(null);
+                    this.resetCsvInput();
+                    this.activateCsvImportTab();
+                },
+                error: (error) => {
+                    let message = 'Import failed. Confirm the CSV matches the template.';
+                    if (error instanceof HttpErrorResponse) {
+                        const serverMessage =
+                            typeof error.error?.error === 'string' ? error.error.error.trim() : '';
+                        if (serverMessage) {
+                            message = serverMessage;
+                        }
+                    }
+                    this.importError.set(message);
+                    this.activateCsvImportTab();
+                },
+            });
+    }
+
+    handleImportReset(): void {
+        this.selectedCsvFile.set(null);
+        this.importSummary.set(null);
+        this.importError.set(null);
+        this.resetCsvInput();
+        this.activateCsvImportTab();
+    }
+
+    private resetCsvInput(): void {
+        if (this.csvInput?.nativeElement) {
+            this.csvInput.nativeElement.value = '';
+        }
+    }
+
+    private activateCsvImportTab(): void {
+        this.selectedTab.set(AddItemPageComponent.CSV_IMPORT_TAB_INDEX);
     }
 
     private getCategoryConfig(value: SearchCategoryValue): SearchCategoryConfig {

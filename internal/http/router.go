@@ -13,6 +13,7 @@ import (
 
 	"anthology/internal/catalog"
 	"anthology/internal/config"
+	"anthology/internal/importer"
 	"anthology/internal/items"
 )
 
@@ -42,7 +43,8 @@ func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Servic
 	})
 
 	sessionHandler := NewSessionHandler(cfg.APIToken, cfg.Environment)
-	handler := NewItemHandler(svc, logger)
+	bulkImporter := importer.NewCSVImporter(svc, catalogSvc)
+	handler := NewItemHandler(svc, bulkImporter, logger)
 	catalogHandler := NewCatalogHandler(catalogSvc, logger)
 
 	if strings.TrimSpace(cfg.APIToken) == "" {
@@ -61,6 +63,7 @@ func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Servic
 			r.Route("/items", func(r chi.Router) {
 				r.Get("/", handler.List)
 				r.Post("/", handler.Create)
+				r.Post("/import", handler.ImportCSV)
 				r.Route("/{id}", func(r chi.Router) {
 					r.Get("/", handler.Get)
 					r.Put("/", handler.Update)

@@ -4,6 +4,7 @@ import { map, Observable } from 'rxjs';
 
 import { environment } from '../config/environment';
 import { Item, ItemForm, ItemType } from '../models/item';
+import { CsvImportSummary } from '../models/import';
 
 @Injectable({ providedIn: 'root' })
 export class ItemService {
@@ -40,6 +41,12 @@ export class ItemService {
 
     delete(id: string): Observable<void> {
         return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    }
+
+    importCsv(file: File): Observable<CsvImportSummary> {
+        const formData = new FormData();
+        formData.append('file', file);
+        return this.http.post<CsvImportSummary>(`${this.baseUrl}/import`, formData);
     }
 
     private normalizeForm(form: Partial<ItemForm>): Record<string, unknown> {

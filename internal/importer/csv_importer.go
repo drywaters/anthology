@@ -1,0 +1,397 @@
+package importer
+
+import (
+	"context"
+	"encoding/csv"
+	"errors"
+	"fmt"
+	"io"
+	"strconv"
+	"strings"
+
+	"anthology/internal/catalog"
+	"anthology/internal/items"
+)
+
+type ItemStore interface {
+	Create(ctx context.Context, input items.CreateItemInput) (items.Item, error)
+	List(ctx context.Context, opts items.ListOptions) ([]items.Item, error)
+}
+
+type CatalogLookup interface {
+	Lookup(ctx context.Context, query string, category catalog.Category) ([]catalog.Metadata, error)
+}
+
+type Summary struct {
+	TotalRows         int             `json:"totalRows"`
+	Imported          int             `json:"imported"`
+	SkippedDuplicates []SkippedRecord `json:"skippedDuplicates"`
+	Failed            []FailedRecord  `json:"failed"`
+}
+
+type SkippedRecord struct {
+	Row        int    `json:"row"`
+	Title      string `json:"title,omitempty"`
+	Identifier string `json:"identifier,omitempty"`
+	Reason     string `json:"reason"`
+}
+
+type FailedRecord struct {
+	Row        int    `json:"row"`
+	Title      string `json:"title,omitempty"`
+	Identifier string `json:"identifier,omitempty"`
+	Error      string `json:"error"`
+}
+
+var ErrInvalidCSV = errors.New("invalid csv upload")
+
+var requiredColumns = []string{
+	"title",
+	"creator",
+	"itemtype",
+	"releaseyear",
+	"pagecount",
+	"isbn13",
+	"isbn10",
+	"description",
+	"notes",
+}
+
+type CSVImporter struct {
+	items   ItemStore
+	catalog CatalogLookup
+}
+
+func NewCSVImporter(items ItemStore, catalog CatalogLookup) *CSVImporter {
+	return &CSVImporter{items: items, catalog: catalog}
+}
+
+func (i *CSVImporter) Import(ctx context.Context, reader io.Reader) (Summary, error) {
+	if i.items == nil {
+		return Summary{}, fmt.Errorf("%w: item store is not configured", ErrInvalidCSV)
+	}
+
+	existing, err := i.items.List(ctx, items.ListOptions{})
+	if err != nil {
+		return Summary{}, err
+	}
+
+	tracker := newDuplicateTracker(existing)
+
+	csvReader := csv.NewReader(reader)
+	csvReader.FieldsPerRecord = -1
+	csvReader.TrimLeadingSpace = true
+
+	header, err := csvReader.Read()
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return Summary{}, fmt.Errorf("%w: file is empty", ErrInvalidCSV)
+		}
+		return Summary{}, fmt.Errorf("%w: failed to read header", ErrInvalidCSV)
+	}
+
+	columns, err := normalizeHeader(header)
+	if err != nil {
+		return Summary{}, err
+	}
+
+	summary := Summary{}
+	rowNumber := 1
+
+	for {
+		record, err := csvReader.Read()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return Summary{}, fmt.Errorf("%w: failed to read row %d", ErrInvalidCSV, rowNumber+1)
+		}
+		rowNumber++
+		values := mapRecord(columns, record)
+		if isRowEmpty(values) {
+			continue
+		}
+		summary.TotalRows++
+
+		input, meta, rowErr := i.buildInput(ctx, values)
+		if rowErr != nil {
+			summary.Failed = append(summary.Failed, FailedRecord{
+				Row:        rowNumber,
+				Title:      meta.title,
+				Identifier: meta.identifier,
+				Error:      rowErr.Error(),
+			})
+			continue
+		}
+
+		if reason, ok := tracker.Check(input); ok {
+			summary.SkippedDuplicates = append(summary.SkippedDuplicates, SkippedRecord{
+				Row:        rowNumber,
+				Title:      input.Title,
+				Identifier: firstIdentifier(input),
+				Reason:     reason,
+			})
+			continue
+		}
+
+		if _, err := i.items.Create(ctx, input); err != nil {
+			summary.Failed = append(summary.Failed, FailedRecord{
+				Row:        rowNumber,
+				Title:      input.Title,
+				Identifier: firstIdentifier(input),
+				Error:      err.Error(),
+			})
+			continue
+		}
+
+		tracker.Add(input)
+		summary.Imported++
+	}
+
+	return summary, nil
+}
+
+type rowMeta struct {
+	title      string
+	identifier string
+}
+
+func (i *CSVImporter) buildInput(ctx context.Context, values map[string]string) (items.CreateItemInput, rowMeta, error) {
+	meta := rowMeta{}
+
+	rawType := strings.ToLower(values["itemtype"])
+	itemType := items.ItemType(strings.TrimSpace(rawType))
+	switch itemType {
+	case items.ItemTypeBook, items.ItemTypeGame, items.ItemTypeMovie, items.ItemTypeMusic:
+	default:
+		return items.CreateItemInput{}, meta, fmt.Errorf("itemType must be one of book, game, movie, or music")
+	}
+
+	title := strings.TrimSpace(values["title"])
+	meta.title = title
+	creator := strings.TrimSpace(values["creator"])
+	isbn13 := strings.TrimSpace(values["isbn13"])
+	isbn10 := strings.TrimSpace(values["isbn10"])
+	meta.identifier = firstNonEmpty(isbn13, isbn10)
+
+	releaseYear, err := parseOptionalInt(values["releaseyear"], "releaseYear")
+	if err != nil {
+		return items.CreateItemInput{}, meta, err
+	}
+
+	pageCount, err := parseOptionalInt(values["pagecount"], "pageCount")
+	if err != nil {
+		return items.CreateItemInput{}, meta, err
+	}
+
+	description := strings.TrimSpace(values["description"])
+	notes := strings.TrimSpace(values["notes"])
+
+	if itemType == items.ItemTypeBook && title == "" {
+		identifier := meta.identifier
+		if identifier == "" {
+			return items.CreateItemInput{}, meta, fmt.Errorf("provide a title or ISBN/UPC for books")
+		}
+		metadata, err := i.lookupBook(ctx, identifier)
+		if err != nil {
+			return items.CreateItemInput{}, meta, err
+		}
+
+		title = metadata.Title
+		if creator == "" {
+			creator = metadata.Creator
+		}
+		if releaseYear == nil && metadata.ReleaseYear != nil {
+			releaseYear = metadata.ReleaseYear
+		}
+		if pageCount == nil && metadata.PageCount != nil {
+			pageCount = metadata.PageCount
+		}
+		if isbn13 == "" {
+			isbn13 = metadata.ISBN13
+		}
+		if isbn10 == "" {
+			isbn10 = metadata.ISBN10
+		}
+		if description == "" {
+			description = metadata.Description
+		}
+	}
+
+	if title == "" {
+		return items.CreateItemInput{}, meta, fmt.Errorf("title is required for %s rows", itemType)
+	}
+
+	return items.CreateItemInput{
+		Title:       title,
+		Creator:     creator,
+		ItemType:    itemType,
+		ReleaseYear: releaseYear,
+		PageCount:   pageCount,
+		ISBN13:      isbn13,
+		ISBN10:      isbn10,
+		Description: description,
+		Notes:       notes,
+	}, meta, nil
+}
+
+func (i *CSVImporter) lookupBook(ctx context.Context, query string) (catalog.Metadata, error) {
+	if i.catalog == nil {
+		return catalog.Metadata{}, fmt.Errorf("%w: metadata lookup is unavailable", ErrInvalidCSV)
+	}
+
+	metadata, err := i.catalog.Lookup(ctx, query, catalog.CategoryBook)
+	if err != nil {
+		if errors.Is(err, catalog.ErrNotFound) {
+			return catalog.Metadata{}, fmt.Errorf("no metadata found for %s", query)
+		}
+		if errors.Is(err, catalog.ErrInvalidQuery) {
+			return catalog.Metadata{}, fmt.Errorf("ISBN/UPC %s is not valid", query)
+		}
+		return catalog.Metadata{}, err
+	}
+	if len(metadata) == 0 {
+		return catalog.Metadata{}, fmt.Errorf("no metadata found for %s", query)
+	}
+	return metadata[0], nil
+}
+
+func normalizeHeader(header []string) (map[int]string, error) {
+	columns := make(map[int]string, len(header))
+	seen := map[string]bool{}
+	for idx, raw := range header {
+		cleaned := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(raw, "\ufeff")))
+		if cleaned == "" {
+			continue
+		}
+		columns[idx] = cleaned
+		seen[cleaned] = true
+	}
+
+	missing := make([]string, 0)
+	for _, column := range requiredColumns {
+		if !seen[column] {
+			missing = append(missing, column)
+		}
+	}
+	if len(missing) > 0 {
+		return nil, fmt.Errorf("%w: missing required columns: %s", ErrInvalidCSV, strings.Join(missing, ", "))
+	}
+	return columns, nil
+}
+
+func mapRecord(columns map[int]string, record []string) map[string]string {
+	values := make(map[string]string, len(columns))
+	for idx, column := range columns {
+		if idx >= len(record) {
+			values[column] = ""
+			continue
+		}
+		values[column] = strings.TrimSpace(record[idx])
+	}
+	return values
+}
+
+func isRowEmpty(values map[string]string) bool {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return false
+		}
+	}
+	return true
+}
+
+func parseOptionalInt(value string, field string) (*int, error) {
+	cleaned := strings.TrimSpace(value)
+	if cleaned == "" {
+		return nil, nil
+	}
+	parsed, err := strconv.Atoi(cleaned)
+	if err != nil {
+		return nil, fmt.Errorf("%s must be a number", field)
+	}
+	if parsed <= 0 {
+		return nil, fmt.Errorf("%s must be positive", field)
+	}
+	return &parsed, nil
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
+}
+
+func firstIdentifier(input items.CreateItemInput) string {
+	if input.ISBN13 != "" {
+		return input.ISBN13
+	}
+	if input.ISBN10 != "" {
+		return input.ISBN10
+	}
+	return ""
+}
+
+func normalizeIdentifier(value string) string {
+	cleaned := strings.TrimSpace(value)
+	if cleaned == "" {
+		return ""
+	}
+	builder := strings.Builder{}
+	for _, r := range cleaned {
+		if r >= '0' && r <= '9' {
+			builder.WriteRune(r)
+		}
+	}
+	return builder.String()
+}
+
+type duplicateTracker struct {
+	known map[string]string
+}
+
+func newDuplicateTracker(existing []items.Item) *duplicateTracker {
+	tracker := &duplicateTracker{known: map[string]string{}}
+	for _, item := range existing {
+		tracker.store("title", strings.ToLower(strings.TrimSpace(item.Title)))
+		tracker.store("isbn13", normalizeIdentifier(item.ISBN13))
+		tracker.store("isbn10", normalizeIdentifier(item.ISBN10))
+	}
+	return tracker
+}
+
+func (t *duplicateTracker) store(field string, value string) {
+	if value == "" {
+		return
+	}
+	t.known[field+":"+value] = field
+}
+
+func (t *duplicateTracker) Check(input items.CreateItemInput) (string, bool) {
+	title := strings.ToLower(strings.TrimSpace(input.Title))
+	if title != "" {
+		if reason, ok := t.known["title:"+title]; ok {
+			return fmt.Sprintf("duplicate %s", reason), true
+		}
+	}
+	if isbn := normalizeIdentifier(input.ISBN13); isbn != "" {
+		if reason, ok := t.known["isbn13:"+isbn]; ok {
+			return fmt.Sprintf("duplicate %s", reason), true
+		}
+	}
+	if isbn := normalizeIdentifier(input.ISBN10); isbn != "" {
+		if reason, ok := t.known["isbn10:"+isbn]; ok {
+			return fmt.Sprintf("duplicate %s", reason), true
+		}
+	}
+	return "", false
+}
+
+func (t *duplicateTracker) Add(input items.CreateItemInput) {
+	t.store("title", strings.ToLower(strings.TrimSpace(input.Title)))
+	t.store("isbn13", normalizeIdentifier(input.ISBN13))
+	t.store("isbn10", normalizeIdentifier(input.ISBN10))
+}
