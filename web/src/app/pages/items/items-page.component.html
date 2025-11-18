@@ -1,46 +1,42 @@
 <div class="page">
-    <header class="page-header">
-        <div class="page-heading">
-            <p class="eyebrow">Library</p>
+    <div class="filters-panel">
+        <div class="filters">
+            <mat-form-field appearance="outline" class="type-select">
+                <mat-label>Type</mat-label>
+                <mat-select [value]="typeFilter()" (valueChange)="setTypeFilter($event)">
+                    <mat-option *ngFor="let option of typeOptions" [value]="option.value">
+                        {{ option.label }}
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+
+            <div class="letter-filter" role="list">
+                <button
+                    mat-button
+                    type="button"
+                    class="letter-button"
+                    [class.active]="letterFilter() === 'ALL'"
+                    (click)="setLetterFilter('ALL')"
+                >
+                    All
+                </button>
+                <button
+                    mat-button
+                    type="button"
+                    class="letter-button"
+                    *ngFor="let letter of alphabet"
+                    [class.active]="letterFilter() === letter"
+                    (click)="setLetterFilter(letter)"
+                >
+                    {{ letter }}
+                </button>
+            </div>
         </div>
-    </header>
+    </div>
     <div class="layout">
         <section class="items-panel">
             <mat-card>
                 <mat-progress-bar *ngIf="loading()" mode="indeterminate"></mat-progress-bar>
-
-                <div class="filters">
-                    <mat-form-field appearance="outline" class="type-select">
-                        <mat-label>Type</mat-label>
-                        <mat-select [value]="typeFilter()" (valueChange)="setTypeFilter($event)">
-                            <mat-option *ngFor="let option of typeOptions" [value]="option.value">
-                                {{ option.label }}
-                            </mat-option>
-                        </mat-select>
-                    </mat-form-field>
-
-                    <div class="letter-filter" role="list">
-                        <button
-                            mat-button
-                            type="button"
-                            class="letter-button"
-                            [class.active]="letterFilter() === 'ALL'"
-                            (click)="setLetterFilter('ALL')"
-                        >
-                            All
-                        </button>
-                        <button
-                            mat-button
-                            type="button"
-                            class="letter-button"
-                            *ngFor="let letter of alphabet"
-                            [class.active]="letterFilter() === letter"
-                            (click)="setLetterFilter(letter)"
-                        >
-                            {{ letter }}
-                        </button>
-                    </div>
-                </div>
 
                 <ng-container *ngIf="hasFilteredItems(); else filteredFallback">
                     <div class="table-wrapper">
