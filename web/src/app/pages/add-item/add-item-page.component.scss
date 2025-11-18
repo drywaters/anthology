@@ -251,15 +251,6 @@ align-self: flex-end;
     margin: 0.25rem 0 0;
 }
 
-.template-link {
-    text-decoration: none;
-    border: 1px solid var(--mat-sys-outline);
-    padding: 0.5rem 1rem;
-    border-radius: 999px;
-    color: var(--mat-sys-primary);
-    font-weight: 600;
-}
-
 .csv-instructions {
     border: 1px solid var(--mat-sys-outline-variant);
     border-radius: 12px;
@@ -322,6 +313,28 @@ align-self: flex-end;
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
+    align-items: center;
+}
+
+.csv-template-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    color: var(--mat-sys-primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.csv-template-link:hover,
+.csv-template-link:focus-visible {
+    text-decoration: underline;
+}
+
+.csv-template-link mat-icon {
+    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
+    line-height: 1;
 }
 
 .csv-feedback {

@@ -183,13 +183,6 @@ Use for manual entry
                                 <h3>Bulk import</h3>
                                 <p>Upload the Anthology CSV template to add multiple items at once.</p>
                             </div>
-                            <a
-                                class="template-link"
-                                [href]="csvTemplateUrl"
-                                download="anthology-import-template.csv"
-                            >
-                                Download template
-                            </a>
                         </div>
 
                         <div class="csv-instructions">
@@ -207,7 +200,7 @@ Use for manual entry
                             </p>
                         </div>
 
-                        <form class="csv-form" (ngSubmit)="handleImportSubmit()" novalidate>
+                        <form class="csv-form" (ngSubmit)="handleImportSubmit($event)" novalidate>
                             <label class="file-input">
                                 <span class="label">CSV file</span>
                                 <input
@@ -226,8 +219,9 @@ Use for manual entry
                                 <button
                                     mat-flat-button
                                     color="primary"
-                                    type="submit"
+                                    type="button"
                                     [disabled]="!selectedCsvFile() || importBusy()"
+                                    (click)="handleImportSubmit($event)"
                                 >
                                     <span *ngIf="!importBusy()">Upload CSV</span>
                                     <mat-progress-spinner
@@ -244,13 +238,16 @@ Use for manual entry
                                 >
                                     Clear
                                 </button>
+                                <a
+                                    class="csv-template-link"
+                                    [href]="csvTemplateUrl"
+                                    download="anthology-import-template.csv"
+                                >
+                                    <mat-icon aria-hidden="true">file_download</mat-icon>
+                                    <span>Download template</span>
+                                </a>
                             </div>
                         </form>
-
-                        <div class="csv-feedback" *ngIf="importError()">
-                            <mat-icon aria-hidden="true">error</mat-icon>
-                            <span>{{ importError() }}</span>
-                        </div>
 
                         <div class="csv-summary" *ngIf="importSummary() as summary">
                             <h4>Import summary</h4>
@@ -260,8 +257,8 @@ Use for manual entry
                                 <h5>Skipped duplicates</h5>
                                 <ul>
                                     <li *ngFor="let entry of summary.skippedDuplicates">
-                                        Row {{ entry.row }} · {{ entry.title || entry.identifier || 'Untitled item' }} —
-                                        {{ entry.reason }}
+                                        Row {{ entry.row }} ·
+                                        {{ entry.title || entry.identifier || 'Untitled item' }} — {{ entry.reason }}
                                     </li>
                                 </ul>
                             </div>
@@ -276,8 +273,8 @@ Use for manual entry
                                 </ul>
                             </div>
                         </div>
-                    </div>
-                </mat-tab>
+                   </div>
+               </mat-tab>
             </mat-tab-group>
         </mat-card-content>
     </mat-card>

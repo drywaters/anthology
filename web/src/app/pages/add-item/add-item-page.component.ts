@@ -13,6 +13,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { finalize } from 'rxjs/operators';
 
 import { ItemFormComponent } from '../../components/item-form/item-form.component';
 import { ItemForm } from '../../models/item';
@@ -21,6 +22,14 @@ import { ItemLookupCategory, ItemLookupService } from '../../services/item-looku
 import { CsvImportSummary } from '../../models/import';
 
 type SearchCategoryValue = ItemLookupCategory;
+
+type CsvImportStatusLevel = 'info' | 'success' | 'warning' | 'error';
+
+interface CsvImportStatus {
+    level: CsvImportStatusLevel;
+    icon: string;
+    message: string;
+}
 
 interface SearchCategoryConfig {
     value: SearchCategoryValue;
@@ -93,6 +102,7 @@ export class AddItemPageComponent {
     ];
 
     private static readonly MANUAL_ENTRY_TAB_INDEX = 1;
+    private static readonly CSV_IMPORT_TAB_INDEX = 2;
     private static readonly CSV_FIELDS = [
         'title',
         'creator',
@@ -126,6 +136,26 @@ readonly manualDraft = signal<ItemForm | null>(null);
     readonly importError = signal<string | null>(null);
     readonly importSummary = signal<CsvImportSummary | null>(null);
     readonly selectedCsvFile = signal<File | null>(null);
+    readonly csvImportStatus = computed<CsvImportStatus | null>(() => {
+        if (this.importBusy()) {
+            return {
+                level: 'info',
+                icon: 'autorenew',
+                message: 'Importing CSV...',
+            };
+        }
+
+        const error = this.importError();
+        if (error) {
+            return {
+                level: 'error',
+                icon: 'error',
+                message: error,
+            };
+        }
+
+        return null;
+    });
 
     readonly searchCategories = AddItemPageComponent.SEARCH_CATEGORIES;
     readonly csvFields = AddItemPageComponent.CSV_FIELDS;
@@ -256,13 +286,13 @@ let message = 'We couldn’t find a match. Try another ISBN or UPC.';
 this.lookupResults.set([]);
 }
 
-handleQuickAdd(preview: ItemForm): void {
-if (!preview) {
-return;
-}
+    handleQuickAdd(preview: ItemForm): void {
+        if (!preview) {
+            return;
+        }
 
-this.handleSave({ ...preview });
-}
+        this.handleSave({ ...preview });
+    }
 
     handleUseForManual(preview: ItemForm): void {
         if (!preview) {
@@ -272,7 +302,7 @@ this.handleSave({ ...preview });
         const source = this.manualDraftSource();
         this.manualDraft.set({ ...preview });
         if (source) {
-        this.manualDraftSource.set({ ...source });
+            this.manualDraftSource.set({ ...source });
         }
         this.selectedTab.set(AddItemPageComponent.MANUAL_ENTRY_TAB_INDEX);
     }
@@ -283,13 +313,21 @@ this.handleSave({ ...preview });
         this.selectedCsvFile.set(file);
         this.importError.set(null);
         this.importSummary.set(null);
+        this.activateCsvImportTab();
     }
 
-    handleImportSubmit(): void {
-        const file = this.selectedCsvFile();
+    handleImportSubmit(event?: Event): void {
+        event?.preventDefault();
+        event?.stopPropagation();
+
+        const fileFromInput = this.csvInput?.nativeElement?.files?.[0] ?? null;
+        const file = this.selectedCsvFile() ?? fileFromInput;
         if (!file || this.importBusy()) {
             return;
         }
+        this.selectedCsvFile.set(file);
+
+        this.activateCsvImportTab();
 
         this.importBusy.set(true);
         this.importError.set(null);
@@ -298,20 +336,20 @@ this.handleSave({ ...preview });
         this.itemService
             .importCsv(file)
             .pipe(takeUntilDestroyed(this.destroyRef))
+            .pipe(finalize(() => this.importBusy.set(false)))
             .subscribe({
                 next: (summary: CsvImportSummary) => {
-                    this.importBusy.set(false);
-                    this.importSummary.set(summary);
-                    this.snackBar.open(
-                        `Imported ${summary.imported} of ${summary.totalRows} rows`,
-                        'Dismiss',
-                        { duration: 5000 }
-                    );
+                    const normalizedSummary: CsvImportSummary = {
+                        ...summary,
+                        skippedDuplicates: summary.skippedDuplicates ?? [],
+                        failed: summary.failed ?? [],
+                    };
+                    this.importSummary.set(normalizedSummary);
                     this.selectedCsvFile.set(null);
                     this.resetCsvInput();
+                    this.activateCsvImportTab();
                 },
                 error: (error) => {
-                    this.importBusy.set(false);
                     let message = 'Import failed. Confirm the CSV matches the template.';
                     if (error instanceof HttpErrorResponse) {
                         const serverMessage =
@@ -321,6 +359,7 @@ this.handleSave({ ...preview });
                         }
                     }
                     this.importError.set(message);
+                    this.activateCsvImportTab();
                 },
             });
     }
@@ -330,12 +369,17 @@ this.handleSave({ ...preview });
         this.importSummary.set(null);
         this.importError.set(null);
         this.resetCsvInput();
+        this.activateCsvImportTab();
     }
 
     private resetCsvInput(): void {
         if (this.csvInput?.nativeElement) {
             this.csvInput.nativeElement.value = '';
         }
+    }
+
+    private activateCsvImportTab(): void {
+        this.selectedTab.set(AddItemPageComponent.CSV_IMPORT_TAB_INDEX);
     }
 
     private getCategoryConfig(value: SearchCategoryValue): SearchCategoryConfig {
