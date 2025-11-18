@@ -145,6 +145,31 @@ expect(fixture.componentInstance.lookupResults()[0]?.isbn13).toBe('9780000000002
         expect(fixture.componentInstance.manualDraftSource()).toEqual({ query: '9780000000002', label: 'Book' });
     }));
 
+    it('switches to the manual entry tab when using a lookup result manually', () => {
+        const fixture = createComponent();
+        const preview: ItemForm = {
+            title: 'Metadata Title',
+            creator: 'Someone',
+            itemType: 'book',
+            releaseYear: 2001,
+            pageCount: 320,
+            isbn13: '9780000000002',
+            isbn10: '0000000002',
+            description: 'From lookup',
+            notes: '',
+        } satisfies ItemForm;
+
+        fixture.componentInstance.manualDraftSource.set({ query: '9780000000002', label: 'Book' });
+        fixture.componentInstance.handleUseForManual(preview);
+
+        expect(fixture.componentInstance.manualDraft()).toEqual(preview);
+        expect(fixture.componentInstance.selectedTab()).toBe(1);
+        expect(fixture.componentInstance.manualDraftSource()).toEqual({
+            query: '9780000000002',
+            label: 'Book',
+        });
+    });
+
 it('adds a lookup result directly to the collection', fakeAsync(() => {
         const mockItem = {
             id: 'item-1',

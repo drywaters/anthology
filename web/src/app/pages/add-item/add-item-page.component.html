@@ -20,6 +20,7 @@
                                         class="category-option"
                                         *ngFor="let option of searchCategories"
                                         [value]="option.value"
+                                        [disabled]="option.disabled"
                                     >
                                         <span class="category-label">{{ option.label }}</span>
                                         <span class="category-description">{{ option.description }}</span>
@@ -62,7 +63,7 @@
                                         type="submit"
                                         [disabled]="lookupBusy() || searchForm.invalid"
                                     >
-                                        <span class="button-label">Search</span>
+                                        <span class="button-label" *ngIf="!lookupBusy()">Search</span>
                                         <mat-progress-spinner
                                             *ngIf="lookupBusy()"
                                             mode="indeterminate"
@@ -78,7 +79,7 @@
                             <div class="success" *ngIf="!lookupError() && lastLookupSummary()">{{ lastLookupSummary() }}</div>
                         </div>
 
-<div class="lookup-preview" *ngIf="lookupResults().length">
+                        <div class="lookup-preview" *ngIf="lookupResults().length">
 <div class="preview-header">
 <h3>Metadata preview</h3>
 <p>

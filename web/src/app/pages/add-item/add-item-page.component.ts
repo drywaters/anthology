@@ -28,6 +28,7 @@ interface SearchCategoryConfig {
     inputLabel: string;
     placeholder: string;
     itemType: ItemForm['itemType'];
+    disabled?: boolean;
 }
 
 @Component({
@@ -68,6 +69,7 @@ export class AddItemPageComponent {
             inputLabel: 'Search for games',
             placeholder: 'UPC or title keyword',
             itemType: 'game',
+            disabled: true,
         },
         {
             value: 'movie',
@@ -76,6 +78,7 @@ export class AddItemPageComponent {
             inputLabel: 'Search for movies',
             placeholder: 'UPC or title keyword',
             itemType: 'movie',
+            disabled: true,
         },
         {
             value: 'music',
@@ -84,8 +87,11 @@ export class AddItemPageComponent {
             inputLabel: 'Search for music',
             placeholder: 'UPC or title keyword',
             itemType: 'music',
+            disabled: true,
         },
     ];
+
+    private static readonly MANUAL_ENTRY_TAB_INDEX = 1;
 
     private readonly itemService = inject(ItemService);
     private readonly itemLookupService = inject(ItemLookupService);
@@ -238,17 +244,18 @@ return;
 this.handleSave({ ...preview });
 }
 
-handleUseForManual(preview: ItemForm): void {
-if (!preview) {
-return;
-}
+    handleUseForManual(preview: ItemForm): void {
+        if (!preview) {
+            return;
+        }
 
-const source = this.manualDraftSource();
-this.manualDraft.set({ ...preview });
-if (source) {
-this.manualDraftSource.set({ ...source });
-}
-}
+        const source = this.manualDraftSource();
+        this.manualDraft.set({ ...preview });
+        if (source) {
+            this.manualDraftSource.set({ ...source });
+        }
+        this.selectedTab.set(AddItemPageComponent.MANUAL_ENTRY_TAB_INDEX);
+    }
 
     private getCategoryConfig(value: SearchCategoryValue): SearchCategoryConfig {
         return (
