@@ -154,6 +154,28 @@ readonly manualDraft = signal<ItemForm | null>(null);
             };
         }
 
+        const summary = this.importSummary();
+        if (summary) {
+            const totalRows = summary.totalRows ?? 0;
+            const imported = summary.imported ?? 0;
+            const notImported = Math.max(totalRows - imported, 0);
+            const baseMessage = `Imported ${imported} of ${totalRows} rows.`;
+
+            if (notImported > 0) {
+                return {
+                    level: 'warning',
+                    icon: 'error_outline',
+                    message: `${baseMessage} Not imported ${notImported} rows.`,
+                };
+            }
+
+            return {
+                level: 'success',
+                icon: 'check_circle',
+                message: baseMessage,
+            };
+        }
+
         return null;
     });
 
