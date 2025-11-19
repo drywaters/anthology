@@ -2,6 +2,10 @@
 
 Anthology is a two-tier catalogue that combines a Go API (powered by the [`chi`](https://github.com/go-chi/chi) router) with an Angular Material frontend. The API and UI now ship as independently deployable services, making it easy to scale or update either tier without rebuilding the other. The Phase 1 MVP focuses on managing a personal library of books, games, movies, and music with a polished catalogue presentation.
 
+Recent feature work adds a metadata search workflow (backed by Open Library) plus CSV import so large collections can be ingested in one shot. Both of these flows share the Add Item page and reuse the backend importer so validation, duplicate detection, and auto-enrichment work consistently no matter how data enters the system.
+
+If you are new to the project, start with [`docs/architecture/overview.md`](docs/architecture/overview.md). It diagrams the high-level layout (Go API, Angular UI, database, and Open Library) and calls out where CSV uploads and search lookups plug into the stack.
+
 ## Project structure
 
 ```
@@ -19,6 +23,8 @@ Anthology is a two-tier catalogue that combines a Go API (powered by the [`chi`]
 * Go 1.22 with structured logging via `log/slog`.
 * HTTP routing handled by `chi`, with middleware for request IDs, timeouts, and structured logging.
 * Domain package `internal/items` exposes a repository interface with both in-memory and Postgres implementations.
+* Metadata lookups (`internal/catalog`) talk to Open Library. `/api/catalog/lookup` proxies those queries so the Angular UI can search by ISBN or keyword without exposing API tokens.
+* Bulk imports use `internal/importer`, which accepts CSV uploads, fetches metadata for incomplete rows, deduplicates based on title/ISBN, and returns a structured summary so the UI can visualize success vs. warnings.
 * Configuration is environment-driven (`DATA_STORE`, `DATABASE_URL`, `PORT`, `LOG_LEVEL`, `ALLOWED_ORIGINS`, `API_TOKEN`). When `DATA_STORE=memory` (the default), the API boots with a seeded in-memory catalogue to help demo the experience quickly.
 * When `API_TOKEN` is set, every `/api/*` request must send `Authorization: Bearer <token>`. Requests to `/health` remain public so uptime checks continue to work.
 * CORS is enabled via [`github.com/go-chi/cors`](https://github.com/go-chi/cors) and defaults to allowing `http://localhost:4200` and `http://localhost:8080`. Override with `ALLOWED_ORIGINS="https://example.com,https://admin.example.com"` when deploying.
@@ -42,6 +48,7 @@ The API listens on `http://localhost:8080` and exposes JSON-only endpoints (the 
 | GET    | `/health`      | Service health check   |
 | GET    | `/api/items`   | List catalogue items   |
 | POST   | `/api/items`   | Create a new item      |
+| POST   | `/api/items/import` | Upload a CSV file and import multiple items |
 | GET    | `/api/items/{id}` | Retrieve an item   |
 | PUT    | `/api/items/{id}` | Update an item      |
 | DELETE | `/api/items/{id}` | Delete an item      |
@@ -70,6 +77,8 @@ go run ./cmd/api
 go test ./...
 ```
 
+The Go test suite covers the metadata lookup pipeline (`internal/catalog`) and the CSV importer end-to-end (`internal/importer`, `internal/http/handlers`).
+
 ## Frontend (Angular)
 
 * Angular 20 standalone application located in `web/`.
@@ -91,6 +100,16 @@ The dev server runs on `http://localhost:4200` and proxies requests directly to 
 
 When you first load the app you will be redirected to the login screen. Paste the same value you configured for `API_TOKEN` on the API server and the Angular client will call `/api/session` to mint an HttpOnly cookie. Use the “Log out” button in the toolbar to clear it at any time.
 
+### Add items faster
+
+The Add Item page exposes three flows:
+
+1. **Search** — pick a category (books, games, movies, or music) and search by keyword or ISBN/identifier. Successful lookups populate the manual entry tab with the retrieved metadata and also allow one-click adds straight to the collection. Errors and empty results stay on the Search tab so you can refine queries.
+2. **Manual entry** — edit all item fields directly. If you switch to this tab from the Search experience, a badge explains which query populated the form to help trace provenance.
+3. **CSV import** — upload a CSV file using the template linked on the page. The UI shows the active status (`Uploading`, `Imported n of m rows`, or `Warnings/Errors`) along with a summary of duplicate or invalid rows.
+
+Use the provided [`web/public/csv-import-template.csv`](web/public/csv-import-template.csv) as a starting point. Every column is optional except for `title` and `itemType`, and missing metadata will be backfilled during the import if ISBN data is present.
+
 ### Testing and linting
 
 After installing dependencies you can run:
@@ -100,6 +119,8 @@ cd web
 npm test -- --watch=false
 npm run lint
 ```
+
+`web/src/app/pages/add-item/add-item-page.component.spec.ts` contains coverage for the search form, manual draft handoff, CSV upload flows, and UI copy shown in the Add Item tabs.
 
 (Angular CLI creates the recommended lint configuration out of the box.)
 
