@@ -10,13 +10,14 @@ import (
 
 // Config aggregates runtime configuration for the Anthology services.
 type Config struct {
-	Environment    string
-	HTTPPort       int
-	DatabaseURL    string
-	DataStore      string
-	LogLevel       string
-	AllowedOrigins []string
-	APIToken       string
+	Environment       string
+	HTTPPort          int
+	DatabaseURL       string
+	DataStore         string
+	LogLevel          string
+	AllowedOrigins    []string
+	APIToken          string
+	GoogleBooksAPIKey string
 }
 
 // Load reads configuration from environment variables with sensible defaults for local development.
@@ -31,13 +32,19 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
+	googleBooksAPIKey, err := getEnvOrFile("GOOGLE_BOOKS_API_KEY", "/run/secrets/anthology_google_books_api_key")
+	if err != nil {
+		return Config{}, err
+	}
+
 	cfg := Config{
-		Environment:    getEnv("APP_ENV", "development"),
-		DatabaseURL:    databaseURL,
-		DataStore:      strings.ToLower(getEnv("DATA_STORE", "memory")),
-		LogLevel:       strings.ToLower(getEnv("LOG_LEVEL", "info")),
-		AllowedOrigins: parseCSV(getEnv("ALLOWED_ORIGINS", "http://localhost:4200,http://localhost:8080")),
-		APIToken:       strings.TrimSpace(apiToken),
+		Environment:       getEnv("APP_ENV", "development"),
+		DatabaseURL:       databaseURL,
+		DataStore:         strings.ToLower(getEnv("DATA_STORE", "memory")),
+		LogLevel:          strings.ToLower(getEnv("LOG_LEVEL", "info")),
+		AllowedOrigins:    parseCSV(getEnv("ALLOWED_ORIGINS", "http://localhost:4200,http://localhost:8080")),
+		APIToken:          strings.TrimSpace(apiToken),
+		GoogleBooksAPIKey: strings.TrimSpace(googleBooksAPIKey),
 	}
 
 	portValue := getEnv("PORT", getEnv("HTTP_PORT", "8080"))
@@ -53,6 +60,10 @@ func Load() (Config, error) {
 
 	if !strings.EqualFold(cfg.Environment, "development") && cfg.APIToken == "" {
 		return Config{}, fmt.Errorf("API_TOKEN is required when APP_ENV=%s", cfg.Environment)
+	}
+
+	if cfg.GoogleBooksAPIKey == "" {
+		return Config{}, fmt.Errorf("GOOGLE_BOOKS_API_KEY is required")
 	}
 
 	allowedOrigins, err := sanitizeAllowedOrigins(cfg.AllowedOrigins, cfg.Environment)

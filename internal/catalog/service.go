@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -19,7 +20,7 @@ import (
 type Category string
 
 const (
-	// CategoryBook resolves metadata for books via Open Library.
+	// CategoryBook resolves metadata for books via Google Books.
 	CategoryBook Category = "book"
 	// CategoryGame is reserved for future expansion.
 	CategoryGame Category = "game"
@@ -48,24 +49,33 @@ type Metadata struct {
 	ISBN13      string         `json:"isbn13"`
 	ISBN10      string         `json:"isbn10"`
 	Description string         `json:"description"`
+	CoverImage  string         `json:"coverImage"`
 	Notes       string         `json:"notes"`
 }
 
 // Service performs metadata lookups against third-party catalog APIs.
 type Service struct {
-	client         *http.Client
-	openLibraryURL string
+	client  *http.Client
+	baseURL string
+	apiKey  string
 }
 
-const defaultOpenLibraryURL = "https://openlibrary.org"
+const defaultGoogleBooksURL = "https://www.googleapis.com/books/v1"
 
 // Option configures the Service during construction.
 type Option func(*Service)
 
-// WithOpenLibraryURL overrides the base URL for Open Library requests.
-func WithOpenLibraryURL(baseURL string) Option {
+// WithGoogleBooksBaseURL overrides the base URL for Google Books requests.
+func WithGoogleBooksBaseURL(baseURL string) Option {
 	return func(s *Service) {
-		s.openLibraryURL = strings.TrimRight(baseURL, "/")
+		s.baseURL = strings.TrimRight(baseURL, "/")
+	}
+}
+
+// WithGoogleBooksAPIKey configures the API key used for Google Books requests.
+func WithGoogleBooksAPIKey(key string) Option {
+	return func(s *Service) {
+		s.apiKey = strings.TrimSpace(key)
 	}
 }
 
@@ -76,8 +86,8 @@ func NewService(client *http.Client, opts ...Option) *Service {
 	}
 
 	svc := &Service{
-		client:         client,
-		openLibraryURL: defaultOpenLibraryURL,
+		client:  client,
+		baseURL: defaultGoogleBooksURL,
 	}
 
 	for _, opt := range opts {
@@ -104,53 +114,34 @@ func (s *Service) Lookup(ctx context.Context, query string, category Category) (
 	}
 }
 
-type openLibrarySearchDoc struct {
-	Title            string   `json:"title"`
-	AuthorName       []string `json:"author_name"`
-	FirstPublishYear *int     `json:"first_publish_year"`
-	PublishYear      []int    `json:"publish_year"`
-	NumberOfPages    *int     `json:"number_of_pages_median"`
-	ISBN             []string `json:"isbn"`
-	FirstSentence    any      `json:"first_sentence"`
-	Subtitle         string   `json:"subtitle"`
-	Key              string   `json:"key"`
+type googleBooksResponse struct {
+	Items []googleVolume `json:"items"`
 }
 
-type openLibrarySearchResponse struct {
-	Docs []openLibrarySearchDoc `json:"docs"`
+type googleVolume struct {
+	ID         string           `json:"id"`
+	VolumeInfo googleVolumeInfo `json:"volumeInfo"`
 }
 
-var openLibrarySearchFields = strings.Join([]string{
-	"title",
-	"author_name",
-	"first_publish_year",
-	"publish_year",
-	"number_of_pages_median",
-	"isbn",
-	"first_sentence",
-	"subtitle",
-	"key",
-}, ",")
-
-type openLibraryBookDataResponse map[string]openLibraryBookDataEntry
-
-type openLibraryBookDataEntry struct {
-	Title         string              `json:"title"`
-	Subtitle      string              `json:"subtitle"`
-	NumberOfPages *int                `json:"number_of_pages"`
-	PublishDate   string              `json:"publish_date"`
-	Authors       []openLibraryAuthor `json:"authors"`
-	Identifiers   map[string][]string `json:"identifiers"`
-	Description   any                 `json:"description"`
-	Notes         any                 `json:"notes"`
+type googleVolumeInfo struct {
+	Title               string                     `json:"title"`
+	Subtitle            string                     `json:"subtitle"`
+	Authors             []string                   `json:"authors"`
+	Description         string                     `json:"description"`
+	PublishedDate       string                     `json:"publishedDate"`
+	PageCount           int                        `json:"pageCount"`
+	IndustryIdentifiers []googleIndustryIdentifier `json:"industryIdentifiers"`
+	ImageLinks          googleImageLinks           `json:"imageLinks"`
 }
 
-type openLibraryAuthor struct {
-	Name string `json:"name"`
+type googleIndustryIdentifier struct {
+	Type       string `json:"type"`
+	Identifier string `json:"identifier"`
 }
 
-type openLibraryWorkResponse struct {
-	Description any `json:"description"`
+type googleImageLinks struct {
+	Thumbnail      string `json:"thumbnail"`
+	SmallThumbnail string `json:"smallThumbnail"`
 }
 
 func (s *Service) lookupBook(ctx context.Context, query string) ([]Metadata, error) {
@@ -162,140 +153,48 @@ func (s *Service) lookupBook(ctx context.Context, query string) ([]Metadata, err
 		if !errors.Is(err, ErrNotFound) {
 			return nil, err
 		}
-		return s.lookupBookBySearch(ctx, isbn)
 	}
 
-	return s.lookupBookBySearch(ctx, query)
+	return s.lookupBookByQuery(ctx, query)
 }
 
 func (s *Service) lookupBookByISBN(ctx context.Context, isbn string) (Metadata, error) {
-	endpoint, err := url.Parse(s.openLibraryURL + "/api/books")
+	volumes, err := s.searchGoogleBooks(ctx, "isbn:"+isbn, 1)
 	if err != nil {
-		return Metadata{}, fmt.Errorf("build open library book url: %w", err)
+		return Metadata{}, err
 	}
-
-	values := url.Values{}
-	values.Set("bibkeys", "ISBN:"+isbn)
-	values.Set("format", "json")
-	values.Set("jscmd", "data")
-	endpoint.RawQuery = values.Encode()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
-	if err != nil {
-		return Metadata{}, fmt.Errorf("create open library book request: %w", err)
-	}
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return Metadata{}, fmt.Errorf("call open library book api: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return Metadata{}, fmt.Errorf("open library returned status %d", resp.StatusCode)
-	}
-
-	var payload openLibraryBookDataResponse
-	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-		return Metadata{}, fmt.Errorf("decode open library book response: %w", err)
-	}
-
-	entry, ok := payload["ISBN:"+isbn]
-	if !ok {
+	if len(volumes) == 0 {
 		return Metadata{}, ErrNotFound
 	}
 
-	title := strings.TrimSpace(entry.Title)
-	creator := strings.TrimSpace(joinAuthorNames(entry.Authors))
-	if title == "" && creator == "" {
-		return Metadata{}, ErrNotFound
+	metadata, err := s.metadataFromVolume(volumes[0])
+	if err != nil {
+		return Metadata{}, err
 	}
 
-	isbn13, isbn10 := selectISBNs(append(entry.Identifiers["isbn_13"], entry.Identifiers["isbn_10"]...))
-	if isbn13 == "" && len(isbn) == 13 {
-		isbn13 = isbn
+	if metadata.ISBN13 == "" && len(isbn) == 13 {
+		metadata.ISBN13 = isbn
 	}
-	if isbn10 == "" {
-		if alt := firstIdentifier(entry.Identifiers["isbn_10"]); alt != "" {
-			isbn10 = alt
-		} else if len(isbn) == 10 {
-			isbn10 = isbn
-		}
-	}
-
-	description := textValue(entry.Description)
-	if description == "" {
-		description = strings.TrimSpace(entry.Subtitle)
-	}
-
-	metadata := Metadata{
-		Title:       title,
-		Creator:     creator,
-		ItemType:    items.ItemTypeBook,
-		PageCount:   entry.NumberOfPages,
-		ISBN13:      isbn13,
-		ISBN10:      isbn10,
-		Description: description,
-		Notes:       "",
-	}
-
-	if year := parsePublishYear(entry.PublishDate); year != nil {
-		metadata.ReleaseYear = year
+	if metadata.ISBN10 == "" && len(isbn) == 10 {
+		metadata.ISBN10 = isbn
 	}
 
 	return metadata, nil
 }
 
-func (s *Service) lookupBookBySearch(ctx context.Context, query string) ([]Metadata, error) {
-	endpoint, err := url.Parse(s.openLibraryURL + "/search.json")
+func (s *Service) lookupBookByQuery(ctx context.Context, query string) ([]Metadata, error) {
+	volumes, err := s.searchGoogleBooks(ctx, query, 5)
 	if err != nil {
-		return nil, fmt.Errorf("build open library url: %w", err)
+		return nil, err
 	}
 
-	values := url.Values{}
-	isbn := normalizeISBN(query)
-	limit := "5"
-	switch {
-	case isbn != "":
-		values.Set("isbn", isbn)
-		limit = "1"
-	case isLikelyUPC(query):
-		values.Set("q", digitsOnly(query))
-		limit = "1"
-	default:
-		values.Set("q", query)
-	}
-	values.Set("limit", limit)
-	values.Set("fields", openLibrarySearchFields)
-	endpoint.RawQuery = values.Encode()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("create open library request: %w", err)
-	}
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("call open library: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("open library returned status %d", resp.StatusCode)
-	}
-
-	var payload openLibrarySearchResponse
-	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-		return nil, fmt.Errorf("decode open library response: %w", err)
-	}
-
-	if len(payload.Docs) == 0 {
+	if len(volumes) == 0 {
 		return nil, ErrNotFound
 	}
 
-	results := make([]Metadata, 0, len(payload.Docs))
-	for _, doc := range payload.Docs {
-		metadata, err := s.metadataFromSearchDoc(ctx, doc)
+	results := make([]Metadata, 0, len(volumes))
+	for _, volume := range volumes {
+		metadata, err := s.metadataFromVolume(volume)
 		if err != nil {
 			if errors.Is(err, ErrNotFound) {
 				continue
@@ -312,85 +211,108 @@ func (s *Service) lookupBookBySearch(ctx context.Context, query string) ([]Metad
 	return results, nil
 }
 
-func (s *Service) metadataFromSearchDoc(ctx context.Context, doc openLibrarySearchDoc) (Metadata, error) {
-	title := strings.TrimSpace(doc.Title)
-	creator := strings.TrimSpace(strings.Join(doc.AuthorName, ", "))
+func (s *Service) searchGoogleBooks(ctx context.Context, q string, maxResults int) ([]googleVolume, error) {
+	endpoint, err := url.Parse(s.baseURL + "/volumes")
+	if err != nil {
+		return nil, fmt.Errorf("build google books url: %w", err)
+	}
+
+	values := url.Values{}
+	values.Set("q", q)
+	if maxResults > 0 {
+		values.Set("maxResults", strconv.Itoa(maxResults))
+	}
+	values.Set("printType", "books")
+	values.Set("orderBy", "relevance")
+	if s.apiKey != "" {
+		values.Set("key", s.apiKey)
+	}
+	endpoint.RawQuery = values.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("create google books request: %w", err)
+	}
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("call google books: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("google books returned status %d", resp.StatusCode)
+	}
+
+	var payload googleBooksResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return nil, fmt.Errorf("decode google books response: %w", err)
+	}
+
+	return payload.Items, nil
+}
+
+func (s *Service) metadataFromVolume(volume googleVolume) (Metadata, error) {
+	info := volume.VolumeInfo
+	title := strings.TrimSpace(info.Title)
+	creator := strings.TrimSpace(strings.Join(info.Authors, ", "))
 
 	if title == "" && creator == "" {
 		return Metadata{}, ErrNotFound
 	}
 
-	isbn13, isbn10 := selectISBNs(doc.ISBN)
-	releaseYear := releaseYearFromDoc(doc)
+	isbn13, isbn10 := selectISBNs(flattenIdentifiers(info.IndustryIdentifiers))
+	description := strings.TrimSpace(firstNonEmpty(info.Description, info.Subtitle))
+
 	metadata := Metadata{
 		Title:       title,
 		Creator:     creator,
 		ItemType:    items.ItemTypeBook,
-		PageCount:   doc.NumberOfPages,
+		PageCount:   nil,
 		ISBN13:      isbn13,
 		ISBN10:      isbn10,
-		Description: deriveDescription(doc.FirstSentence, doc.Subtitle),
+		Description: description,
+		CoverImage:  normalizeCoverURL(info.ImageLinks),
 		Notes:       "",
 	}
 
-	if releaseYear != nil {
-		metadata.ReleaseYear = releaseYear
+	if info.PageCount > 0 {
+		pages := info.PageCount
+		metadata.PageCount = &pages
 	}
 
-	if enriched, err := s.enrichMetadataFromISBN(ctx, isbn13, isbn10, releaseYear); err == nil {
-		metadata = enriched
-	} else if err != nil && !errors.Is(err, ErrNotFound) {
-		return Metadata{}, err
-	}
-
-	if metadata.Description == "" {
-		if desc, err := s.lookupWorkDescription(ctx, doc.Key); err == nil && desc != "" {
-			metadata.Description = desc
-		}
+	if year := parsePublishYear(info.PublishedDate); year != nil {
+		metadata.ReleaseYear = year
 	}
 
 	return metadata, nil
 }
 
-func (s *Service) enrichMetadataFromISBN(ctx context.Context, isbn13, isbn10 string, releaseYear *int) (Metadata, error) {
-	tryISBN := func(isbn string, fallback func(*Metadata)) (Metadata, error) {
-		if isbn == "" {
-			return Metadata{}, ErrNotFound
+func flattenIdentifiers(values []googleIndustryIdentifier) []string {
+	candidates := make([]string, 0, len(values))
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value.Identifier)
+		if trimmed == "" {
+			continue
 		}
-		metadata, err := s.lookupBookByISBN(ctx, isbn)
-		if err != nil {
-			return Metadata{}, err
-		}
-		if releaseYear != nil && metadata.ReleaseYear == nil {
-			metadata.ReleaseYear = releaseYear
-		}
-		if fallback != nil {
-			fallback(&metadata)
-		}
-		return metadata, nil
+		candidates = append(candidates, trimmed)
 	}
+	return candidates
+}
 
-	metadata, err := tryISBN(isbn13, func(metadata *Metadata) {
-		if metadata.ISBN10 == "" {
-			metadata.ISBN10 = isbn10
+func normalizeCoverURL(links googleImageLinks) string {
+	candidates := []string{links.Thumbnail, links.SmallThumbnail}
+	for _, raw := range candidates {
+		trimmed := strings.TrimSpace(raw)
+		if trimmed == "" {
+			continue
 		}
-	})
-	if err == nil {
-		return metadata, nil
-	}
-	if err != nil && !errors.Is(err, ErrNotFound) {
-		return Metadata{}, err
-	}
-
-	metadata, err = tryISBN(isbn10, func(metadata *Metadata) {
-		if metadata.ISBN13 == "" {
-			metadata.ISBN13 = isbn13
+		if strings.HasPrefix(trimmed, "http://") {
+			trimmed = "https://" + strings.TrimPrefix(trimmed, "http://")
 		}
-	})
-	if err == nil {
-		return metadata, nil
+		return trimmed
 	}
-	return Metadata{}, err
+	return ""
 }
 
 func selectISBNs(values []string) (string, string) {
@@ -409,90 +331,14 @@ func selectISBNs(values []string) (string, string) {
 	return isbn13, isbn10
 }
 
-func deriveDescription(raw any, subtitle string) string {
-	if text := textValue(raw); text != "" {
-		return text
-	}
-	return strings.TrimSpace(subtitle)
-}
-
-func (s *Service) lookupWorkDescription(ctx context.Context, workKey string) (string, error) {
-	trimmed := strings.TrimSpace(workKey)
-	if trimmed == "" {
-		return "", ErrNotFound
-	}
-
-	path := strings.TrimSuffix(trimmed, ".json")
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
-	}
-
-	endpoint, err := url.Parse(s.openLibraryURL + path)
-	if err != nil {
-		return "", fmt.Errorf("build open library work url: %w", err)
-	}
-
-	if !strings.HasSuffix(endpoint.Path, ".json") {
-		endpoint.Path += ".json"
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
-	if err != nil {
-		return "", fmt.Errorf("create open library work request: %w", err)
-	}
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("call open library work api: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("open library returned status %d", resp.StatusCode)
-	}
-
-	var payload openLibraryWorkResponse
-	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-		return "", fmt.Errorf("decode open library work response: %w", err)
-	}
-
-	return textValue(payload.Description), nil
-}
-
-func textValue(raw any) string {
-	switch value := raw.(type) {
-	case string:
-		return strings.TrimSpace(value)
-	case []any:
-		for _, entry := range value {
-			if text := textValue(entry); text != "" {
-				return text
-			}
-		}
-	case map[string]any:
-		if text, ok := value["value"]; ok {
-			return textValue(text)
-		}
-	case map[string]string:
-		if text, ok := value["value"]; ok {
-			trimmed := strings.TrimSpace(text)
-			if trimmed != "" {
-				return trimmed
-			}
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed != "" {
+			return trimmed
 		}
 	}
 	return ""
-}
-
-func joinAuthorNames(authors []openLibraryAuthor) string {
-	names := make([]string, 0, len(authors))
-	for _, author := range authors {
-		trimmed := strings.TrimSpace(author.Name)
-		if trimmed != "" {
-			names = append(names, trimmed)
-		}
-	}
-	return strings.Join(names, ", ")
 }
 
 var publishYearPattern = regexp.MustCompile(`(1[0-9]{3}|20[0-9]{2})`)
@@ -508,16 +354,6 @@ func parsePublishYear(raw string) *int {
 		return nil
 	}
 	return &year
-}
-
-func firstIdentifier(values []string) string {
-	for _, value := range values {
-		trimmed := strings.TrimSpace(value)
-		if trimmed != "" {
-			return trimmed
-		}
-	}
-	return ""
 }
 
 func normalizeISBN(value string) string {
@@ -555,30 +391,4 @@ func normalizeISBN(value string) string {
 	}
 
 	return string(cleaned)
-}
-
-func digitsOnly(value string) string {
-	cleaned := make([]rune, 0, len(value))
-	for _, r := range value {
-		if unicode.IsDigit(r) {
-			cleaned = append(cleaned, r)
-		}
-	}
-	return string(cleaned)
-}
-
-func isLikelyUPC(value string) bool {
-	digits := digitsOnly(value)
-	return len(digits) == 12
-}
-
-func releaseYearFromDoc(doc openLibrarySearchDoc) *int {
-	if doc.FirstPublishYear != nil {
-		return doc.FirstPublishYear
-	}
-	if len(doc.PublishYear) > 0 {
-		year := doc.PublishYear[0]
-		return &year
-	}
-	return nil
 }

@@ -44,7 +44,7 @@ func main() {
 
 	svc := items.NewService(repo)
 	lookupClient := &http.Client{Timeout: 12 * time.Second}
-	catalogSvc := catalog.NewService(lookupClient)
+	catalogSvc := catalog.NewService(lookupClient, catalog.WithGoogleBooksAPIKey(cfg.GoogleBooksAPIKey))
 	router := transporthttp.NewRouter(cfg, svc, catalogSvc, logger)
 
 	srv := &http.Server{
