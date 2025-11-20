@@ -11,7 +11,10 @@ import (
 	"github.com/google/uuid"
 )
 
-const maxCoverImageBytes = 500 * 1024
+const (
+	maxCoverImageBytes     = 500 * 1024
+	maxCoverImageURLLength = 4096
+)
 
 // Service orchestrates validation and persistence for items.
 type Service struct {
@@ -185,10 +188,6 @@ func sanitizeCoverImage(raw string) (string, error) {
 		return "", nil
 	}
 
-	if len(trimmed) > 4096 {
-		return "", fmt.Errorf("coverImage must be shorter than 4096 characters")
-	}
-
 	if strings.HasPrefix(trimmed, "data:") {
 		parts := strings.SplitN(trimmed, ",", 2)
 		if len(parts) != 2 {
@@ -203,6 +202,12 @@ func sanitizeCoverImage(raw string) (string, error) {
 		if estimatedBytes > maxCoverImageBytes {
 			return "", fmt.Errorf("coverImage must be smaller than %dKB", maxCoverImageBytes/1024)
 		}
+
+		return trimmed, nil
+	}
+
+	if len(trimmed) > maxCoverImageURLLength {
+		return "", fmt.Errorf("coverImage must be shorter than %d characters", maxCoverImageURLLength)
 	}
 
 	return trimmed, nil
