@@ -65,6 +65,39 @@
                                             diameter="18"
                                         ></mat-progress-spinner>
                                     </button>
+                                    <button
+                                        mat-stroked-button
+                                        type="button"
+                                        *ngIf="activeCategory().value === 'book'"
+                                        (click)="scannerActive() ? stopBarcodeScanner() : startBarcodeScan()"
+                                        [disabled]="lookupBusy()"
+                                    >
+                                        <mat-icon aria-hidden="true">photo_camera</mat-icon>
+                                        <span *ngIf="!scannerActive()">Scan barcode</span>
+                                        <span *ngIf="scannerActive()">Stop scanning</span>
+                                    </button>
+                                </div>
+                                <div
+                                    class="scanner-feedback"
+                                    *ngIf="activeCategory().value === 'book' && (scannerStatus() || scannerError())"
+                                >
+                                    <div class="status" *ngIf="scannerStatus()">{{ scannerStatus() }}</div>
+                                    <div class="error" *ngIf="scannerError()">{{ scannerError() }}</div>
+                                </div>
+                                <div
+                                    class="scanner-preview"
+                                    [class.scanner-preview--visible]="scannerActive()"
+                                    [attr.aria-hidden]="scannerActive() ? 'false' : 'true'"
+                                >
+                                    <div class="video-frame">
+                                        <video #scanVideo autoplay playsinline muted></video>
+                                        <div class="overlay" *ngIf="scannerActive()">
+                                            <span>Point your camera at a UPC or ISBN barcode.</span>
+                                        </div>
+                                    </div>
+                                    <p class="hint" *ngIf="scannerActive()">
+                                        Once we read a code, we’ll automatically run the lookup for you.
+                                    </p>
                                 </div>
                             </div>
                         </form>
