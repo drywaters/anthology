@@ -112,6 +112,7 @@ export class AddItemPageComponent {
         'isbn13',
         'isbn10',
         'description',
+        'coverImage',
         'notes',
     ];
 
