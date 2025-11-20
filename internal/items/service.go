@@ -2,6 +2,7 @@ package items
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"slices"
 	"strings"
@@ -9,6 +10,8 @@ import (
 
 	"github.com/google/uuid"
 )
+
+const maxCoverImageBytes = 500 * 1024
 
 // Service orchestrates validation and persistence for items.
 type Service struct {
@@ -26,6 +29,11 @@ func (s *Service) Create(ctx context.Context, input CreateItemInput) (Item, erro
 		return Item{}, err
 	}
 
+	coverImage, err := sanitizeCoverImage(input.CoverImage)
+	if err != nil {
+		return Item{}, err
+	}
+
 	now := time.Now().UTC()
 	item := Item{
 		ID:          uuid.New(),
@@ -37,6 +45,7 @@ func (s *Service) Create(ctx context.Context, input CreateItemInput) (Item, erro
 		ISBN13:      strings.TrimSpace(input.ISBN13),
 		ISBN10:      strings.TrimSpace(input.ISBN10),
 		Description: strings.TrimSpace(input.Description),
+		CoverImage:  coverImage,
 		Notes:       strings.TrimSpace(input.Notes),
 		CreatedAt:   now,
 		UpdatedAt:   now,
@@ -120,6 +129,14 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, input UpdateItemInpu
 		existing.Description = strings.TrimSpace(*input.Description)
 	}
 
+	if input.CoverImage != nil {
+		coverImage, err := sanitizeCoverImage(*input.CoverImage)
+		if err != nil {
+			return Item{}, err
+		}
+		existing.CoverImage = coverImage
+	}
+
 	existing.UpdatedAt = time.Now().UTC()
 	return s.repo.Update(ctx, existing)
 }
@@ -160,4 +177,33 @@ func normalizePositiveInt(value *int) *int {
 	}
 	v := *value
 	return &v
+}
+
+func sanitizeCoverImage(raw string) (string, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "", nil
+	}
+
+	if len(trimmed) > 4096 {
+		return "", fmt.Errorf("coverImage must be shorter than 4096 characters")
+	}
+
+	if strings.HasPrefix(trimmed, "data:") {
+		parts := strings.SplitN(trimmed, ",", 2)
+		if len(parts) != 2 {
+			return "", fmt.Errorf("coverImage data URI is invalid")
+		}
+
+		if _, err := base64.StdEncoding.DecodeString(parts[1]); err != nil {
+			return "", fmt.Errorf("coverImage must contain valid base64 image data")
+		}
+
+		estimatedBytes := len(parts[1]) * 3 / 4
+		if estimatedBytes > maxCoverImageBytes {
+			return "", fmt.Errorf("coverImage must be smaller than %dKB", maxCoverImageBytes/1024)
+		}
+	}
+
+	return trimmed, nil
 }

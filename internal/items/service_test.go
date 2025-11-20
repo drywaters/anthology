@@ -34,6 +34,7 @@ func TestServiceCreatePersistsItem(t *testing.T) {
 		ISBN13:      "9780135957059",
 		ISBN10:      "0135957052",
 		Description: "Practical advice for software craftspeople.",
+		CoverImage:  "data:image/png;base64,aGVsbG8=",
 		Notes:       "Initial dataset mirrors a curated media catalogue.",
 	})
 	if err != nil {
@@ -60,6 +61,9 @@ func TestServiceCreatePersistsItem(t *testing.T) {
 	}
 	if item.Description != "Practical advice for software craftspeople." {
 		t.Fatalf("expected description to persist")
+	}
+	if item.CoverImage == "" {
+		t.Fatalf("expected cover image to persist")
 	}
 }
 
@@ -238,5 +242,23 @@ func TestServiceUpdateRejectsBlankTitleOrItemType(t *testing.T) {
 	_, err = svc.Update(ctx, item.ID, UpdateItemInput{ItemType: &emptyType})
 	if err == nil || !strings.Contains(err.Error(), "itemType is required") {
 		t.Fatalf("expected itemType validation error, got %v", err)
+	}
+}
+
+func TestServiceRejectsOversizedCoverImage(t *testing.T) {
+	repo := NewInMemoryRepository(nil)
+	svc := NewService(repo)
+
+	bigPayload := "data:image/jpeg;base64," + strings.Repeat("a", maxCoverImageBytes)
+	_, err := svc.Create(context.Background(), CreateItemInput{Title: "Big Cover", ItemType: ItemTypeBook, CoverImage: bigPayload})
+	if err == nil {
+		t.Fatalf("expected oversized cover image to be rejected")
+	}
+
+	updatePayload := bigPayload
+	item, _ := svc.Create(context.Background(), CreateItemInput{Title: "Small cover", ItemType: ItemTypeBook, CoverImage: "data:image/png;base64,aA=="})
+	_, err = svc.Update(context.Background(), item.ID, UpdateItemInput{CoverImage: &updatePayload})
+	if err == nil {
+		t.Fatalf("expected oversized cover image to be rejected on update")
 	}
 }

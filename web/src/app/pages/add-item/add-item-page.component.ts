@@ -440,6 +440,7 @@ this.lookupResults.set([]);
             isbn13: partial.isbn13 ?? '',
             isbn10: partial.isbn10 ?? '',
             description: partial.description ?? '',
+            coverImage: partial.coverImage ?? '',
             notes: partial.notes ?? '',
         };
     }

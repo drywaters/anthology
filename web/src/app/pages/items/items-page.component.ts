@@ -88,6 +88,7 @@ export class ItemsPageComponent {
     readonly formContext = signal<EditFormContext | null>(null);
     readonly letterFilter = signal<LetterFilter>('ALL');
     readonly typeFilter = signal<ItemTypeFilter>('all');
+    readonly viewMode = signal<'table' | 'grid'>('table');
     private readonly refreshTick = signal(0);
 
     readonly typeLabels = ITEM_TYPE_LABELS;
@@ -133,6 +134,7 @@ export class ItemsPageComponent {
     readonly isUnfiltered = computed(
         () => this.typeFilter() === 'all' && this.letterFilter() === 'ALL'
     );
+    readonly isGridView = computed(() => this.viewMode() === 'grid');
 
     constructor() {
         const requestParams = computed(() => ({ filters: this.currentFilters(), tick: this.refreshTick() }));
@@ -246,6 +248,17 @@ export class ItemsPageComponent {
 
     setTypeFilter(type: ItemTypeFilter): void {
         this.typeFilter.set(type);
+    }
+
+    setViewMode(mode: 'table' | 'grid'): void {
+        this.viewMode.set(mode);
+    }
+
+    handleCardKeydown(event: KeyboardEvent, item: Item): void {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            this.startEdit(item);
+        }
     }
 
     private currentFilters(): { itemType?: ItemType; letter?: string } | undefined {

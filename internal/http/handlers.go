@@ -73,17 +73,18 @@ func parseListOptions(values url.Values) (items.ListOptions, error) {
 
 // Create stores a new item.
 func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var payload struct {
-		Title       string `json:"title"`
-		Creator     string `json:"creator"`
-		ItemType    string `json:"itemType"`
-		ReleaseYear *int   `json:"releaseYear"`
-		PageCount   *int   `json:"pageCount"`
-		ISBN13      string `json:"isbn13"`
-		ISBN10      string `json:"isbn10"`
-		Description string `json:"description"`
-		Notes       string `json:"notes"`
-	}
+        var payload struct {
+                Title       string `json:"title"`
+                Creator     string `json:"creator"`
+                ItemType    string `json:"itemType"`
+                ReleaseYear *int   `json:"releaseYear"`
+                PageCount   *int   `json:"pageCount"`
+                ISBN13      string `json:"isbn13"`
+                ISBN10      string `json:"isbn10"`
+                Description string `json:"description"`
+                CoverImage  string `json:"coverImage"`
+                Notes       string `json:"notes"`
+        }
 
 	if err := decodeJSONBody(w, r, &payload); err != nil {
 		writeJSONError(w, err)
@@ -94,13 +95,14 @@ func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Title:       payload.Title,
 		Creator:     payload.Creator,
 		ItemType:    items.ItemType(payload.ItemType),
-		ReleaseYear: payload.ReleaseYear,
-		PageCount:   payload.PageCount,
-		ISBN13:      payload.ISBN13,
-		ISBN10:      payload.ISBN10,
-		Description: payload.Description,
-		Notes:       payload.Notes,
-	})
+                ReleaseYear: payload.ReleaseYear,
+                PageCount:   payload.PageCount,
+                ISBN13:      payload.ISBN13,
+                ISBN10:      payload.ISBN10,
+                Description: payload.Description,
+                CoverImage:  payload.CoverImage,
+                Notes:       payload.Notes,
+        })
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -138,17 +140,18 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var payload struct {
-		Title       *string `json:"title"`
-		Creator     *string `json:"creator"`
-		ItemType    *string `json:"itemType"`
-		ReleaseYear *int    `json:"releaseYear"`
-		PageCount   *int    `json:"pageCount"`
-		ISBN13      *string `json:"isbn13"`
-		ISBN10      *string `json:"isbn10"`
-		Description *string `json:"description"`
-		Notes       *string `json:"notes"`
-	}
+        var payload struct {
+                Title       *string `json:"title"`
+                Creator     *string `json:"creator"`
+                ItemType    *string `json:"itemType"`
+                ReleaseYear *int    `json:"releaseYear"`
+                PageCount   *int    `json:"pageCount"`
+                ISBN13      *string `json:"isbn13"`
+                ISBN10      *string `json:"isbn10"`
+                Description *string `json:"description"`
+                CoverImage  *string `json:"coverImage"`
+                Notes       *string `json:"notes"`
+        }
 
 	if err := decodeInto(raw, &payload); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -187,9 +190,12 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if _, ok := raw["isbn10"]; ok {
 		input.ISBN10 = payload.ISBN10
 	}
-	if _, ok := raw["description"]; ok {
-		input.Description = payload.Description
-	}
+        if _, ok := raw["description"]; ok {
+                input.Description = payload.Description
+        }
+        if _, ok := raw["coverImage"]; ok {
+                input.CoverImage = payload.CoverImage
+        }
 
 	item, err := h.service.Update(r.Context(), id, input)
 	if err != nil {

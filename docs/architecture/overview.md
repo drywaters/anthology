@@ -40,7 +40,7 @@ Anthology is a split-stack application with a stateless Go API and an Angular Ma
 
 ## Data contracts
 
-* **Catalog items** — `internal/items.Item` and `web/src/app/models/item.ts` share the same fields: `title`, `creator`, `itemType`, optional `releaseYear`, `pageCount`, and notes/description/ISBNs.
+* **Catalog items** — `internal/items.Item` and `web/src/app/models/item.ts` share the same fields: `title`, `creator`, `itemType`, optional `releaseYear`, `pageCount`, notes/description/ISBNs, and an optional `coverImage` (either a remote URL or a small data URI capped at 500KB).
 * **Metadata lookup** — `internal/catalog.Metadata` is mapped to the UI via `ItemLookupService` so selected previews can be passed directly to `ItemService.create`.
 * **CSV summary** — `internal/importer.Summary` mirrors `web/src/app/models/import.ts`. Each summary includes `skippedDuplicates` and `failed` entries with the original row number for easy debugging.
 

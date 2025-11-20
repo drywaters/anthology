@@ -30,6 +30,7 @@ describe(ItemFormComponent.name, () => {
             isbn13: '9780441569595',
             isbn10: '0441569595',
             description: 'Cyberpunk classic',
+            coverImage: 'https://example.com/cover.jpg',
             notes: 'Cyberpunk classic',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -50,6 +51,7 @@ describe(ItemFormComponent.name, () => {
                 isbn13: '9780441569595',
                 isbn10: '0441569595',
                 description: 'Cyberpunk classic',
+                coverImage: 'https://example.com/cover.jpg',
                 notes: 'Cyberpunk classic',
             })
         );
@@ -80,6 +82,7 @@ describe(ItemFormComponent.name, () => {
             isbn13: '',
             isbn10: '',
             description: '',
+            coverImage: '',
             notes: '',
         });
 

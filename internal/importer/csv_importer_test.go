@@ -49,9 +49,9 @@ func (s *stubCatalog) Lookup(ctx context.Context, query string, category catalog
 func TestCSVImporter_ImportCreatesItemsAndSkipsDuplicates(t *testing.T) {
 	store := &stubStore{items: []items.Item{{Title: "Existing Title"}}}
 	importer := NewCSVImporter(store, &stubCatalog{})
-	csv := "title,creator,itemType,releaseYear,pageCount,isbn13,isbn10,description,notes\n" +
-		"New Book,Author,book,2020,320,9780000000001,0000000001,Desc,Note\n" +
-		"Existing Title,Someone,book,,,,,,,\n"
+	csv := "title,creator,itemType,releaseYear,pageCount,isbn13,isbn10,description,coverImage,notes\n" +
+		"New Book,Author,book,2020,320,9780000000001,0000000001,Desc,,Note\n" +
+		"Existing Title,Someone,book,,,,,,,,\n"
 	summary, err := importer.Import(context.Background(), bytes.NewBufferString(csv))
 	if err != nil {
 		t.Fatalf("import failed: %v", err)
@@ -73,8 +73,8 @@ func TestCSVImporter_PopulatesBookFromLookup(t *testing.T) {
 		ISBN13:   "9780000000000",
 	}}}
 	importer := NewCSVImporter(store, catalog)
-	csv := "title,creator,itemType,releaseYear,pageCount,isbn13,isbn10,description,notes\n" +
-		",,book,, ,9780000000000,,,,\n"
+	csv := "title,creator,itemType,releaseYear,pageCount,isbn13,isbn10,description,coverImage,notes\n" +
+		",,book,, ,9780000000000,,,,,\n"
 	summary, err := importer.Import(context.Background(), bytes.NewBufferString(csv))
 	if err != nil {
 		t.Fatalf("import failed: %v", err)
@@ -87,8 +87,8 @@ func TestCSVImporter_PopulatesBookFromLookup(t *testing.T) {
 func TestCSVImporter_ReturnsRowErrors(t *testing.T) {
 	store := &stubStore{}
 	importer := NewCSVImporter(store, &stubCatalog{})
-	csv := "title,creator,itemType,releaseYear,pageCount,isbn13,isbn10,description,notes\n" +
-		"Bad Year,Author,book,year,100,,,,\n"
+	csv := "title,creator,itemType,releaseYear,pageCount,isbn13,isbn10,description,coverImage,notes\n" +
+		"Bad Year,Author,book,year,100,,,,,\n"
 	summary, err := importer.Import(context.Background(), bytes.NewBufferString(csv))
 	if err != nil {
 		t.Fatalf("import failed: %v", err)
