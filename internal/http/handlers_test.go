@@ -61,9 +61,9 @@ func TestItemHandlerImportCSVSuccess(t *testing.T) {
 	importerSvc := importer.NewCSVImporter(store, nil)
 	handler := NewItemHandler(nil, importerSvc, logger)
 	req := newMultipartCSVRequest(t, strings.Join([]string{
-		"title,creator,itemType,releaseYear,pageCount,isbn13,isbn10,description,notes",
-		"Title A,Creator,book,2020,300,9780000000001,0000000001,Desc,Notes",
-		"Title B,Director,movie,,,,,,",
+		"title,creator,itemType,releaseYear,pageCount,isbn13,isbn10,description,coverImage,notes",
+		"Title A,Creator,book,2020,300,9780000000001,0000000001,Desc,,Notes",
+		"Title B,Director,movie,,,,,,,",
 	}, "\n"))
 	rec := httptest.NewRecorder()
 

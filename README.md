@@ -112,6 +112,15 @@ The Add Item page exposes three flows:
 
 Use the provided [`web/public/csv-import-template.csv`](web/public/csv-import-template.csv) as a starting point. Every column is optional except for `title` and `itemType`, and missing metadata will be backfilled during the import if ISBN data is present.
 
+### Cover thumbnails and gallery view
+
+Books can now carry a `coverImage` that powers the grid (thumbnail) view on the library page. Covers accept either:
+
+* A remote URL (preferred for durability and cacheability, e.g., the Open Library cover service used during ISBN lookups and CSV enrichment).
+* A small data URI (JPG/PNG) for user uploads, capped at 500KB to keep API payloads and database storage manageable.
+
+Use the new cover controls on the Add/Edit forms to upload a thumbnail or paste a URL. When browsing your library, switch between the traditional table and the new card grid; in grid mode, click a card or press Enter/Space to open the edit panel since explicit action buttons are hidden for a cleaner layout.
+
 ### Testing and linting
 
 After installing dependencies you can run:

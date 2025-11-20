@@ -20,12 +20,12 @@ func NewPostgresRepository(db *sqlx.DB) *PostgresRepository {
 	return &PostgresRepository{db: db}
 }
 
-const baseSelect = "SELECT id, title, creator, item_type, release_year, page_count, isbn_13, isbn_10, description, notes, created_at, updated_at FROM items"
+const baseSelect = "SELECT id, title, creator, item_type, release_year, page_count, isbn_13, isbn_10, description, cover_image, notes, created_at, updated_at FROM items"
 
 // Create inserts a new row and returns the stored representation.
 func (r *PostgresRepository) Create(ctx context.Context, item Item) (Item, error) {
-	insert := `INSERT INTO items (id, title, creator, item_type, release_year, page_count, isbn_13, isbn_10, description, notes, created_at, updated_at)
-VALUES (:id, :title, :creator, :item_type, :release_year, :page_count, :isbn_13, :isbn_10, :description, :notes, :created_at, :updated_at)`
+	insert := `INSERT INTO items (id, title, creator, item_type, release_year, page_count, isbn_13, isbn_10, description, cover_image, notes, created_at, updated_at)
+VALUES (:id, :title, :creator, :item_type, :release_year, :page_count, :isbn_13, :isbn_10, :description, :cover_image, :notes, :created_at, :updated_at)`
 
 	if _, err := r.db.NamedExecContext(ctx, insert, item); err != nil {
 		return Item{}, fmt.Errorf("insert item: %w", err)
@@ -91,6 +91,7 @@ SET title = :title,
     isbn_13 = :isbn_13,
     isbn_10 = :isbn_10,
     description = :description,
+    cover_image = :cover_image,
     notes = :notes,
     updated_at = :updated_at
 WHERE id = :id`

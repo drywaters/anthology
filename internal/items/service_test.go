@@ -1,7 +1,9 @@
 package items
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"strings"
 	"testing"
 	"time"
@@ -34,6 +36,7 @@ func TestServiceCreatePersistsItem(t *testing.T) {
 		ISBN13:      "9780135957059",
 		ISBN10:      "0135957052",
 		Description: "Practical advice for software craftspeople.",
+		CoverImage:  "data:image/png;base64,aGVsbG8=",
 		Notes:       "Initial dataset mirrors a curated media catalogue.",
 	})
 	if err != nil {
@@ -60,6 +63,9 @@ func TestServiceCreatePersistsItem(t *testing.T) {
 	}
 	if item.Description != "Practical advice for software craftspeople." {
 		t.Fatalf("expected description to persist")
+	}
+	if item.CoverImage == "" {
+		t.Fatalf("expected cover image to persist")
 	}
 }
 
@@ -239,4 +245,58 @@ func TestServiceUpdateRejectsBlankTitleOrItemType(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "itemType is required") {
 		t.Fatalf("expected itemType validation error, got %v", err)
 	}
+}
+
+func TestServiceRejectsOversizedCoverImage(t *testing.T) {
+	repo := NewInMemoryRepository(nil)
+	svc := NewService(repo)
+
+	bigPayload := makeDataURICoverBytes(maxCoverImageBytes + 1)
+	_, err := svc.Create(context.Background(), CreateItemInput{Title: "Big Cover", ItemType: ItemTypeBook, CoverImage: bigPayload})
+	if err == nil {
+		t.Fatalf("expected oversized cover image to be rejected")
+	}
+
+	updatePayload := bigPayload
+	item, _ := svc.Create(context.Background(), CreateItemInput{Title: "Small cover", ItemType: ItemTypeBook, CoverImage: "data:image/png;base64,aA=="})
+	_, err = svc.Update(context.Background(), item.ID, UpdateItemInput{CoverImage: &updatePayload})
+	if err == nil {
+		t.Fatalf("expected oversized cover image to be rejected on update")
+	}
+}
+
+func TestServiceAllowsDataURIsLongerThanURLLimitWhenUnderByteCap(t *testing.T) {
+	repo := NewInMemoryRepository(nil)
+	svc := NewService(repo)
+
+	payload := makeDataURICoverBytes(4000)
+	if len(payload) <= maxCoverImageURLLength {
+		t.Fatalf("expected payload length to exceed url limit")
+	}
+
+	item, err := svc.Create(context.Background(), CreateItemInput{
+		Title:      "Large data URI",
+		ItemType:   ItemTypeBook,
+		CoverImage: payload,
+	})
+	if err != nil {
+		t.Fatalf("expected data URI under byte cap to be accepted, got error: %v", err)
+	}
+	if item.CoverImage != payload {
+		t.Fatalf("expected cover image to be stored, got %q", item.CoverImage)
+	}
+
+	updatePayload := makeDataURICoverBytes(4200)
+	updated, err := svc.Update(context.Background(), item.ID, UpdateItemInput{CoverImage: &updatePayload})
+	if err != nil {
+		t.Fatalf("expected update to accept long data URI, got error: %v", err)
+	}
+	if updated.CoverImage != updatePayload {
+		t.Fatalf("expected cover image to be updated, got %q", updated.CoverImage)
+	}
+}
+
+func makeDataURICoverBytes(byteCount int) string {
+	data := bytes.Repeat([]byte{0x42}, byteCount)
+	return "data:image/png;base64," + base64.StdEncoding.EncodeToString(data)
 }

@@ -10,6 +10,7 @@ export interface Item {
     isbn13?: string;
     isbn10?: string;
     description?: string;
+    coverImage?: string;
     notes: string;
     createdAt: string;
     updatedAt: string;
@@ -24,6 +25,7 @@ export interface ItemForm {
     isbn13?: string;
     isbn10?: string;
     description: string;
+    coverImage?: string;
     notes: string;
 }
 

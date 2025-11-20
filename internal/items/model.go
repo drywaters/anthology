@@ -32,6 +32,7 @@ type Item struct {
 	ISBN13      string    `db:"isbn_13" json:"isbn13"`
 	ISBN10      string    `db:"isbn_10" json:"isbn10"`
 	Description string    `db:"description" json:"description"`
+	CoverImage  string    `db:"cover_image" json:"coverImage"`
 	Notes       string    `db:"notes" json:"notes"`
 	CreatedAt   time.Time `db:"created_at" json:"createdAt"`
 	UpdatedAt   time.Time `db:"updated_at" json:"updatedAt"`
@@ -47,6 +48,7 @@ type CreateItemInput struct {
 	ISBN13      string
 	ISBN10      string
 	Description string
+	CoverImage  string
 	Notes       string
 }
 
@@ -60,6 +62,7 @@ type UpdateItemInput struct {
 	ISBN13      *string
 	ISBN10      *string
 	Description *string
+	CoverImage  *string
 	Notes       *string
 }
 

@@ -54,6 +54,7 @@ var requiredColumns = []string{
 	"isbn13",
 	"isbn10",
 	"description",
+	"coverimage",
 	"notes",
 }
 
@@ -185,6 +186,7 @@ func (i *CSVImporter) buildInput(ctx context.Context, values map[string]string) 
 	}
 
 	description := strings.TrimSpace(values["description"])
+	coverImage := strings.TrimSpace(values["coverimage"])
 	notes := strings.TrimSpace(values["notes"])
 
 	if itemType == items.ItemTypeBook && title == "" {
@@ -216,6 +218,9 @@ func (i *CSVImporter) buildInput(ctx context.Context, values map[string]string) 
 		if description == "" {
 			description = metadata.Description
 		}
+		if coverImage == "" {
+			coverImage = metadata.CoverImage
+		}
 	}
 
 	if title == "" {
@@ -231,6 +236,7 @@ func (i *CSVImporter) buildInput(ctx context.Context, values map[string]string) 
 		ISBN13:      isbn13,
 		ISBN10:      isbn10,
 		Description: description,
+		CoverImage:  coverImage,
 		Notes:       notes,
 	}, meta, nil
 }

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -26,6 +26,9 @@ import { Item, ItemForm, ItemType, ITEM_TYPE_LABELS } from '../../models/item';
 })
 export class ItemFormComponent implements OnChanges {
     private readonly fb = inject(FormBuilder);
+    private static readonly MAX_COVER_BYTES = 500 * 1024;
+
+    @ViewChild('coverInput') coverInput?: ElementRef<HTMLInputElement>;
 
     @Input() item: Item | null = null;
     @Input() draft: Partial<ItemForm> | null = null;
@@ -37,6 +40,8 @@ export class ItemFormComponent implements OnChanges {
 
     readonly itemTypeOptions = Object.entries(ITEM_TYPE_LABELS) as [ItemType, string][];
 
+    coverImageError: string | null = null;
+
     readonly form: FormGroup = this.fb.group({
         title: ['', [Validators.required, Validators.maxLength(120)]],
         creator: ['', [Validators.maxLength(120)]],
@@ -46,6 +51,7 @@ export class ItemFormComponent implements OnChanges {
         isbn13: ['', [Validators.maxLength(20)]],
         isbn10: ['', [Validators.maxLength(20)]],
         description: ['', [Validators.maxLength(2000)]],
+        coverImage: [''],
         notes: ['', [Validators.maxLength(500)]],
     });
 
@@ -64,6 +70,7 @@ export class ItemFormComponent implements OnChanges {
                 isbn13: '',
                 isbn10: '',
                 description: '',
+                coverImage: '',
                 notes: '',
             };
 
@@ -96,6 +103,7 @@ export class ItemFormComponent implements OnChanges {
                 next.isbn13 = this.draft.isbn13 ?? next.isbn13;
                 next.isbn10 = this.draft.isbn10 ?? next.isbn10;
                 next.description = this.draft.description ?? next.description;
+                next.coverImage = this.draft.coverImage ?? next.coverImage;
             }
 
             if (this.item) {
@@ -107,6 +115,7 @@ export class ItemFormComponent implements OnChanges {
                 next.isbn13 = this.item.isbn13 ?? '';
                 next.isbn10 = this.item.isbn10 ?? '';
                 next.description = this.item.description ?? '';
+                next.coverImage = this.item.coverImage ?? '';
                 next.notes = this.item.notes;
             }
 
@@ -128,6 +137,7 @@ export class ItemFormComponent implements OnChanges {
             description: value.description ?? '',
             isbn13: value.isbn13 ?? '',
             isbn10: value.isbn10 ?? '',
+            coverImage: value.coverImage ?? '',
         });
     }
 
@@ -137,5 +147,48 @@ export class ItemFormComponent implements OnChanges {
 
     clearPageCount(): void {
         this.form.patchValue({ pageCount: null });
+    }
+
+    clearCoverImage(): void {
+        this.form.patchValue({ coverImage: '' });
+        this.coverImageError = null;
+        this.resetCoverInput();
+    }
+
+    clearCoverError(): void {
+        this.coverImageError = null;
+    }
+
+    openCoverFilePicker(): void {
+        this.coverImageError = null;
+        this.coverInput?.nativeElement?.click();
+    }
+
+    handleCoverFileChange(event: Event): void {
+        const input = event.target as HTMLInputElement | null;
+        const file = input?.files?.[0];
+        if (!file) {
+            return;
+        }
+
+        if (file.size > ItemFormComponent.MAX_COVER_BYTES) {
+            this.coverImageError = 'Cover images must be under 500KB.';
+            this.resetCoverInput();
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            const result = reader.result as string;
+            this.form.patchValue({ coverImage: result });
+            this.coverImageError = null;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    private resetCoverInput(): void {
+        if (this.coverInput?.nativeElement) {
+            this.coverInput.nativeElement.value = '';
+        }
     }
 }
