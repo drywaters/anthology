@@ -25,6 +25,27 @@ type SearchCategoryValue = ItemLookupCategory;
 
 type CsvImportStatusLevel = 'info' | 'success' | 'warning' | 'error';
 
+type SupportedBarcodeFormat = 'ean_13' | 'ean_8' | 'code_128' | 'upc_a' | 'upc_e';
+
+interface BarcodeDetectionResult {
+    rawValue?: string;
+}
+
+interface BarcodeDetectorOptions {
+    formats?: SupportedBarcodeFormat[];
+}
+
+interface BarcodeDetector {
+    detect(source: ImageBitmapSource): Promise<BarcodeDetectionResult[]>;
+}
+
+interface BarcodeDetectorConstructor {
+    new (options?: BarcodeDetectorOptions): BarcodeDetector;
+    getSupportedFormats(): Promise<SupportedBarcodeFormat[]>;
+}
+
+declare const BarcodeDetector: BarcodeDetectorConstructor;
+
 interface CsvImportStatus {
     level: CsvImportStatusLevel;
     icon: string;
@@ -123,13 +144,25 @@ export class AddItemPageComponent {
     private readonly destroyRef = inject(DestroyRef);
     private readonly fb = inject(FormBuilder);
 
+    private readonly preferredBarcodeFormats: SupportedBarcodeFormat[] = [
+        'ean_13',
+        'ean_8',
+        'code_128',
+        'upc_a',
+        'upc_e',
+    ];
+    private barcodeDetector: BarcodeDetector | null = null;
+    private scanStream: MediaStream | null = null;
+    private scanFrameId: number | null = null;
+
+    @ViewChild('scanVideo') scanVideo?: ElementRef<HTMLVideoElement>;
     @ViewChild('csvInput') csvInput?: ElementRef<HTMLInputElement>;
 
     readonly busy = signal(false);
     readonly lookupBusy = signal(false);
     readonly lookupError = signal<string | null>(null);
-readonly lookupResults = signal<ItemForm[]>([]);
-readonly manualDraft = signal<ItemForm | null>(null);
+    readonly lookupResults = signal<ItemForm[]>([]);
+    readonly manualDraft = signal<ItemForm | null>(null);
     readonly manualDraftSource = signal<{ query: string; label: string } | null>(null);
     readonly lastLookupSummary = signal<string | null>(null);
     readonly selectedTab = signal(0);
@@ -137,6 +170,10 @@ readonly manualDraft = signal<ItemForm | null>(null);
     readonly importError = signal<string | null>(null);
     readonly importSummary = signal<CsvImportSummary | null>(null);
     readonly selectedCsvFile = signal<File | null>(null);
+    readonly scannerActive = signal(false);
+    readonly scannerStatus = signal<string | null>(null);
+    readonly scannerError = signal<string | null>(null);
+    readonly scannerSupported = signal<boolean | null>(null);
     readonly csvImportStatus = computed<CsvImportStatus | null>(() => {
         if (this.importBusy()) {
             return {
@@ -189,6 +226,10 @@ readonly manualDraft = signal<ItemForm | null>(null);
         query: ['', [Validators.required, Validators.minLength(3)]],
     });
 
+    constructor() {
+        this.destroyRef.onDestroy(() => this.stopBarcodeScanner());
+    }
+
     readonly activeCategory = computed(() => {
         const value = this.searchForm.get('category')?.value as SearchCategoryValue | null;
         return (
@@ -196,6 +237,163 @@ readonly manualDraft = signal<ItemForm | null>(null);
             AddItemPageComponent.SEARCH_CATEGORIES[0]
         );
     });
+
+    async startBarcodeScan(): Promise<void> {
+        if (this.scannerActive()) {
+            return;
+        }
+
+        if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+            this.scannerSupported.set(false);
+            this.scannerError.set('Camera access is not available in this browser.');
+            return;
+        }
+
+        this.scannerError.set(null);
+        this.scannerStatus.set('Checking camera support...');
+
+        const detector = await this.resolveBarcodeDetector();
+        if (!detector) {
+            return;
+        }
+
+        const video = this.scanVideo?.nativeElement;
+        if (!video) {
+            this.scannerError.set('Camera preview is not available.');
+            return;
+        }
+
+        try {
+            this.scanStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' },
+                audio: false,
+            });
+
+            video.srcObject = this.scanStream;
+            await video.play();
+
+            this.barcodeDetector = detector;
+            this.scannerActive.set(true);
+            this.scannerStatus.set('Align a UPC or ISBN barcode within the frame.');
+            this.scheduleNextScan();
+        } catch (error) {
+            console.error('Unable to start barcode scanner', error);
+            this.scannerError.set('Camera access failed. Confirm permissions and try again.');
+            this.scannerStatus.set(null);
+            this.stopScannerStream();
+        }
+    }
+
+    private scheduleNextScan(): void {
+        this.scanFrameId = requestAnimationFrame(() => {
+            void this.detectBarcodeFrame();
+        });
+    }
+
+    private async detectBarcodeFrame(): Promise<void> {
+        if (!this.scannerActive() || !this.barcodeDetector) {
+            return;
+        }
+
+        const video = this.scanVideo?.nativeElement;
+        if (!video) {
+            this.stopBarcodeScanner();
+            return;
+        }
+
+        if (video.readyState < HTMLMediaElement.HAVE_ENOUGH_DATA) {
+            this.scheduleNextScan();
+            return;
+        }
+
+        try {
+            const codes = await this.barcodeDetector.detect(video);
+            const found = codes.find((code: BarcodeDetectionResult) => (code.rawValue ?? '').trim());
+
+            if (found?.rawValue) {
+                this.scannerStatus.set(`Found ${found.rawValue}. Searching...`);
+                this.handleDetectedBarcode(found.rawValue);
+                return;
+            }
+        } catch (error) {
+            console.error('Barcode detection failed', error);
+            this.scannerError.set('Unable to read the barcode. Try adjusting lighting or typing the code.');
+            this.stopBarcodeScanner();
+            return;
+        }
+
+        this.scheduleNextScan();
+    }
+
+    handleDetectedBarcode(rawValue: string): void {
+        const value = rawValue.trim();
+        if (!value) {
+            return;
+        }
+
+        this.searchForm.get('query')?.setValue(value);
+        this.stopBarcodeScanner();
+        this.handleLookupSubmit();
+    }
+
+    stopBarcodeScanner(): void {
+        this.scannerActive.set(false);
+        this.scannerStatus.set(null);
+        this.clearScannerAnimation();
+        this.stopScannerStream();
+
+        const video = this.scanVideo?.nativeElement;
+        if (video) {
+            video.pause();
+            video.srcObject = null;
+        }
+    }
+
+    private stopScannerStream(): void {
+        if (this.scanStream) {
+            this.scanStream.getTracks().forEach((track) => track.stop());
+            this.scanStream = null;
+        }
+    }
+
+    private clearScannerAnimation(): void {
+        if (this.scanFrameId !== null) {
+            cancelAnimationFrame(this.scanFrameId);
+            this.scanFrameId = null;
+        }
+    }
+
+    private async resolveBarcodeDetector(): Promise<BarcodeDetector | null> {
+        if (typeof window === 'undefined' || typeof BarcodeDetector === 'undefined') {
+            this.scannerSupported.set(false);
+            this.scannerError.set('Barcode scanning is not supported in this browser.');
+            this.scannerStatus.set(null);
+            return null;
+        }
+
+        try {
+            const supportedFormats = await BarcodeDetector.getSupportedFormats();
+            const availableFormats = this.preferredBarcodeFormats.filter((format) =>
+                supportedFormats.includes(format)
+            );
+
+            if (!availableFormats.length) {
+                this.scannerSupported.set(false);
+                this.scannerError.set('No compatible barcode formats are supported by this camera.');
+                this.scannerStatus.set(null);
+                return null;
+            }
+
+            this.scannerSupported.set(true);
+            return new BarcodeDetector({ formats: availableFormats });
+        } catch (error) {
+            console.error('Barcode detector unavailable', error);
+            this.scannerSupported.set(false);
+            this.scannerError.set('Barcode scanning is not available on this device.');
+            this.scannerStatus.set(null);
+            return null;
+        }
+    }
 
     handleSave(formValue: ItemForm): void {
         if (this.busy()) {
@@ -232,6 +430,8 @@ readonly manualDraft = signal<ItemForm | null>(null);
             return;
         }
 
+        this.stopBarcodeScanner();
+
         if (this.searchForm.invalid) {
             this.searchForm.markAllAsTouched();
             return;
@@ -250,41 +450,41 @@ readonly manualDraft = signal<ItemForm | null>(null);
 
         this.lookupBusy.set(true);
         this.lookupError.set(null);
-this.lookupResults.set([]);
-this.lastLookupSummary.set(null);
+        this.lookupResults.set([]);
+        this.lastLookupSummary.set(null);
 
-this.itemLookupService
-.lookup(query, rawCategory)
-.pipe(takeUntilDestroyed(this.destroyRef))
-.subscribe({
-next: (results) => {
-this.lookupBusy.set(false);
-const drafts = results.map((partial) => this.composeDraft(partial, category));
-this.lookupResults.set(drafts);
-if (drafts.length > 0) {
-this.manualDraft.set({ ...drafts[0] });
-this.manualDraftSource.set({
-query,
-label: category.label,
-});
-const summary =
-drafts.length > 1
-? `Loaded ${drafts.length} matches for “${query}”. Choose one below.`
-: `Metadata loaded for “${query}”.`;
-this.lastLookupSummary.set(summary);
-} else {
-this.manualDraft.set(null);
-this.manualDraftSource.set(null);
-this.lastLookupSummary.set(null);
-}
-},
-error: (error) => {
-this.lookupBusy.set(false);
-this.manualDraft.set(null);
-this.manualDraftSource.set(null);
-this.lookupResults.set([]);
+        this.itemLookupService
+            .lookup(query, rawCategory)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (results) => {
+                    this.lookupBusy.set(false);
+                    const drafts = results.map((partial) => this.composeDraft(partial, category));
+                    this.lookupResults.set(drafts);
+                    if (drafts.length > 0) {
+                        this.manualDraft.set({ ...drafts[0] });
+                        this.manualDraftSource.set({
+                            query,
+                            label: category.label,
+                        });
+                        const summary =
+                            drafts.length > 1
+                                ? `Loaded ${drafts.length} matches for “${query}”. Choose one below.`
+                                : `Metadata loaded for “${query}”.`;
+                        this.lastLookupSummary.set(summary);
+                    } else {
+                        this.manualDraft.set(null);
+                        this.manualDraftSource.set(null);
+                        this.lastLookupSummary.set(null);
+                    }
+                },
+                error: (error) => {
+                    this.lookupBusy.set(false);
+                    this.manualDraft.set(null);
+                    this.manualDraftSource.set(null);
+                    this.lookupResults.set([]);
 
-let message = 'We couldn’t find a match. Try another ISBN or UPC.';
+                    let message = 'We couldn’t find a match. Try another ISBN or UPC.';
                     if (error instanceof HttpErrorResponse) {
                         const serverMessage = typeof error.error?.error === 'string' ? error.error.error.trim() : '';
                         if (serverMessage) {

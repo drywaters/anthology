@@ -98,6 +98,19 @@ describe(AddItemPageComponent.name, () => {
         expect(navigateSpy).not.toHaveBeenCalled();
     }));
 
+    it('triggers a lookup when a barcode is detected', fakeAsync(() => {
+        itemLookupServiceSpy.lookup.and.returnValue(of([]));
+        const fixture = createComponent();
+        const submitSpy = spyOn(fixture.componentInstance, 'handleLookupSubmit').and.callThrough();
+
+        fixture.componentInstance.handleDetectedBarcode('9781234567890');
+        flush();
+
+        expect(fixture.componentInstance.searchForm.get('query')?.value).toBe('9781234567890');
+        expect(submitSpy).toHaveBeenCalled();
+        expect(itemLookupServiceSpy.lookup).toHaveBeenCalledWith('9781234567890', 'book');
+    }));
+
     it('navigates back when cancel is invoked while idle', () => {
         const router = TestBed.inject(Router);
         const navigateSpy = spyOn(router, 'navigate').and.resolveTo(true);
