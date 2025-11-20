@@ -84,14 +84,18 @@
                                     <div class="status" *ngIf="scannerStatus()">{{ scannerStatus() }}</div>
                                     <div class="error" *ngIf="scannerError()">{{ scannerError() }}</div>
                                 </div>
-                                <div class="scanner-preview" *ngIf="scannerActive()">
+                                <div
+                                    class="scanner-preview"
+                                    [class.scanner-preview--visible]="scannerActive()"
+                                    [attr.aria-hidden]="scannerActive() ? 'false' : 'true'"
+                                >
                                     <div class="video-frame">
                                         <video #scanVideo autoplay playsinline muted></video>
-                                        <div class="overlay">
+                                        <div class="overlay" *ngIf="scannerActive()">
                                             <span>Point your camera at a UPC or ISBN barcode.</span>
                                         </div>
                                     </div>
-                                    <p class="hint">
+                                    <p class="hint" *ngIf="scannerActive()">
                                         Once we read a code, we’ll automatically run the lookup for you.
                                     </p>
                                 </div>
