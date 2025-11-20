@@ -14,6 +14,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { finalize } from 'rxjs/operators';
+import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
+import { BarcodeFormat, DecodeHintType, Exception, NotFoundException, Result } from '@zxing/library';
 
 import { ItemFormComponent } from '../../components/item-form/item-form.component';
 import { ItemForm } from '../../models/item';
@@ -154,6 +156,9 @@ export class AddItemPageComponent {
     private barcodeDetector: BarcodeDetector | null = null;
     private scanStream: MediaStream | null = null;
     private scanFrameId: number | null = null;
+    private scannerMode: 'native' | 'zxing' | null = null;
+    private zxingReader: BrowserMultiFormatReader | null = null;
+    private zxingControls: IScannerControls | null = null;
 
     @ViewChild('scanVideo') scanVideo?: ElementRef<HTMLVideoElement>;
     @ViewChild('csvInput') csvInput?: ElementRef<HTMLInputElement>;
@@ -252,14 +257,14 @@ export class AddItemPageComponent {
         this.scannerError.set(null);
         this.scannerStatus.set('Checking camera support...');
 
-        const detector = await this.resolveBarcodeDetector();
-        if (!detector) {
-            return;
-        }
-
         const video = this.scanVideo?.nativeElement;
         if (!video) {
             this.scannerError.set('Camera preview is not available.');
+            return;
+        }
+
+        const scannerMode = await this.resolveBarcodeScanner();
+        if (!scannerMode) {
             return;
         }
 
@@ -272,10 +277,15 @@ export class AddItemPageComponent {
             video.srcObject = this.scanStream;
             await video.play();
 
-            this.barcodeDetector = detector;
+            this.scannerMode = scannerMode;
             this.scannerActive.set(true);
             this.scannerStatus.set('Align a UPC or ISBN barcode within the frame.');
-            this.scheduleNextScan();
+
+            if (scannerMode === 'native') {
+                this.scheduleNextScan();
+            } else {
+                this.startZxingDetection(video);
+            }
         } catch (error) {
             console.error('Unable to start barcode scanner', error);
             this.scannerError.set('Camera access failed. Confirm permissions and try again.');
@@ -325,6 +335,37 @@ export class AddItemPageComponent {
         this.scheduleNextScan();
     }
 
+    private startZxingDetection(video: HTMLVideoElement): void {
+        if (!this.zxingReader) {
+            this.scannerError.set('Barcode scanning is not available on this device.');
+            this.stopBarcodeScanner();
+            return;
+        }
+
+        this.zxingReader
+            .decodeFromVideoElement(video, (result: Result | null | undefined, error: Exception | null | undefined, controls) => {
+                this.zxingControls = controls;
+
+                if (result?.getText()) {
+                    this.scannerStatus.set(`Found ${result.getText()}. Searching...`);
+                    this.handleDetectedBarcode(result.getText());
+                    controls.stop();
+                    return;
+                }
+
+                if (error && !(error instanceof NotFoundException)) {
+                    console.error('Barcode detection failed', error);
+                    this.scannerError.set('Unable to read the barcode. Try adjusting lighting or typing the code.');
+                    this.stopBarcodeScanner();
+                }
+            })
+            .catch((error: unknown) => {
+                console.error('Barcode detection failed', error);
+                this.scannerError.set('Unable to read the barcode. Try adjusting lighting or typing the code.');
+                this.stopBarcodeScanner();
+            });
+    }
+
     handleDetectedBarcode(rawValue: string): void {
         const value = rawValue.trim();
         if (!value) {
@@ -340,7 +381,9 @@ export class AddItemPageComponent {
         this.scannerActive.set(false);
         this.scannerStatus.set(null);
         this.clearScannerAnimation();
+        this.stopZxingControls();
         this.stopScannerStream();
+        this.scannerMode = null;
 
         const video = this.scanVideo?.nativeElement;
         if (video) {
@@ -356,6 +399,15 @@ export class AddItemPageComponent {
         }
     }
 
+    private stopZxingControls(): void {
+        if (this.zxingControls) {
+            this.zxingControls.stop();
+            this.zxingControls = null;
+        }
+
+        this.zxingReader = null;
+    }
+
     private clearScannerAnimation(): void {
         if (this.scanFrameId !== null) {
             cancelAnimationFrame(this.scanFrameId);
@@ -363,31 +415,46 @@ export class AddItemPageComponent {
         }
     }
 
-    private async resolveBarcodeDetector(): Promise<BarcodeDetector | null> {
-        if (typeof window === 'undefined' || typeof BarcodeDetector === 'undefined') {
+    private async resolveBarcodeScanner(): Promise<'native' | 'zxing' | null> {
+        if (typeof window === 'undefined') {
             this.scannerSupported.set(false);
             this.scannerError.set('Barcode scanning is not supported in this browser.');
             this.scannerStatus.set(null);
             return null;
         }
 
-        try {
-            const supportedFormats = await BarcodeDetector.getSupportedFormats();
-            const availableFormats = this.preferredBarcodeFormats.filter((format) =>
-                supportedFormats.includes(format)
-            );
+        if (typeof BarcodeDetector !== 'undefined') {
+            try {
+                const supportedFormats = await BarcodeDetector.getSupportedFormats();
+                const availableFormats = this.preferredBarcodeFormats.filter((format) =>
+                    supportedFormats.includes(format)
+                );
 
-            if (!availableFormats.length) {
-                this.scannerSupported.set(false);
-                this.scannerError.set('No compatible barcode formats are supported by this camera.');
-                this.scannerStatus.set(null);
-                return null;
+                if (availableFormats.length) {
+                    this.barcodeDetector = new BarcodeDetector({ formats: availableFormats });
+                    this.scannerSupported.set(true);
+                    return 'native';
+                }
+            } catch (error) {
+                console.warn('Native barcode detector unavailable, falling back to library.', error);
             }
+        }
 
+        try {
+            const hints = new Map();
+            hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+                BarcodeFormat.EAN_13,
+                BarcodeFormat.EAN_8,
+                BarcodeFormat.CODE_128,
+                BarcodeFormat.UPC_A,
+                BarcodeFormat.UPC_E,
+            ]);
+
+            this.zxingReader = new BrowserMultiFormatReader(hints);
             this.scannerSupported.set(true);
-            return new BarcodeDetector({ formats: availableFormats });
+            return 'zxing';
         } catch (error) {
-            console.error('Barcode detector unavailable', error);
+            console.error('Barcode scanner unavailable', error);
             this.scannerSupported.set(false);
             this.scannerError.set('Barcode scanning is not available on this device.');
             this.scannerStatus.set(null);
