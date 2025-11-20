@@ -2,9 +2,9 @@
 
 Anthology is a two-tier catalogue that combines a Go API (powered by the [`chi`](https://github.com/go-chi/chi) router) with an Angular Material frontend. The API and UI now ship as independently deployable services, making it easy to scale or update either tier without rebuilding the other. The Phase 1 MVP focuses on managing a personal library of books, games, movies, and music with a polished catalogue presentation.
 
-Recent feature work adds a metadata search workflow (backed by Open Library) plus CSV import so large collections can be ingested in one shot. Both of these flows share the Add Item page and reuse the backend importer so validation, duplicate detection, and auto-enrichment work consistently no matter how data enters the system.
+Recent feature work adds a metadata search workflow (backed by Google Books) plus CSV import so large collections can be ingested in one shot. Both of these flows share the Add Item page and reuse the backend importer so validation, duplicate detection, and auto-enrichment work consistently no matter how data enters the system.
 
-If you are new to the project, start with [`docs/architecture/overview.md`](docs/architecture/overview.md). It diagrams the high-level layout (Go API, Angular UI, database, and Open Library) and calls out where CSV uploads and search lookups plug into the stack.
+If you are new to the project, start with [`docs/architecture/overview.md`](docs/architecture/overview.md). It diagrams the high-level layout (Go API, Angular UI, database, and Google Books) and calls out where CSV uploads and search lookups plug into the stack.
 
 ## Project structure
 
@@ -23,9 +23,9 @@ If you are new to the project, start with [`docs/architecture/overview.md`](docs
 * Go 1.22 with structured logging via `log/slog`.
 * HTTP routing handled by `chi`, with middleware for request IDs, timeouts, and structured logging.
 * Domain package `internal/items` exposes a repository interface with both in-memory and Postgres implementations.
-* Metadata lookups (`internal/catalog`) talk to Open Library. `/api/catalog/lookup` proxies those queries so the Angular UI can search by ISBN or keyword without exposing API tokens.
+* Metadata lookups (`internal/catalog`) call the Google Books API. `/api/catalog/lookup` proxies those queries so the Angular UI can search by ISBN or keyword without exposing API tokens.
 * Bulk imports use `internal/importer`, which accepts CSV uploads, fetches metadata for incomplete rows, deduplicates based on title/ISBN, and returns a structured summary so the UI can visualize success vs. warnings.
-* Configuration is environment-driven (`DATA_STORE`, `DATABASE_URL`, `PORT`, `LOG_LEVEL`, `ALLOWED_ORIGINS`, `API_TOKEN`). When `DATA_STORE=memory` (the default), the API boots with a seeded in-memory catalogue to help demo the experience quickly.
+* Configuration is environment-driven (`DATA_STORE`, `DATABASE_URL`, `PORT`, `LOG_LEVEL`, `ALLOWED_ORIGINS`, `API_TOKEN`, `GOOGLE_BOOKS_API_KEY`). When `DATA_STORE=memory` (the default), the API boots with a seeded in-memory catalogue to help demo the experience quickly. Secrets can be provided via environment variables, `<NAME>_FILE` pointers, or the default Docker Swarm secret paths under `/run/secrets/anthology_*`.
 * When `API_TOKEN` is set, every `/api/*` request must send `Authorization: Bearer <token>`. Requests to `/health` remain public so uptime checks continue to work.
 * CORS is enabled via [`github.com/go-chi/cors`](https://github.com/go-chi/cors) and defaults to allowing `http://localhost:4200` and `http://localhost:8080`. Override with `ALLOWED_ORIGINS="https://example.com,https://admin.example.com"` when deploying.
 * Postgres persistence is implemented with `sqlx`; see [`migrations/0001_create_items.sql`](migrations/0001_create_items.sql) for the schema.
@@ -38,6 +38,7 @@ export DATA_STORE=memory
 export PORT=8080
 export ALLOWED_ORIGINS="http://localhost:4200,http://localhost:8080"
 export API_TOKEN="super-secret-token"
+export GOOGLE_BOOKS_API_KEY="super-google-books-key"
 go run ./cmd/api
 ```
 
@@ -64,6 +65,7 @@ export DATABASE_URL="postgres://anthology:anthology@localhost:5432/anthology?ssl
 export PORT=8080
 export ALLOWED_ORIGINS="https://tracker.example.com"
 export API_TOKEN="super-secret-token"
+export GOOGLE_BOOKS_API_KEY="staging-or-prod-google-books-key"
 
 # Apply the migration (example)
 psql "$DATABASE_URL" -f migrations/0001_create_items.sql

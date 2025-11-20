@@ -7,13 +7,13 @@ Anthology is a split-stack application with a stateless Go API and an Angular Ma
 | Frontend | Angular 20 + Angular Material | Authentication UI, catalogue browse experience, Add Item workflows (search, manual entry, CSV import). |
 | Backend | Go 1.22 (`cmd/api`) | REST API for CRUD, CSV ingestion endpoint, metadata lookup proxy, session management. |
 | Data | Postgres or in-memory store (`internal/items`) | Persists catalog items. |
-| External APIs | Open Library | Provides metadata for ISBN/keyword searches and CSV enrichment. |
+| External APIs | Google Books API | Provides metadata for ISBN/keyword searches and CSV enrichment. |
 
 ## Directory layout
 
 * `cmd/api` — chi router setup, middleware, and HTTP handler wiring.
 * `internal/items` — domain logic, validation, repository interfaces.
-* `internal/catalog` — Open Library client plus metadata aggregation helpers.
+* `internal/catalog` — Google Books client plus metadata aggregation helpers.
 * `internal/importer` — CSV importer used by both the HTTP endpoint and CLI tests.
 * `internal/http` — request/response helpers, item handler, catalog handler, and router definitions.
 * `web/src/app` — Angular standalone application. Each feature (e.g., Add Item) lives in `pages/` with supporting services under `services/`.
@@ -29,13 +29,13 @@ Anthology is a split-stack application with a stateless Go API and an Angular Ma
 ### Metadata search
 1. `AddItemPageComponent` submits `GET /api/catalog/lookup?query=...&category=...` when the Search tab runs.
 2. `internal/http/catalog_handler.go` validates inputs and calls `internal/catalog.Service`.
-3. `internal/catalog.Service` queries Open Library (`/search.json`, `/api/books`, `/works/...`) to assemble normalized `Metadata` entries.
+3. `internal/catalog.Service` queries Google Books (`/volumes?q=...`) to assemble normalized `Metadata` entries.
 4. Results stream back to the UI, which can either quick-add an item or copy the metadata into the manual form.
 
 ### CSV import
 1. The Angular CSV tab builds a `FormData` payload and calls `POST /api/items/import`.
 2. `internal/http.ItemHandler.ImportCSV` enforces the upload size limit, passes the file to `internal/importer.CSVImporter`, and returns the summary as JSON.
-3. `CSVImporter` loads existing catalog items to detect duplicates, parses each row, and, when ISBN data exists, calls `internal/catalog.Service` to fill missing metadata.
+3. `CSVImporter` loads existing catalog items to detect duplicates, parses each row, and, when ISBN data exists, calls `internal/catalog.Service` to fill missing metadata via Google Books.
 4. The HTTP response includes counts of imported, skipped, and failed rows so the UI can display the progress timeline.
 
 ## Data contracts

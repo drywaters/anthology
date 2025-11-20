@@ -7,6 +7,7 @@ DATA_STORE ?= memory
 PORT ?= 8080
 ALLOWED_ORIGINS ?= http://localhost:4200,http://localhost:8080
 API_TOKEN ?= local-dev-token
+GOOGLE_BOOKS_API_KEY ?= local-google-books-api-key
 DATABASE_URL ?= postgres://anthology:anthology@localhost:5432/anthology?sslmode=disable
 
 REGISTRY ?= registry.bitofbytes.io
@@ -37,6 +38,7 @@ api-run: ## Run the Go API with in-memory defaults.
 	PORT=$(PORT) \
 	ALLOWED_ORIGINS=$(ALLOWED_ORIGINS) \
 	API_TOKEN=$(API_TOKEN) \
+	GOOGLE_BOOKS_API_KEY=$(GOOGLE_BOOKS_API_KEY) \
 	DATABASE_URL=$(DATABASE_URL) \
 	LOG_LEVEL=$(LOG_LEVEL) \
 	go run ./cmd/api
