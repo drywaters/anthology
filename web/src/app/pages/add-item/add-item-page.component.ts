@@ -257,14 +257,20 @@ export class AddItemPageComponent {
         this.scannerError.set(null);
         this.scannerStatus.set('Checking camera support...');
 
-        const video = this.scanVideo?.nativeElement;
+        this.scannerActive.set(true);
+
+        const video = await this.waitForScanVideoElement();
         if (!video) {
             this.scannerError.set('Camera preview is not available.');
+            this.scannerStatus.set(null);
+            this.scannerActive.set(false);
             return;
         }
 
         const scannerMode = await this.resolveBarcodeScanner();
         if (!scannerMode) {
+            this.scannerActive.set(false);
+            this.scannerStatus.set(null);
             return;
         }
 
@@ -278,7 +284,6 @@ export class AddItemPageComponent {
             await video.play();
 
             this.scannerMode = scannerMode;
-            this.scannerActive.set(true);
             this.scannerStatus.set('Align a UPC or ISBN barcode within the frame.');
 
             if (scannerMode === 'native') {
@@ -290,7 +295,7 @@ export class AddItemPageComponent {
             console.error('Unable to start barcode scanner', error);
             this.scannerError.set('Camera access failed. Confirm permissions and try again.');
             this.scannerStatus.set(null);
-            this.stopScannerStream();
+            this.stopBarcodeScanner();
         }
     }
 
@@ -413,6 +418,15 @@ export class AddItemPageComponent {
             cancelAnimationFrame(this.scanFrameId);
             this.scanFrameId = null;
         }
+    }
+
+    private async waitForScanVideoElement(): Promise<HTMLVideoElement | null> {
+        if (this.scanVideo?.nativeElement) {
+            return this.scanVideo.nativeElement;
+        }
+
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        return this.scanVideo?.nativeElement ?? null;
     }
 
     private async resolveBarcodeScanner(): Promise<'native' | 'zxing' | null> {
