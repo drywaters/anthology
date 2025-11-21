@@ -65,9 +65,18 @@ button {
     --mat-sys-on-secondary: #ffffff;
     --mat-sys-secondary-container: #d0e8d4;
     --mat-sys-on-secondary-container: #0c1f13;
+    --mat-sys-error: #ba1a1a;
+    --mat-sys-on-error: #ffffff;
     --mdc-theme-primary: var(--mat-sys-primary);
     --mdc-filled-button-container-color: var(--mat-sys-primary);
     --mdc-filled-button-label-text-color: var(--mat-sys-on-primary);
     --mdc-protected-button-container-color: color-mix(in srgb, var(--mat-sys-primary) 12%, white);
     --mdc-protected-button-label-text-color: var(--mat-sys-primary);
+}
+
+.mat-mdc-button-base.mat-mdc-warn {
+    --mdc-filled-button-container-color: var(--mat-sys-error);
+    --mdc-filled-button-label-text-color: var(--mat-sys-on-error);
+    --mdc-outlined-button-outline-color: var(--mat-sys-error);
+    --mdc-text-button-label-text-color: var(--mat-sys-error);
 }

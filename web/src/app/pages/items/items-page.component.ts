@@ -10,15 +10,10 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { EMPTY, catchError, map, switchMap, tap } from 'rxjs';
+import { EMPTY, catchError, switchMap, tap } from 'rxjs';
 
-import { Item, ItemForm, ItemType, ITEM_TYPE_LABELS } from '../../models/item';
+import { Item, ItemType, ITEM_TYPE_LABELS } from '../../models/item';
 import { ItemService } from '../../services/item.service';
-import { ItemFormComponent } from '../../components/item-form/item-form.component';
-
-interface EditFormContext {
-    item: Item;
-}
 
 type ItemTypeFilter = ItemType | 'all';
 type LetterFilter = AlphabetLetter | 'ALL';
@@ -61,7 +56,6 @@ type AlphabetLetter =
         NgFor,
         NgIf,
         NgTemplateOutlet,
-        ItemFormComponent,
         MatFormFieldModule,
         MatSelectModule,
         MatButtonModule,
@@ -81,15 +75,12 @@ export class ItemsPageComponent {
     private readonly destroyRef = inject(DestroyRef);
     private readonly router = inject(Router);
 
-    readonly displayedColumns = ['title', 'creator', 'itemType', 'releaseYear', 'updatedAt', 'actions'] as const;
+    readonly displayedColumns = ['title', 'creator', 'itemType', 'releaseYear', 'updatedAt'] as const;
     readonly items = signal<Item[]>([]);
     readonly loading = signal(false);
-    readonly mutationInFlight = signal(false);
-    readonly formContext = signal<EditFormContext | null>(null);
     readonly letterFilter = signal<LetterFilter>('ALL');
     readonly typeFilter = signal<ItemTypeFilter>('all');
     readonly viewMode = signal<'table' | 'grid'>('table');
-    private readonly refreshTick = signal(0);
 
     readonly typeLabels = ITEM_TYPE_LABELS;
     readonly typeOptions: Array<{ value: ItemTypeFilter; label: string }> = [
@@ -137,11 +128,8 @@ export class ItemsPageComponent {
     readonly isGridView = computed(() => this.viewMode() === 'grid');
 
     constructor() {
-        const requestParams = computed(() => ({ filters: this.currentFilters(), tick: this.refreshTick() }));
-
-        toObservable(requestParams)
+        toObservable(computed(() => this.currentFilters()))
             .pipe(
-                map(({ filters }) => filters),
                 switchMap((filters) => {
                     this.loading.set(true);
                     return this.itemService.list(filters).pipe(
@@ -161,69 +149,12 @@ export class ItemsPageComponent {
             .subscribe();
     }
 
-    refresh(): void {
-        this.refreshTick.update((value) => value + 1);
-    }
-
     startCreate(): void {
         this.router.navigate(['/items/add']);
     }
 
     startEdit(item: Item): void {
-        this.formContext.set({ item });
-    }
-
-    closeForm(): void {
-        this.formContext.set(null);
-    }
-
-    handleSave(formValue: ItemForm): void {
-        const ctx = this.formContext();
-        if (!ctx) {
-            return;
-        }
-
-        this.mutationInFlight.set(true);
-        this.itemService
-            .update(ctx.item.id, formValue)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (item) => {
-                    this.mutationInFlight.set(false);
-                    this.snackBar.open(`Saved “${item.title}”`, 'Dismiss', { duration: 4000 });
-                    this.closeForm();
-                    this.refresh();
-                },
-                error: () => {
-                    this.mutationInFlight.set(false);
-                    this.snackBar.open('We could not save the item. Double-check required fields.', 'Dismiss', {
-                        duration: 5000,
-                    });
-                },
-            });
-    }
-
-    deleteItem(item: Item): void {
-        if (this.mutationInFlight()) {
-            return;
-        }
-
-        this.mutationInFlight.set(true);
-        this.itemService
-            .delete(item.id)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: () => {
-                    this.mutationInFlight.set(false);
-                    this.snackBar.open(`Removed “${item.title}”`, 'Dismiss', { duration: 4000 });
-                    this.closeForm();
-                    this.refresh();
-                },
-                error: () => {
-                    this.mutationInFlight.set(false);
-                    this.snackBar.open('Unable to delete this entry right now.', 'Dismiss', { duration: 5000 });
-                },
-            });
+        this.router.navigate(['/items', item.id, 'edit']);
     }
 
     trackById(_: number, item: Item): string {

@@ -31,6 +31,11 @@ export class SidebarComponent {
         { label: 'Add Item', icon: 'library_add', route: '/items/add' },
     ];
 
+    handleLogoutClick(event: Event): void {
+        event.preventDefault();
+        this.logout();
+    }
+
     logout(): void {
         this.authService
             .logout()

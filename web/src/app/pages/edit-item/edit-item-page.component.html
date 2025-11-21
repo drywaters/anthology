@@ -1,0 +1,36 @@
+<section class="edit-item-page">
+    <div class="page-header">
+        <h2>Edit item</h2>
+        <p>Review the captured details, make adjustments, or remove this entry entirely.</p>
+    </div>
+
+    <mat-card>
+        <mat-card-content>
+            <div class="state" *ngIf="loading()">
+                <mat-progress-spinner mode="indeterminate" diameter="32"></mat-progress-spinner>
+                <p>Loading item…</p>
+            </div>
+            <div class="state error" *ngIf="!loading() && loadError()">
+                <mat-icon aria-hidden="true">error</mat-icon>
+                <div>
+                    <h3>Something went wrong</h3>
+                    <p>{{ loadError() }}</p>
+                </div>
+                <div class="state-actions">
+                    <button mat-stroked-button type="button" (click)="retry()" *ngIf="itemId()">Try again</button>
+                    <button mat-button type="button" (click)="navigateBack()">Back to list</button>
+                </div>
+            </div>
+
+            <app-item-form
+                *ngIf="item() && !loading() && !loadError()"
+                [item]="item()"
+                mode="edit"
+                [busy]="busy()"
+                (save)="handleSave($event)"
+                (cancelled)="handleCancel()"
+                (deleteRequested)="handleDelete()"
+            ></app-item-form>
+        </mat-card-content>
+    </mat-card>
+</section>

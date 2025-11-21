@@ -129,6 +129,10 @@
     gap: 0.35rem;
 }
 
+.cover-image-field {
+    margin: 0 0 1.25rem;
+}
+
 .cover-header {
     display: flex;
     flex-direction: column;
@@ -153,7 +157,7 @@
 }
 
 .cover-error {
-    color: #b91c1c;
+    color: var(--mat-sys-error);
     font-weight: 600;
 }
 
@@ -173,4 +177,14 @@
     display: flex;
     justify-content: flex-end;
     gap: 0.75rem;
+}
+
+.form-actions__delete.mat-mdc-button-base {
+    --mdc-filled-button-container-color: var(--mat-sys-error);
+    --mdc-filled-button-label-text-color: var(--mat-sys-on-error);
+}
+
+.form-actions__delete.mat-mdc-button-base:disabled {
+    --mdc-filled-button-container-color: color-mix(in srgb, var(--mat-sys-error) 65%, white);
+    --mdc-filled-button-label-text-color: color-mix(in srgb, var(--mat-sys-on-error) 75%, var(--mat-sys-on-surface));
 }

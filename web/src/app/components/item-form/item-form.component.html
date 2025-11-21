@@ -88,7 +88,7 @@
                 <p class="cover-hint">Use a JPG/PNG under 500KB. Upload a file or paste an image link.</p>
             </div>
 
-            <mat-form-field appearance="fill">
+            <mat-form-field appearance="fill" class="cover-image-field">
                 <mat-label>Cover image URL or data URI</mat-label>
                 <input matInput formControlName="coverImage" (input)="clearCoverError()" />
                 <button
@@ -129,6 +129,17 @@
     </mat-form-field>
 
     <div class="form-actions">
+        <button
+            mat-flat-button
+            color="warn"
+            type="button"
+            *ngIf="mode === 'edit'"
+            class="form-actions__delete"
+            (click)="deleteRequested.emit()"
+            [disabled]="busy"
+        >
+            Delete item
+        </button>
         <button mat-stroked-button type="button" (click)="cancelled.emit()" [disabled]="busy">
            Cancel
         </button>

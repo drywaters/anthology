@@ -96,10 +96,16 @@
                 <ng-template #tableView>
                     <ng-container *ngIf="hasFilteredItems(); else filteredFallback">
                         <div class="table-wrapper">
-                            <table mat-table [dataSource]="items()" class="items-table" data-testid="items-table">
+                            <table
+                                mat-table
+                                [dataSource]="items()"
+                                [trackBy]="trackById"
+                                class="items-table"
+                                data-testid="items-table"
+                            >
                                 <ng-container matColumnDef="title">
                                     <th mat-header-cell *matHeaderCellDef>Title</th>
-                                    <td mat-cell *matCellDef="let item" (click)="startEdit(item)">
+                                    <td mat-cell *matCellDef="let item">
                                         <div class="item-title">{{ item.title }}</div>
                                     </td>
                                 </ng-container>
@@ -135,32 +141,16 @@
                                     <td mat-cell *matCellDef="let item">{{ item.updatedAt | date: 'mediumDate' }}</td>
                                 </ng-container>
 
-                                <ng-container matColumnDef="actions">
-                                    <th mat-header-cell *matHeaderCellDef></th>
-                                    <td mat-cell *matCellDef="let item" class="actions">
-                                        <button
-                                            mat-icon-button
-                                            type="button"
-                                            (click)="startEdit(item); $event.stopPropagation()"
-                                            aria-label="Edit {{ item.title }}"
-                                        >
-                                            <mat-icon>edit</mat-icon>
-                                        </button>
-                                        <button
-                                            mat-icon-button
-                                            color="warn"
-                                            type="button"
-                                            (click)="deleteItem(item); $event.stopPropagation()"
-                                            [disabled]="mutationInFlight()"
-                                            aria-label="Delete {{ item.title }}"
-                                        >
-                                            <mat-icon>delete</mat-icon>
-                                        </button>
-                                    </td>
-                                </ng-container>
-
                                 <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                                <tr mat-row *matRowDef="let row; columns: displayedColumns; trackBy: trackById"></tr>
+                                <tr
+                                    mat-row
+                                    *matRowDef="let row; columns: displayedColumns"
+                                    class="clickable-row"
+                                    tabindex="0"
+                                    (click)="startEdit(row)"
+                                    (keydown.enter)="startEdit(row)"
+                                    (keydown.space)="startEdit(row); $event.preventDefault()"
+                                ></tr>
                             </table>
                         </div>
                     </ng-container>
@@ -188,23 +178,5 @@
             </mat-card>
         </section>
 
-        <section class="form-panel" *ngIf="formContext() as ctx">
-            <mat-card>
-                <mat-card-content>
-                    <app-item-form
-                        [item]="ctx.item"
-                        mode="edit"
-                        [busy]="mutationInFlight()"
-                        (save)="handleSave($event)"
-                        (cancelled)="closeForm()"
-                    ></app-item-form>
-                </mat-card-content>
-                <mat-card-actions align="end" *ngIf="ctx.item">
-                    <button mat-stroked-button color="warn" (click)="deleteItem(ctx.item)" [disabled]="mutationInFlight()">
-                        Delete item
-                    </button>
-                </mat-card-actions>
-            </mat-card>
-        </section>
     </div>
 </div>
