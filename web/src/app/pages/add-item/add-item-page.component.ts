@@ -260,6 +260,10 @@ export class AddItemPageComponent {
         this.scannerActive.set(true);
 
         const video = await this.waitForScanVideoElement();
+        if (!this.scannerActive()) {
+            return;
+        }
+
         if (!video) {
             this.scannerError.set('Camera preview is not available.');
             this.scannerStatus.set(null);
@@ -268,6 +272,10 @@ export class AddItemPageComponent {
         }
 
         const scannerMode = await this.resolveBarcodeScanner();
+        if (!this.scannerActive()) {
+            return;
+        }
+
         if (!scannerMode) {
             this.scannerActive.set(false);
             this.scannerStatus.set(null);
@@ -275,6 +283,10 @@ export class AddItemPageComponent {
         }
 
         try {
+            if (!this.scannerActive()) {
+                return;
+            }
+
             this.scanStream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: 'environment' },
                 audio: false,
