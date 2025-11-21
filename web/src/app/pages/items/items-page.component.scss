@@ -25,19 +25,12 @@
     align-items: flex-start;
 }
 
-.items-panel,
-.form-panel {
+.items-panel {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-}
-
-.items-panel {
     flex: 2 1 520px;
-}
-
-.form-panel {
-    flex: 1 1 360px;
+    min-width: 0;
 }
 
 mat-card {
@@ -189,19 +182,21 @@ mat-progress-bar {
     border-bottom: none;
 }
 
-.items-table tr:hover {
-    background-color: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
+.items-table tr.mat-mdc-row {
     cursor: pointer;
+}
+
+.items-table tr.mat-mdc-row:hover {
+    background-color: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
+}
+
+.items-table tr.mat-mdc-row:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--mat-sys-primary) 40%, transparent);
+    outline-offset: -4px;
 }
 
 .item-title {
     font-weight: 600;
-}
-
-.actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.25rem;
 }
 
 .empty-state {
@@ -333,8 +328,8 @@ mat-progress-bar {
         flex-direction: column;
     }
 
-    .form-panel {
-        order: -1;
+    .items-panel {
+        flex: 1 1 auto;
         width: 100%;
     }
 
@@ -346,6 +341,7 @@ mat-progress-bar {
         flex-direction: column;
         align-items: stretch;
         padding-inline: 1rem;
+        width: 100%;
     }
 }
 .item-type-chip--book {
