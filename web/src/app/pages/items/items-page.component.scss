@@ -83,6 +83,10 @@ mat-progress-bar {
     min-width: 180px;
 }
 
+.status-select {
+    min-width: 210px;
+}
+
 .letter-filter {
     display: flex;
     flex-wrap: wrap;
@@ -178,6 +182,11 @@ mat-progress-bar {
     border-bottom: 1px solid var(--mat-sys-outline-variant);
 }
 
+.item-subtext {
+    font-size: 0.85rem;
+    color: var(--mat-sys-on-surface-variant);
+}
+
 .items-table tr:last-child td {
     border-bottom: none;
 }
@@ -197,6 +206,20 @@ mat-progress-bar {
 
 .item-title {
     font-weight: 600;
+}
+
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.1rem 0.65rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--mat-sys-secondary) 18%, white);
+    color: color-mix(in srgb, var(--mat-sys-secondary) 85%, black);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.75rem;
 }
 
 .empty-state {

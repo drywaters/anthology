@@ -46,7 +46,7 @@ api-run: ## Run the Go API with in-memory defaults.
 run: api-run ## Alias for api-run to match common tooling expectations.
 
 api-test: ## Execute all Go unit tests.
-	go test ./...
+	GOOGLE_BOOKS_API_KEY=$(GOOGLE_BOOKS_API_KEY) go test ./...
 
 api-build: ## Compile the Go API into ./bin/anthology.
 	mkdir -p $(BIN_DIR)

@@ -10,6 +10,15 @@
                 </mat-select>
             </mat-form-field>
 
+            <mat-form-field appearance="outline" class="status-select">
+                <mat-label>Reading status</mat-label>
+                <mat-select [value]="statusFilter()" (valueChange)="setStatusFilter($event)">
+                    <mat-option *ngFor="let option of statusOptions" [value]="option.value">
+                        {{ option.label }}
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+
             <div class="letter-filter" role="list">
                 <button
                     mat-button
@@ -87,6 +96,19 @@
                                     </div>
                                     <p class="card-meta">{{ item.creator || 'Unknown creator' }}</p>
                                     <p class="card-sub" *ngIf="item.releaseYear">Released {{ item.releaseYear }}</p>
+                                    <p class="card-sub" *ngIf="readingStatusLabel(item) as statusLabel">
+                                        <span class="status-chip">{{ statusLabel }}</span>
+                                        <ng-container *ngIf="item.readingStatus === 'read' && item.readAt">
+                                            • Read {{ item.readAt | date: 'mediumDate' }}
+                                        </ng-container>
+                                        <ng-container *ngIf="readingProgress(item) as progress">
+                                            •
+                                            <ng-container *ngIf="progress.percent !== undefined; else cardProgressFallback">
+                                                {{ progress.percent }}% complete ({{ progress.current }}/{{ progress.total }} pages)
+                                            </ng-container>
+                                            <ng-template #cardProgressFallback>On page {{ progress.current }}</ng-template>
+                                        </ng-container>
+                                    </p>
                                 </div>
                             </article>
                         </div>
@@ -107,6 +129,13 @@
                                     <th mat-header-cell *matHeaderCellDef>Title</th>
                                     <td mat-cell *matCellDef="let item">
                                         <div class="item-title">{{ item.title }}</div>
+                                        <div class="item-subtext" *ngIf="readingProgress(item) as progress">
+                                            Reading •
+                                            <ng-container *ngIf="progress.percent !== undefined; else tableProgressFallback">
+                                                {{ progress.percent }}% complete ({{ progress.current }}/{{ progress.total }} pages)
+                                            </ng-container>
+                                            <ng-template #tableProgressFallback>On page {{ progress.current }}</ng-template>
+                                        </div>
                                     </td>
                                 </ng-container>
 

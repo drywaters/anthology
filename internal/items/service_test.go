@@ -55,6 +55,9 @@ func TestServiceCreatePersistsItem(t *testing.T) {
 	if item.PageCount == nil || *item.PageCount != pages {
 		t.Fatalf("expected page count to persist")
 	}
+	if item.CurrentPage != nil {
+		t.Fatalf("expected current page to be nil for new item")
+	}
 	if item.ISBN13 != "9780135957059" {
 		t.Fatalf("expected isbn13 to persist")
 	}
@@ -66,6 +69,42 @@ func TestServiceCreatePersistsItem(t *testing.T) {
 	}
 	if item.CoverImage == "" {
 		t.Fatalf("expected cover image to persist")
+	}
+	if item.ReadingStatus != BookStatusUnknown {
+		t.Fatalf("expected default reading status to be empty, got %q", item.ReadingStatus)
+	}
+	if item.ReadAt != nil {
+		t.Fatalf("expected readAt to be nil for non-read status")
+	}
+}
+
+func TestServiceCreateValidatesCurrentPage(t *testing.T) {
+	repo := NewInMemoryRepository(nil)
+	svc := NewService(repo)
+	ctx := context.Background()
+	pageCount := 200
+	current := 250
+
+	_, err := svc.Create(ctx, CreateItemInput{
+		Title:         "Progress",
+		ItemType:      ItemTypeBook,
+		PageCount:     &pageCount,
+		ReadingStatus: BookStatusReading,
+		CurrentPage:   &current,
+	})
+	if err == nil {
+		t.Fatalf("expected error when current page exceeds total")
+	}
+
+	current = -1
+	_, err = svc.Create(ctx, CreateItemInput{
+		Title:         "Negative",
+		ItemType:      ItemTypeBook,
+		ReadingStatus: BookStatusReading,
+		CurrentPage:   &current,
+	})
+	if err == nil {
+		t.Fatalf("expected error when current page negative")
 	}
 }
 
@@ -153,6 +192,10 @@ func TestServiceListAppliesFilters(t *testing.T) {
 	_, _ = svc.Create(ctx, CreateItemInput{Title: "Zulu", ItemType: ItemTypeGame})
 	_, _ = svc.Create(ctx, CreateItemInput{Title: "99 Luftballons", ItemType: ItemTypeMusic})
 
+	finishedDate := time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC)
+	finished, _ := svc.Create(ctx, CreateItemInput{Title: "Finished Book", ItemType: ItemTypeBook, ReadingStatus: BookStatusRead, ReadAt: &finishedDate})
+	_, _ = svc.Create(ctx, CreateItemInput{Title: "In Progress", ItemType: ItemTypeBook, ReadingStatus: BookStatusReading})
+
 	letter := "A"
 	items, err := svc.List(ctx, ListOptions{Initial: &letter})
 	if err != nil {
@@ -170,6 +213,15 @@ func TestServiceListAppliesFilters(t *testing.T) {
 	}
 	if len(items) != 1 || items[0].Title != "99 Luftballons" {
 		t.Fatalf("expected non-alphabetic music result")
+	}
+
+	status := BookStatusRead
+	items, err = svc.List(ctx, ListOptions{ReadingStatus: &status})
+	if err != nil {
+		t.Fatalf("list with status filter failed: %v", err)
+	}
+	if len(items) != 1 || items[0].ID != finished.ID {
+		t.Fatalf("expected only finished book, got %#v", items)
 	}
 }
 
@@ -263,6 +315,95 @@ func TestServiceRejectsOversizedCoverImage(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected oversized cover image to be rejected on update")
 	}
+}
+
+func TestServiceValidatesBookStatusTransitions(t *testing.T) {
+	repo := NewInMemoryRepository(nil)
+	svc := NewService(repo)
+
+	pageCount := 400
+	book, err := svc.Create(context.Background(), CreateItemInput{Title: "Status", ItemType: ItemTypeBook, PageCount: &pageCount})
+	if err != nil {
+		t.Fatalf("create failed: %v", err)
+	}
+
+	_, err = svc.Update(context.Background(), book.ID, UpdateItemInput{ReadingStatus: ptrBookStatus(BookStatusRead)})
+	if err == nil {
+		t.Fatalf("expected read status to require readAt")
+	}
+
+	readAt := time.Date(2023, 3, 5, 0, 0, 0, 0, time.UTC)
+	updated, err := svc.Update(context.Background(), book.ID, UpdateItemInput{ReadingStatus: ptrBookStatus(BookStatusRead), ReadAt: ptrTimePtr(readAt)})
+	if err != nil {
+		t.Fatalf("expected valid status update, got %v", err)
+	}
+	if updated.ReadingStatus != BookStatusRead {
+		t.Fatalf("expected status to update to read")
+	}
+	if updated.ReadAt == nil || !updated.ReadAt.Equal(readAt) {
+		t.Fatalf("expected readAt to persist")
+	}
+	if updated.CurrentPage != nil {
+		t.Fatalf("expected current page to clear for read status")
+	}
+
+	readingUpdate, err := svc.Update(context.Background(), book.ID, UpdateItemInput{
+		ReadingStatus: ptrBookStatus(BookStatusReading),
+		CurrentPage:  ptrIntPtr(120),
+	})
+	if err != nil {
+		t.Fatalf("expected reading status update to succeed: %v", err)
+	}
+	if readingUpdate.CurrentPage == nil || *readingUpdate.CurrentPage != 120 {
+		t.Fatalf("expected current page to persist")
+	}
+
+	_, err = svc.Update(context.Background(), book.ID, UpdateItemInput{CurrentPage: ptrIntPtr(999)})
+	if err == nil {
+		t.Fatalf("expected error when current page exceeds total")
+	}
+
+	cleared, err := svc.Update(context.Background(), book.ID, UpdateItemInput{ReadingStatus: ptrBookStatus(BookStatusUnknown)})
+	if err != nil {
+		t.Fatalf("expected clearing reading status to succeed: %v", err)
+	}
+	if cleared.ReadingStatus != BookStatusUnknown {
+		t.Fatalf("expected reading status to clear, got %q", cleared.ReadingStatus)
+	}
+	if cleared.ReadAt != nil {
+		t.Fatalf("expected readAt to clear when status removed")
+	}
+	if cleared.CurrentPage != nil {
+		t.Fatalf("expected current page to clear when status removed")
+	}
+
+	_, err = svc.Update(context.Background(), book.ID, UpdateItemInput{ReadingStatus: ptrBookStatus(BookStatusReading), CurrentPage: ptrIntPtr(-5)})
+	if err == nil {
+		t.Fatalf("expected negative current page to fail")
+	}
+}
+
+func ptrInt(value int) *int {
+	v := value
+	return &v
+}
+
+func ptrIntPtr(value int) **int {
+	inner := ptrInt(value)
+	return &inner
+}
+
+func ptrBookStatus(status BookStatus) *BookStatus {
+	return &status
+}
+
+func ptrTime(t time.Time) *time.Time {
+	return &t
+}
+
+func ptrTimePtr(t time.Time) **time.Time {
+	value := ptrTime(t)
+	return &value
 }
 
 func TestServiceAllowsDataURIsLongerThanURLLimitWhenUnderByteCap(t *testing.T) {

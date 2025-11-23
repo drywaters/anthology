@@ -32,6 +32,17 @@ func (s *Service) Create(ctx context.Context, input CreateItemInput) (Item, erro
 		return Item{}, err
 	}
 
+	pageCount := normalizePositiveInt(input.PageCount)
+	currentPage, err := normalizeCurrentPage(input.CurrentPage)
+	if err != nil {
+		return Item{}, err
+	}
+
+	readingStatus, readAt, normalizedCurrentPage, err := normalizeBookFields(input.ItemType, input.ReadingStatus, input.ReadAt, pageCount, currentPage)
+	if err != nil {
+		return Item{}, err
+	}
+
 	coverImage, err := sanitizeCoverImage(input.CoverImage)
 	if err != nil {
 		return Item{}, err
@@ -39,19 +50,22 @@ func (s *Service) Create(ctx context.Context, input CreateItemInput) (Item, erro
 
 	now := time.Now().UTC()
 	item := Item{
-		ID:          uuid.New(),
-		Title:       strings.TrimSpace(input.Title),
-		Creator:     strings.TrimSpace(input.Creator),
-		ItemType:    input.ItemType,
-		ReleaseYear: normalizeYear(input.ReleaseYear),
-		PageCount:   normalizePositiveInt(input.PageCount),
-		ISBN13:      strings.TrimSpace(input.ISBN13),
-		ISBN10:      strings.TrimSpace(input.ISBN10),
-		Description: strings.TrimSpace(input.Description),
-		CoverImage:  coverImage,
-		Notes:       strings.TrimSpace(input.Notes),
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		ID:            uuid.New(),
+		Title:         strings.TrimSpace(input.Title),
+		Creator:       strings.TrimSpace(input.Creator),
+		ItemType:      input.ItemType,
+		ReleaseYear:   normalizeYear(input.ReleaseYear),
+		PageCount:     pageCount,
+		CurrentPage:   normalizedCurrentPage,
+		ISBN13:        strings.TrimSpace(input.ISBN13),
+		ISBN10:        strings.TrimSpace(input.ISBN10),
+		Description:   strings.TrimSpace(input.Description),
+		CoverImage:    coverImage,
+		ReadingStatus: readingStatus,
+		ReadAt:        readAt,
+		Notes:         strings.TrimSpace(input.Notes),
+		CreatedAt:     now,
+		UpdatedAt:     now,
 	}
 
 	return s.repo.Create(ctx, item)
@@ -116,6 +130,14 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, input UpdateItemInpu
 		existing.PageCount = normalizePositiveInt(*input.PageCount)
 	}
 
+	if input.CurrentPage != nil {
+		value, err := normalizeCurrentPage(*input.CurrentPage)
+		if err != nil {
+			return Item{}, err
+		}
+		existing.CurrentPage = value
+	}
+
 	if input.Notes != nil {
 		existing.Notes = strings.TrimSpace(*input.Notes)
 	}
@@ -140,6 +162,24 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, input UpdateItemInpu
 		existing.CoverImage = coverImage
 	}
 
+	readingStatus := existing.ReadingStatus
+	if input.ReadingStatus != nil {
+		readingStatus = *input.ReadingStatus
+	}
+
+	readAt := existing.ReadAt
+	if input.ReadAt != nil {
+		readAt = *input.ReadAt
+	}
+
+	normalizedStatus, normalizedReadAt, normalizedCurrentPage, err := normalizeBookFields(existing.ItemType, readingStatus, readAt, existing.PageCount, existing.CurrentPage)
+	if err != nil {
+		return Item{}, err
+	}
+
+	existing.ReadingStatus = normalizedStatus
+	existing.ReadAt = normalizedReadAt
+	existing.CurrentPage = normalizedCurrentPage
 	existing.UpdatedAt = time.Now().UTC()
 	return s.repo.Update(ctx, existing)
 }
@@ -182,6 +222,17 @@ func normalizePositiveInt(value *int) *int {
 	return &v
 }
 
+func normalizeCurrentPage(value *int) (*int, error) {
+	if value == nil {
+		return nil, nil
+	}
+	v := *value
+	if v < 0 {
+		return nil, fmt.Errorf("currentPage must be zero or greater")
+	}
+	return &v, nil
+}
+
 func sanitizeCoverImage(raw string) (string, error) {
 	trimmed := strings.TrimSpace(raw)
 	if trimmed == "" {
@@ -211,4 +262,42 @@ func sanitizeCoverImage(raw string) (string, error) {
 	}
 
 	return trimmed, nil
+}
+
+func normalizeBookFields(itemType ItemType, status BookStatus, readAt *time.Time, pageCount *int, currentPage *int) (BookStatus, *time.Time, *int, error) {
+	if itemType != ItemTypeBook {
+		return BookStatusUnknown, nil, nil, nil
+	}
+
+	switch status {
+	case BookStatusUnknown:
+		return BookStatusUnknown, nil, nil, nil
+	case BookStatusWantToRead:
+		return BookStatusWantToRead, nil, nil, nil
+	case BookStatusRead:
+		if readAt == nil || readAt.IsZero() {
+			return BookStatusUnknown, nil, nil, fmt.Errorf("readAt is required when readingStatus is read")
+		}
+
+		normalized := readAt.UTC()
+		return status, &normalized, nil, nil
+	case BookStatusReading:
+		normalizedPage, err := normalizeReadingProgress(currentPage, pageCount)
+		if err != nil {
+			return BookStatusUnknown, nil, nil, err
+		}
+		return status, nil, normalizedPage, nil
+	default:
+		return BookStatusUnknown, nil, nil, fmt.Errorf("readingStatus must be empty or one of read, reading, or want_to_read")
+	}
+}
+
+func normalizeReadingProgress(currentPage *int, pageCount *int) (*int, error) {
+	if currentPage == nil {
+		return nil, nil
+	}
+	if pageCount != nil && *currentPage > *pageCount {
+		return nil, fmt.Errorf("currentPage cannot exceed pageCount")
+	}
+	return currentPage, nil
 }

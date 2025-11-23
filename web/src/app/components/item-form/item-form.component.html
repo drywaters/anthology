@@ -37,6 +37,48 @@
 
         <div class="book-grid">
             <mat-form-field appearance="fill">
+                <mat-label>Reading status</mat-label>
+                <mat-select formControlName="readingStatus" (valueChange)="onStatusChange($event)">
+                    <mat-option *ngFor="let option of bookStatusOptions" [value]="option.value">
+                        {{ option.label }}
+                    </mat-option>
+                </mat-select>
+                <mat-hint>Track whether you have read or started this book.</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill" *ngIf="isReadStatus">
+                <mat-label>Date finished</mat-label>
+                <input matInput [matDatepicker]="finishedPicker" formControlName="readAt" />
+                <mat-datepicker-toggle matIconSuffix [for]="finishedPicker"></mat-datepicker-toggle>
+                <mat-datepicker #finishedPicker></mat-datepicker>
+                <mat-error *ngIf="form.get('readAt')?.hasError('required')">
+                    Finish date is required when marking a book as read.
+                </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill" *ngIf="isReadingStatus">
+                <mat-label>Current page</mat-label>
+                <input matInput formControlName="currentPage" type="number" min="0" />
+                <button
+                    mat-icon-button
+                    matSuffix
+                    type="button"
+                    (click)="clearCurrentPage()"
+                    aria-label="Clear current page"
+                    *ngIf="form.get('currentPage')?.value || form.get('currentPage')?.value === 0"
+                >
+                    <mat-icon>close</mat-icon>
+                </button>
+                <mat-hint *ngIf="form.get('pageCount')?.value as total">Out of {{ total }} total pages.</mat-hint>
+                <mat-error *ngIf="form.get('currentPage')?.hasError('min')">
+                    Current page cannot be negative.
+                </mat-error>
+                <mat-error *ngIf="form.get('currentPage')?.hasError('maxPages')">
+                    Current page cannot exceed the total page count.
+                </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill">
                 <mat-label>Number of pages</mat-label>
                 <input matInput formControlName="pageCount" type="number" min="1" />
                 <button mat-icon-button matSuffix type="button" (click)="clearPageCount()" aria-label="Clear page count">
