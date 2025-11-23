@@ -1,4 +1,4 @@
-import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { NgClass, NgFor, NgIf, NgStyle } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -84,13 +84,19 @@ export class ShelfDetailPageComponent {
     readonly unplacedItems = computed(() => this.shelf()?.unplaced ?? []);
 
     constructor() {
-        effect(() => {
-            const id = this.route.snapshot.paramMap.get('id');
-            if (id) {
-                this.loadShelf(id);
-                this.loadItems();
+        this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+            const id = params.get('id');
+            if (!id) {
+                this.shelf.set(null);
+                return;
             }
+            this.mode.set('view');
+            this.displaced.set([]);
+            this.selectedSlot.set(null);
+            this.loadShelf(id);
         });
+
+        this.loadItems();
     }
 
     get rows(): FormArray<FormGroup<LayoutRowGroup>> {

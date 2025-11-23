@@ -147,6 +147,21 @@ func (s *Service) UpdateLayout(ctx context.Context, shelfID uuid.UUID, input Upd
 	}
 
 	removedSlotIDs := removedSlots(existing.Slots, slots)
+	displacedItemIDs := make(map[uuid.UUID]struct{})
+	if len(removedSlotIDs) > 0 {
+		removedSet := make(map[uuid.UUID]struct{}, len(removedSlotIDs))
+		for _, id := range removedSlotIDs {
+			removedSet[id] = struct{}{}
+		}
+		for _, placement := range existing.Placements {
+			if placement.Placement.ShelfSlotID == nil {
+				continue
+			}
+			if _, removed := removedSet[*placement.Placement.ShelfSlotID]; removed {
+				displacedItemIDs[placement.Placement.ItemID] = struct{}{}
+			}
+		}
+	}
 	if err := s.repo.SaveLayout(ctx, shelfID, slices.Clone(normalizedRows), flattenColumns(normalizedColumns), slots, removedSlotIDs); err != nil {
 		return ShelfWithLayout{}, nil, err
 	}
@@ -162,9 +177,9 @@ func (s *Service) UpdateLayout(ctx context.Context, shelfID uuid.UUID, input Upd
 	}
 
 	var displaced []PlacementWithItem
-	if len(removedSlotIDs) > 0 {
+	if len(displacedItemIDs) > 0 {
 		for _, placement := range hydrated.Unplaced {
-			if placement.Placement.ShelfSlotID == nil {
+			if _, removed := displacedItemIDs[placement.Placement.ItemID]; removed {
 				displaced = append(displaced, placement)
 			}
 		}
