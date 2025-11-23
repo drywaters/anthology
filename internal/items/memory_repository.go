@@ -60,6 +60,10 @@ func (r *InMemoryRepository) List(_ context.Context, opts ListOptions) ([]Item, 
 				continue
 			}
 
+			if opts.ReadingStatus != nil && item.ReadingStatus != *opts.ReadingStatus {
+				continue
+			}
+
 			if opts.Initial != nil {
 				initial := strings.ToUpper(strings.TrimSpace(*opts.Initial))
 				titleInitial := ""

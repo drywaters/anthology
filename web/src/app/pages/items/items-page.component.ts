@@ -12,11 +12,12 @@ import { Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { EMPTY, catchError, switchMap, tap } from 'rxjs';
 
-import { Item, ItemType, ITEM_TYPE_LABELS } from '../../models/item';
+import { BookStatus, BOOK_STATUS_LABELS, Item, ItemType, ITEM_TYPE_LABELS } from '../../models/item';
 import { ItemService } from '../../services/item.service';
 
 type ItemTypeFilter = ItemType | 'all';
 type LetterFilter = AlphabetLetter | 'ALL';
+type BookStatusFilter = BookStatus | 'all';
 
 type AlphabetLetter =
     | 'A'
@@ -75,20 +76,28 @@ export class ItemsPageComponent {
     private readonly destroyRef = inject(DestroyRef);
     private readonly router = inject(Router);
 
-    readonly displayedColumns = ['title', 'creator', 'itemType', 'releaseYear', 'updatedAt'] as const;
+    readonly displayedColumns = ['title', 'creator', 'itemType', 'readingStatus', 'releaseYear', 'updatedAt'] as const;
     readonly items = signal<Item[]>([]);
     readonly loading = signal(false);
     readonly letterFilter = signal<LetterFilter>('ALL');
     readonly typeFilter = signal<ItemTypeFilter>('all');
+    readonly statusFilter = signal<BookStatusFilter>('all');
     readonly viewMode = signal<'table' | 'grid'>('table');
 
     readonly typeLabels = ITEM_TYPE_LABELS;
+    readonly statusLabels = BOOK_STATUS_LABELS;
     readonly typeOptions: Array<{ value: ItemTypeFilter; label: string }> = [
         { value: 'all', label: 'All items' },
         { value: 'book', label: ITEM_TYPE_LABELS.book },
         { value: 'game', label: ITEM_TYPE_LABELS.game },
         { value: 'movie', label: ITEM_TYPE_LABELS.movie },
         { value: 'music', label: ITEM_TYPE_LABELS.music },
+    ];
+    readonly statusOptions: Array<{ value: BookStatusFilter; label: string }> = [
+        { value: 'all', label: 'All reading statuses' },
+        { value: 'want_to_read', label: BOOK_STATUS_LABELS.want_to_read },
+        { value: 'reading', label: BOOK_STATUS_LABELS.reading },
+        { value: 'read', label: BOOK_STATUS_LABELS.read },
     ];
 
     readonly alphabet: AlphabetLetter[] = [
@@ -123,7 +132,7 @@ export class ItemsPageComponent {
 
     readonly hasFilteredItems = computed(() => this.items().length > 0);
     readonly isUnfiltered = computed(
-        () => this.typeFilter() === 'all' && this.letterFilter() === 'ALL'
+        () => this.typeFilter() === 'all' && this.letterFilter() === 'ALL' && this.statusFilter() === 'all'
     );
     readonly isGridView = computed(() => this.viewMode() === 'grid');
 
@@ -165,6 +174,14 @@ export class ItemsPageComponent {
         return this.typeLabels[item.itemType];
     }
 
+    readingStatusLabel(item: Item): string | null {
+        if (item.itemType !== 'book' || !item.readingStatus) {
+            return null;
+        }
+
+        return this.statusLabels[item.readingStatus];
+    }
+
     chipClassFor(itemType: ItemType): string {
         return `item-type-chip--${itemType}`;
     }
@@ -181,6 +198,10 @@ export class ItemsPageComponent {
         this.typeFilter.set(type);
     }
 
+    setStatusFilter(status: BookStatusFilter): void {
+        this.statusFilter.set(status);
+    }
+
     setViewMode(mode: 'table' | 'grid'): void {
         this.viewMode.set(mode);
     }
@@ -192,8 +213,8 @@ export class ItemsPageComponent {
         }
     }
 
-    private currentFilters(): { itemType?: ItemType; letter?: string } | undefined {
-        const filters: { itemType?: ItemType; letter?: string } = {};
+    private currentFilters(): { itemType?: ItemType; letter?: string; status?: BookStatus } | undefined {
+        const filters: { itemType?: ItemType; letter?: string; status?: BookStatus } = {};
 
         const typeFilter = this.typeFilter();
         if (typeFilter !== 'all') {
@@ -203,6 +224,11 @@ export class ItemsPageComponent {
         const letterFilter = this.letterFilter();
         if (letterFilter !== 'ALL') {
             filters.letter = letterFilter;
+        }
+
+        const statusFilter = this.statusFilter();
+        if (statusFilter !== 'all') {
+            filters.status = statusFilter;
         }
 
         return Object.keys(filters).length > 0 ? filters : undefined;

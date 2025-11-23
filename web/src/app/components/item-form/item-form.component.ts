@@ -1,5 +1,16 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
+import {
+    Component,
+    ElementRef,
+    EventEmitter,
+    Input,
+    OnChanges,
+    OnInit,
+    Output,
+    SimpleChanges,
+    ViewChild,
+    inject,
+} from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -7,7 +18,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
-import { Item, ItemForm, ItemType, ITEM_TYPE_LABELS } from '../../models/item';
+import { BookStatus, BOOK_STATUS_LABELS, Item, ItemForm, ItemType, ITEM_TYPE_LABELS } from '../../models/item';
 
 @Component({
     selector: 'app-item-form',
@@ -24,7 +35,7 @@ import { Item, ItemForm, ItemType, ITEM_TYPE_LABELS } from '../../models/item';
     templateUrl: './item-form.component.html',
     styleUrl: './item-form.component.scss',
 })
-export class ItemFormComponent implements OnChanges {
+export class ItemFormComponent implements OnChanges, OnInit {
     private readonly fb = inject(FormBuilder);
     private static readonly MAX_COVER_BYTES = 500 * 1024;
 
@@ -40,6 +51,7 @@ export class ItemFormComponent implements OnChanges {
 @Output() readonly deleteRequested = new EventEmitter<void>();
 
     readonly itemTypeOptions = Object.entries(ITEM_TYPE_LABELS) as [ItemType, string][];
+    readonly bookStatusOptions = Object.entries(BOOK_STATUS_LABELS) as [BookStatus, string][];
 
     coverImageError: string | null = null;
 
@@ -53,11 +65,23 @@ export class ItemFormComponent implements OnChanges {
         isbn10: ['', [Validators.maxLength(20)]],
         description: ['', [Validators.maxLength(2000)]],
         coverImage: [''],
+        readingStatus: ['want_to_read' as BookStatus],
+        readAt: [''],
         notes: ['', [Validators.maxLength(500)]],
     });
 
     get isBook(): boolean {
         return this.form.get('itemType')?.value === 'book';
+    }
+
+    get isReadStatus(): boolean {
+        return this.form.get('readingStatus')?.value === 'read';
+    }
+
+    ngOnInit(): void {
+        this.form
+            .get('itemType')
+            ?.valueChanges.subscribe((type: ItemType) => this.handleItemTypeChange(type));
     }
 
     ngOnChanges(changes: SimpleChanges): void {
@@ -72,6 +96,8 @@ export class ItemFormComponent implements OnChanges {
                 isbn10: '',
                 description: '',
                 coverImage: '',
+                readingStatus: 'want_to_read',
+                readAt: null,
                 notes: '',
             };
 
@@ -105,6 +131,8 @@ export class ItemFormComponent implements OnChanges {
                 next.isbn10 = this.draft.isbn10 ?? next.isbn10;
                 next.description = this.draft.description ?? next.description;
                 next.coverImage = this.draft.coverImage ?? next.coverImage;
+                next.readingStatus = this.normalizeStatus(this.draft.readingStatus) ?? next.readingStatus;
+                next.readAt = this.normalizeDateInput(this.draft.readAt) ?? next.readAt;
             }
 
             if (this.item) {
@@ -118,6 +146,12 @@ export class ItemFormComponent implements OnChanges {
                 next.description = this.item.description ?? '';
                 next.coverImage = this.item.coverImage ?? '';
                 next.notes = this.item.notes;
+                next.readingStatus = this.normalizeStatus(this.item.readingStatus) ?? next.readingStatus;
+                next.readAt = this.normalizeDateInput(this.item.readAt) ?? next.readAt;
+            }
+
+            if (next.readingStatus !== 'read') {
+                next.readAt = null;
             }
 
             this.form.reset(next);
@@ -131,6 +165,14 @@ export class ItemFormComponent implements OnChanges {
         }
 
         const value = this.form.value as ItemForm;
+        if (value.itemType === 'book' && value.readingStatus === 'read' && !value.readAt) {
+            this.form.get('readAt')?.setErrors({ required: true });
+            this.form.get('readAt')?.markAsTouched();
+            return;
+        }
+
+        const readingStatus = value.itemType === 'book' ? value.readingStatus ?? 'want_to_read' : undefined;
+        const readAt = value.itemType === 'book' ? value.readAt || null : null;
         this.save.emit({
             ...value,
             releaseYear: value.releaseYear === null || value.releaseYear === undefined ? null : value.releaseYear,
@@ -139,6 +181,8 @@ export class ItemFormComponent implements OnChanges {
             isbn13: value.isbn13 ?? '',
             isbn10: value.isbn10 ?? '',
             coverImage: value.coverImage ?? '',
+            readingStatus,
+            readAt,
         });
     }
 
@@ -158,6 +202,13 @@ export class ItemFormComponent implements OnChanges {
 
     clearCoverError(): void {
         this.coverImageError = null;
+    }
+
+    onStatusChange(status: BookStatus): void {
+        if (status !== 'read') {
+            this.form.patchValue({ readAt: '' });
+            this.form.get('readAt')?.setErrors(null);
+        }
     }
 
     openCoverFilePicker(): void {
@@ -191,5 +242,33 @@ export class ItemFormComponent implements OnChanges {
         if (this.coverInput?.nativeElement) {
             this.coverInput.nativeElement.value = '';
         }
+    }
+
+    private normalizeDateInput(value: string | null | undefined): string | null {
+        if (!value) {
+            return null;
+        }
+
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return null;
+        }
+
+        return date.toISOString().slice(0, 10);
+    }
+
+    private handleItemTypeChange(type: ItemType): void {
+        if (type !== 'book') {
+            this.form.patchValue({ readingStatus: 'want_to_read', readAt: '' });
+            this.form.get('readAt')?.setErrors(null);
+        }
+    }
+
+    private normalizeStatus(value: unknown): BookStatus | null {
+        return this.isValidStatus(value) ? value : null;
+    }
+
+    private isValidStatus(value: unknown): value is BookStatus {
+        return value === 'read' || value === 'reading' || value === 'want_to_read';
     }
 }

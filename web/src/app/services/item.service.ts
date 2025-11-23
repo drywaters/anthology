@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 
 import { environment } from '../config/environment';
-import { Item, ItemForm, ItemType } from '../models/item';
+import { BookStatus, Item, ItemForm, ItemType } from '../models/item';
 import { CsvImportSummary } from '../models/import';
 
 @Injectable({ providedIn: 'root' })
@@ -11,13 +11,16 @@ export class ItemService {
     private readonly http = inject(HttpClient);
     private readonly baseUrl = `${environment.apiUrl}/items`;
 
-    list(filters?: { itemType?: ItemType; letter?: string }): Observable<Item[]> {
+    list(filters?: { itemType?: ItemType; letter?: string; status?: BookStatus }): Observable<Item[]> {
         let params = new HttpParams();
         if (filters?.itemType) {
             params = params.set('type', filters.itemType);
         }
         if (filters?.letter) {
             params = params.set('letter', filters.letter);
+        }
+        if (filters?.status) {
+            params = params.set('status', filters.status);
         }
 
         return this.http
@@ -67,6 +70,20 @@ export class ItemService {
             } else if (typeof pageCount === 'string') {
                 payload['pageCount'] = Number.parseInt(pageCount, 10);
             }
+        }
+
+        if ('readAt' in payload) {
+            const readAt = payload['readAt'];
+            if (readAt === '' || readAt === null) {
+                payload['readAt'] = null;
+            } else if (typeof readAt === 'string') {
+                const dateValue = new Date(readAt);
+                payload['readAt'] = Number.isNaN(dateValue.getTime()) ? null : dateValue.toISOString();
+            }
+        }
+
+        if ('readingStatus' in payload && payload['readingStatus'] === undefined) {
+            delete payload['readingStatus'];
         }
 
         return payload;

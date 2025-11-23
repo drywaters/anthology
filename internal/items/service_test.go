@@ -67,6 +67,12 @@ func TestServiceCreatePersistsItem(t *testing.T) {
 	if item.CoverImage == "" {
 		t.Fatalf("expected cover image to persist")
 	}
+	if item.ReadingStatus != BookStatusWantToRead {
+		t.Fatalf("expected default reading status to be want_to_read")
+	}
+	if item.ReadAt != nil {
+		t.Fatalf("expected readAt to be nil for non-read status")
+	}
 }
 
 func TestServiceUpdate(t *testing.T) {
@@ -153,6 +159,10 @@ func TestServiceListAppliesFilters(t *testing.T) {
 	_, _ = svc.Create(ctx, CreateItemInput{Title: "Zulu", ItemType: ItemTypeGame})
 	_, _ = svc.Create(ctx, CreateItemInput{Title: "99 Luftballons", ItemType: ItemTypeMusic})
 
+	finishedDate := time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC)
+	finished, _ := svc.Create(ctx, CreateItemInput{Title: "Finished Book", ItemType: ItemTypeBook, ReadingStatus: BookStatusRead, ReadAt: &finishedDate})
+	_, _ = svc.Create(ctx, CreateItemInput{Title: "In Progress", ItemType: ItemTypeBook, ReadingStatus: BookStatusReading})
+
 	letter := "A"
 	items, err := svc.List(ctx, ListOptions{Initial: &letter})
 	if err != nil {
@@ -170,6 +180,15 @@ func TestServiceListAppliesFilters(t *testing.T) {
 	}
 	if len(items) != 1 || items[0].Title != "99 Luftballons" {
 		t.Fatalf("expected non-alphabetic music result")
+	}
+
+	status := BookStatusRead
+	items, err = svc.List(ctx, ListOptions{ReadingStatus: &status})
+	if err != nil {
+		t.Fatalf("list with status filter failed: %v", err)
+	}
+	if len(items) != 1 || items[0].ID != finished.ID {
+		t.Fatalf("expected only finished book, got %#v", items)
 	}
 }
 
@@ -263,6 +282,46 @@ func TestServiceRejectsOversizedCoverImage(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected oversized cover image to be rejected on update")
 	}
+}
+
+func TestServiceValidatesBookStatusTransitions(t *testing.T) {
+	repo := NewInMemoryRepository(nil)
+	svc := NewService(repo)
+
+	book, err := svc.Create(context.Background(), CreateItemInput{Title: "Status", ItemType: ItemTypeBook})
+	if err != nil {
+		t.Fatalf("create failed: %v", err)
+	}
+
+	_, err = svc.Update(context.Background(), book.ID, UpdateItemInput{ReadingStatus: ptrBookStatus(BookStatusRead)})
+	if err == nil {
+		t.Fatalf("expected read status to require readAt")
+	}
+
+	readAt := time.Date(2023, 3, 5, 0, 0, 0, 0, time.UTC)
+	updated, err := svc.Update(context.Background(), book.ID, UpdateItemInput{ReadingStatus: ptrBookStatus(BookStatusRead), ReadAt: ptrTimePtr(readAt)})
+	if err != nil {
+		t.Fatalf("expected valid status update, got %v", err)
+	}
+	if updated.ReadingStatus != BookStatusRead {
+		t.Fatalf("expected status to update to read")
+	}
+	if updated.ReadAt == nil || !updated.ReadAt.Equal(readAt) {
+		t.Fatalf("expected readAt to persist")
+	}
+}
+
+func ptrBookStatus(status BookStatus) *BookStatus {
+	return &status
+}
+
+func ptrTime(t time.Time) *time.Time {
+	return &t
+}
+
+func ptrTimePtr(t time.Time) **time.Time {
+	value := ptrTime(t)
+	return &value
 }
 
 func TestServiceAllowsDataURIsLongerThanURLLimitWhenUnderByteCap(t *testing.T) {

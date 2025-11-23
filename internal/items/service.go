@@ -32,6 +32,11 @@ func (s *Service) Create(ctx context.Context, input CreateItemInput) (Item, erro
 		return Item{}, err
 	}
 
+	readingStatus, readAt, err := normalizeBookFields(input.ItemType, input.ReadingStatus, input.ReadAt)
+	if err != nil {
+		return Item{}, err
+	}
+
 	coverImage, err := sanitizeCoverImage(input.CoverImage)
 	if err != nil {
 		return Item{}, err
@@ -39,19 +44,21 @@ func (s *Service) Create(ctx context.Context, input CreateItemInput) (Item, erro
 
 	now := time.Now().UTC()
 	item := Item{
-		ID:          uuid.New(),
-		Title:       strings.TrimSpace(input.Title),
-		Creator:     strings.TrimSpace(input.Creator),
-		ItemType:    input.ItemType,
-		ReleaseYear: normalizeYear(input.ReleaseYear),
-		PageCount:   normalizePositiveInt(input.PageCount),
-		ISBN13:      strings.TrimSpace(input.ISBN13),
-		ISBN10:      strings.TrimSpace(input.ISBN10),
-		Description: strings.TrimSpace(input.Description),
-		CoverImage:  coverImage,
-		Notes:       strings.TrimSpace(input.Notes),
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		ID:            uuid.New(),
+		Title:         strings.TrimSpace(input.Title),
+		Creator:       strings.TrimSpace(input.Creator),
+		ItemType:      input.ItemType,
+		ReleaseYear:   normalizeYear(input.ReleaseYear),
+		PageCount:     normalizePositiveInt(input.PageCount),
+		ISBN13:        strings.TrimSpace(input.ISBN13),
+		ISBN10:        strings.TrimSpace(input.ISBN10),
+		Description:   strings.TrimSpace(input.Description),
+		CoverImage:    coverImage,
+		ReadingStatus: readingStatus,
+		ReadAt:        readAt,
+		Notes:         strings.TrimSpace(input.Notes),
+		CreatedAt:     now,
+		UpdatedAt:     now,
 	}
 
 	return s.repo.Create(ctx, item)
@@ -140,6 +147,23 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, input UpdateItemInpu
 		existing.CoverImage = coverImage
 	}
 
+	readingStatus := existing.ReadingStatus
+	if input.ReadingStatus != nil {
+		readingStatus = *input.ReadingStatus
+	}
+
+	readAt := existing.ReadAt
+	if input.ReadAt != nil {
+		readAt = *input.ReadAt
+	}
+
+	normalizedStatus, normalizedReadAt, err := normalizeBookFields(existing.ItemType, readingStatus, readAt)
+	if err != nil {
+		return Item{}, err
+	}
+
+	existing.ReadingStatus = normalizedStatus
+	existing.ReadAt = normalizedReadAt
 	existing.UpdatedAt = time.Now().UTC()
 	return s.repo.Update(ctx, existing)
 }
@@ -211,4 +235,31 @@ func sanitizeCoverImage(raw string) (string, error) {
 	}
 
 	return trimmed, nil
+}
+
+func normalizeBookFields(itemType ItemType, status BookStatus, readAt *time.Time) (BookStatus, *time.Time, error) {
+	if itemType != ItemTypeBook {
+		return BookStatusUnknown, nil, nil
+	}
+
+	if status == BookStatusUnknown {
+		status = BookStatusWantToRead
+	}
+
+	switch status {
+	case BookStatusRead, BookStatusReading, BookStatusWantToRead:
+	default:
+		return BookStatusUnknown, nil, fmt.Errorf("readingStatus must be one of read, reading, or want_to_read")
+	}
+
+	if status == BookStatusRead {
+		if readAt == nil || readAt.IsZero() {
+			return BookStatusUnknown, nil, fmt.Errorf("readAt is required when readingStatus is read")
+		}
+
+		normalized := readAt.UTC()
+		return status, &normalized, nil
+	}
+
+	return status, nil, nil
 }
