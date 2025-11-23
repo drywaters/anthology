@@ -28,6 +28,7 @@ export class SidebarComponent {
 
     readonly navItems: SidebarNavItem[] = [
         { label: 'Library', icon: 'menu_book', route: '/' },
+        { label: 'Shelves', icon: 'grid_on', route: '/shelves' },
         { label: 'Add Item', icon: 'library_add', route: '/items/add' },
     ];
 

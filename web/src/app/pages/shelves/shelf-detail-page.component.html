@@ -1,0 +1,132 @@
+<div class="page" *ngIf="shelf() as shelfData">
+    <div class="page__header">
+        <div>
+            <a routerLink="/shelves" class="back-link"><mat-icon>arrow_back</mat-icon> Shelves</a>
+            <h1>{{ shelfData.shelf.name }}</h1>
+            <p class="subtitle">{{ shelfData.shelf.description || 'Overlay slots onto your shelf photo.' }}</p>
+        </div>
+        <div class="actions">
+            <button mat-stroked-button color="primary" (click)="startEdit()" *ngIf="mode() === 'view'">Edit layout</button>
+            <button mat-stroked-button (click)="cancelEdit()" *ngIf="mode() === 'edit'">Cancel</button>
+            <button mat-flat-button color="primary" (click)="saveLayout()" [disabled]="savingLayout() || mode() !== 'edit'">
+                Save layout
+            </button>
+        </div>
+    </div>
+
+    <mat-progress-bar *ngIf="loading()" mode="indeterminate"></mat-progress-bar>
+
+    <div class="content">
+        <mat-card class="canvas" [ngClass]="{ 'canvas--editing': mode() === 'edit' }">
+            <img class="canvas__image" [src]="shelfData.shelf.photoUrl" [alt]="shelfData.shelf.name" />
+            <div class="canvas__overlay">
+                <div
+                    *ngFor="let slot of shelfData.slots"
+                    class="slot"
+                    [ngClass]="{ 'slot--selected': selectedSlot()?.id === slot.id }"
+                    [ngStyle]="slotStyle(slot)"
+                    (click)="selectSlot(slot)"
+                >
+                    <span class="slot__label">{{ slot.rowIndex + 1 }} / {{ slot.colIndex + 1 }}</span>
+                </div>
+            </div>
+        </mat-card>
+
+        <mat-card class="sidebar" *ngIf="selectedSlot() as slot">
+            <div class="sidebar__header">
+                <div>
+                    <h3>Slot {{ slot.rowIndex + 1 }} · {{ slot.colIndex + 1 }}</h3>
+                    <p class="helper">Assign items to this slot.</p>
+                </div>
+                <div class="badge">{{ assignedItems(slot.id).length }} placed</div>
+            </div>
+
+            <div class="sidebar__section" *ngIf="assignedItems(slot.id).length > 0; else emptySlot">
+                <div class="chip-row">
+                    <mat-chip-row *ngFor="let placement of assignedItems(slot.id)">
+                        {{ placement.item.title }}
+                        <span class="chip-row__meta">{{ itemTypeLabels[placement.item.itemType] }}</span>
+                        <button matChipRemove (click)="removeFromSlot(placement.item.id)"><mat-icon>close</mat-icon></button>
+                    </mat-chip-row>
+                </div>
+            </div>
+            <ng-template #emptySlot>
+                <p class="helper">No items in this slot yet.</p>
+            </ng-template>
+
+            <div class="sidebar__section">
+                <mat-form-field appearance="outline">
+                    <mat-label>Add item</mat-label>
+                    <mat-select (selectionChange)="assignToSelected($event.value)">
+                        <mat-option *ngFor="let item of items()" [value]="item.id">{{ item.title }}</mat-option>
+                    </mat-select>
+                </mat-form-field>
+            </div>
+
+            <div class="sidebar__section" *ngIf="unplacedItems().length">
+                <div class="sidebar__section-title">Unplaced on this shelf</div>
+                <div class="chip-row">
+                    <mat-chip-row *ngFor="let placement of unplacedItems()">
+                        {{ placement.item.title }}
+                        <button matChipRemove (click)="assignToSelected(placement.item.id)"><mat-icon>login</mat-icon></button>
+                    </mat-chip-row>
+                </div>
+            </div>
+
+            <div class="sidebar__section" *ngIf="displaced().length">
+                <div class="sidebar__section-title">Displaced after save</div>
+                <p class="helper">Place these items in a new slot.</p>
+                <div class="chip-row">
+                    <mat-chip-row *ngFor="let placement of displaced()">
+                        {{ placement.item.title }}
+                    </mat-chip-row>
+                </div>
+            </div>
+        </mat-card>
+    </div>
+
+    <mat-card class="layout-editor" *ngIf="mode() === 'edit'">
+        <div class="layout-editor__header">
+            <h3>Edit layout</h3>
+            <p class="helper">Rows and columns are normalized (0-1) relative to the photo.</p>
+        </div>
+        <div class="layout-editor__rows">
+            <div class="layout-row" *ngFor="let row of rows.controls; let idx = index" [formGroup]="row">
+                <div class="layout-row__header">
+                    <div>Row {{ idx + 1 }}</div>
+                    <div class="layout-row__actions">
+                        <button mat-icon-button (click)="addColumn(idx)"><mat-icon>add</mat-icon></button>
+                        <button mat-icon-button color="warn" (click)="removeRow(idx)"><mat-icon>delete</mat-icon></button>
+                    </div>
+                </div>
+                <div class="layout-row__fields">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Start</mat-label>
+                        <input matInput type="number" step="0.01" formControlName="yStartNorm" />
+                    </mat-form-field>
+                    <mat-form-field appearance="outline">
+                        <mat-label>End</mat-label>
+                        <input matInput type="number" step="0.01" formControlName="yEndNorm" />
+                    </mat-form-field>
+                </div>
+                <div formArrayName="columns" class="columns">
+                    <div *ngFor="let col of row.controls.columns.controls; let colIdx = index" [formGroupName]="colIdx" class="column-card">
+                        <div class="column-card__header">
+                            <div>Column {{ colIdx + 1 }}</div>
+                            <button mat-icon-button color="warn" (click)="removeColumn(idx, colIdx)"><mat-icon>close</mat-icon></button>
+                        </div>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Start</mat-label>
+                            <input matInput type="number" step="0.01" formControlName="xStartNorm" />
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>End</mat-label>
+                            <input matInput type="number" step="0.01" formControlName="xEndNorm" />
+                        </mat-form-field>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button mat-stroked-button color="primary" (click)="addRow()">Add row</button>
+    </mat-card>
+</div>

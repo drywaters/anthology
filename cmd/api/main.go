@@ -20,6 +20,7 @@ import (
 	"anthology/internal/platform/database"
 	"anthology/internal/platform/logging"
 	"anthology/internal/platform/migrate"
+	"anthology/internal/shelves"
 )
 
 func main() {
@@ -33,7 +34,7 @@ func main() {
 
 	logger := logging.New(cfg.LogLevel)
 
-	repo, cleanup, err := buildRepository(ctx, cfg, logger)
+	itemRepo, shelfRepo, cleanup, err := buildRepositories(ctx, cfg, logger)
 	if err != nil {
 		logger.Error("failed to initialize repository", "error", err)
 		os.Exit(1)
@@ -42,10 +43,11 @@ func main() {
 		defer cleanup()
 	}
 
-	svc := items.NewService(repo)
+	svc := items.NewService(itemRepo)
 	lookupClient := &http.Client{Timeout: 12 * time.Second}
 	catalogSvc := catalog.NewService(lookupClient, catalog.WithGoogleBooksAPIKey(cfg.GoogleBooksAPIKey))
-	router := transporthttp.NewRouter(cfg, svc, catalogSvc, logger)
+	shelfSvc := shelves.NewService(shelfRepo, itemRepo)
+	router := transporthttp.NewRouter(cfg, svc, catalogSvc, shelfSvc, logger)
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddress(),
@@ -75,15 +77,18 @@ func main() {
 	}
 }
 
-func buildRepository(ctx context.Context, cfg config.Config, logger *slog.Logger) (items.Repository, func(), error) {
+func buildRepositories(ctx context.Context, cfg config.Config, logger *slog.Logger) (items.Repository, shelves.Repository, func(), error) {
 	if cfg.UseInMemoryStore() {
 		logger.Info("using in-memory repository")
-		return items.NewInMemoryRepository(seedLocalItems()), nil, nil
+		itemRepo := items.NewInMemoryRepository(seedLocalItems())
+		shelfRepo := shelves.NewInMemoryRepository()
+		seedShelves(ctx, shelfRepo)
+		return itemRepo, shelfRepo, nil, nil
 	}
 
 	db, err := database.NewPostgres(ctx, cfg.DatabaseURL)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	cleanup := func() {
@@ -92,11 +97,11 @@ func buildRepository(ctx context.Context, cfg config.Config, logger *slog.Logger
 
 	if err := migrate.Apply(ctx, db, logger); err != nil {
 		cleanup()
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	logger.Info("connected to postgres")
-	return items.NewPostgresRepository(db), cleanup, nil
+	return items.NewPostgresRepository(db), shelves.NewPostgresRepository(db), cleanup, nil
 }
 
 func seedLocalItems() []items.Item {
@@ -152,4 +157,54 @@ func seedLocalItems() []items.Item {
 			UpdatedAt:   now.Add(3 * time.Minute),
 		},
 	}
+}
+
+func seedShelves(ctx context.Context, repo shelves.Repository) {
+	now := time.Now().UTC()
+	shelf := shelves.Shelf{
+		ID:          uuid.New(),
+		Name:        "Living Room - Feature Shelf",
+		Description: "Sample shelf seeded for local demos",
+		PhotoURL:    "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1200&q=80",
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+
+	topRowID := uuid.New()
+	bottomRowID := uuid.New()
+	rows := []shelves.ShelfRow{
+		{ID: topRowID, ShelfID: shelf.ID, RowIndex: 0, YStartNorm: 0.0, YEndNorm: 0.48},
+		{ID: bottomRowID, ShelfID: shelf.ID, RowIndex: 1, YStartNorm: 0.52, YEndNorm: 1.0},
+	}
+
+	cols := []shelves.ShelfColumn{
+		{ID: uuid.New(), ShelfRowID: topRowID, ColIndex: 0, XStartNorm: 0.0, XEndNorm: 0.33},
+		{ID: uuid.New(), ShelfRowID: topRowID, ColIndex: 1, XStartNorm: 0.33, XEndNorm: 0.66},
+		{ID: uuid.New(), ShelfRowID: topRowID, ColIndex: 2, XStartNorm: 0.66, XEndNorm: 1.0},
+		{ID: uuid.New(), ShelfRowID: bottomRowID, ColIndex: 0, XStartNorm: 0.0, XEndNorm: 0.5},
+		{ID: uuid.New(), ShelfRowID: bottomRowID, ColIndex: 1, XStartNorm: 0.5, XEndNorm: 1.0},
+	}
+
+	var slots []shelves.ShelfSlot
+	for _, row := range rows {
+		for _, col := range cols {
+			if col.ShelfRowID != row.ID {
+				continue
+			}
+			slots = append(slots, shelves.ShelfSlot{
+				ID:            uuid.New(),
+				ShelfID:       shelf.ID,
+				ShelfRowID:    row.ID,
+				ShelfColumnID: col.ID,
+				RowIndex:      row.RowIndex,
+				ColIndex:      col.ColIndex,
+				XStartNorm:    col.XStartNorm,
+				XEndNorm:      col.XEndNorm,
+				YStartNorm:    row.YStartNorm,
+				YEndNorm:      row.YEndNorm,
+			})
+		}
+	}
+
+	_, _ = repo.CreateShelf(ctx, shelf, rows, cols, slots)
 }
