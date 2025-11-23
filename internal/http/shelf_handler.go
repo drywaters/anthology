@@ -2,12 +2,14 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"log/slog"
 
+	"anthology/internal/items"
 	"anthology/internal/shelves"
 )
 
@@ -131,7 +133,10 @@ func (h *ShelfHandler) AssignItem(w http.ResponseWriter, r *http.Request) {
 	shelf, err := h.svc.AssignItem(r.Context(), shelfID, slotID, itemID)
 	if err != nil {
 		status := http.StatusBadRequest
-		if err == shelves.ErrNotFound || err == shelves.ErrSlotNotFound {
+		switch {
+		case errors.Is(err, items.ErrNotFound):
+			status = http.StatusNotFound
+		case errors.Is(err, shelves.ErrNotFound), errors.Is(err, shelves.ErrSlotNotFound):
 			status = http.StatusNotFound
 		}
 		writeError(w, status, err.Error())
