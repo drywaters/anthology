@@ -1,0 +1,89 @@
+:host {
+    display: block;
+}
+
+.page {
+    --page-gap: 2rem;
+    --page-gutter: clamp(1.5rem, 3vw, 4rem);
+    min-height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: var(--page-gap);
+    padding: var(--page-gap) var(--page-gutter) 3rem;
+    width: 100%;
+}
+
+.helper {
+    color: #5f6368;
+    margin: 0.15rem 0 0;
+    font-size: 0.9rem;
+}
+
+.create-card {
+    padding: 24px;
+    border-radius: 24px;
+    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.14);
+}
+
+.create-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 16px;
+}
+
+.create-card__header-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.create-card__form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.file-upload {
+    grid-column: 1 / -1;
+    border: 1px dashed var(--mat-sys-outline);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.file-upload__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.file-upload__label {
+    font-weight: 600;
+}
+
+.file-upload--error {
+    border-color: var(--mat-sys-error);
+}
+
+.file-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--mat-sys-on-surface);
+}
+
+.file-meta mat-icon {
+    font-size: 20px;
+}
+
+.file-upload .error {
+    color: var(--mat-sys-error);
+    margin: 0;
+    font-size: 0.85rem;
+}

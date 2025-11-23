@@ -1,6 +1,6 @@
 import { Component, DestroyRef, inject } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterLinkActive, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -11,12 +11,14 @@ interface SidebarNavItem {
     icon: string;
     route?: string;
     disabled?: boolean;
+    exact?: boolean;
+    children?: SidebarNavItem[];
 }
 
 @Component({
     selector: 'app-sidebar',
     standalone: true,
-    imports: [NgFor, NgIf, RouterModule, MatIconModule, MatSnackBarModule],
+    imports: [NgFor, NgIf, RouterModule, RouterLinkActive, MatIconModule, MatSnackBarModule],
     templateUrl: './sidebar.component.html',
     styleUrl: './sidebar.component.scss',
 })
@@ -27,10 +29,32 @@ export class SidebarComponent {
     private readonly destroyRef = inject(DestroyRef);
 
     readonly navItems: SidebarNavItem[] = [
-        { label: 'Library', icon: 'menu_book', route: '/' },
-        { label: 'Shelves', icon: 'grid_on', route: '/shelves' },
-        { label: 'Add Item', icon: 'library_add', route: '/items/add' },
+        {
+            label: 'Library',
+            icon: 'menu_book',
+            route: '/',
+            exact: true,
+            children: [{ label: 'Add Item', icon: 'library_add', route: '/items/add', exact: true }],
+        },
+        {
+            label: 'Shelves',
+            icon: 'grid_on',
+            route: '/shelves',
+            children: [{ label: 'Add Shelf', icon: 'add_photo_alternate', route: '/shelves/add', exact: true }],
+        },
     ];
+
+    readonly exactOptions = { exact: true } as const;
+    readonly defaultOptions = { exact: false } as const;
+    expandedSection: string | null = null;
+
+    handleSectionClick(item: SidebarNavItem): void {
+        if (!item.children?.length || !item.route) {
+            return;
+        }
+
+        this.expandedSection = this.expandedSection === item.route ? null : item.route;
+    }
 
     handleLogoutClick(event: Event): void {
         event.preventDefault();

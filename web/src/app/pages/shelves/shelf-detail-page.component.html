@@ -1,11 +1,11 @@
 <div class="page" *ngIf="shelf() as shelfData">
     <div class="page__header">
         <div>
-            <a routerLink="/shelves" class="back-link"><mat-icon>arrow_back</mat-icon> Shelves</a>
             <h1>{{ shelfData.shelf.name }}</h1>
             <p class="subtitle">{{ shelfData.shelf.description || 'Overlay slots onto your shelf photo.' }}</p>
         </div>
         <div class="actions">
+            <button mat-stroked-button routerLink="/shelves"><mat-icon>arrow_back</mat-icon> Shelves</button>
             <button mat-stroked-button color="primary" (click)="startEdit()" *ngIf="mode() === 'view'">Edit layout</button>
             <button mat-stroked-button (click)="cancelEdit()" *ngIf="mode() === 'edit'">Cancel</button>
             <button mat-flat-button color="primary" (click)="saveLayout()" [disabled]="savingLayout() || mode() !== 'edit'">

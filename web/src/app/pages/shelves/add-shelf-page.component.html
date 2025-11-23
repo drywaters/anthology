@@ -1,0 +1,62 @@
+<div class="page">
+    <mat-card class="create-card">
+        <div class="create-card__header">
+            <div>
+                <h1>Add shelf</h1>
+                <p class="helper">Provide a name and upload a photo to start laying out slots.</p>
+            </div>
+            <div class="create-card__header-actions">
+                <button mat-stroked-button type="button" routerLink="/shelves" [disabled]="creating()">Cancel</button>
+                <button mat-flat-button color="primary" type="button" (click)="createShelf()" [disabled]="creating()">
+                    Create shelf
+                </button>
+            </div>
+        </div>
+
+        <form [formGroup]="form" class="create-card__form">
+            <mat-form-field appearance="outline">
+                <mat-label>Name</mat-label>
+                <input matInput placeholder="Living Room - Main" formControlName="name" />
+                <mat-error *ngIf="form.controls.name.invalid">A name is required</mat-error>
+            </mat-form-field>
+
+            <div class="file-upload" [class.file-upload--error]="form.controls.photoUrl.invalid && form.controls.photoUrl.touched">
+                <div class="file-upload__header">
+                    <div>
+                        <div class="file-upload__label">Shelf photo</div>
+                        <p class="helper">Upload a JPG or PNG up to 500KB.</p>
+                    </div>
+                    <button mat-stroked-button type="button" (click)="openPhotoPicker(photoInput)" [disabled]="creating()">
+                        Choose file
+                    </button>
+                </div>
+                <input
+                    #photoInput
+                    type="file"
+                    accept="image/*"
+                    (change)="handlePhotoFileChange(photoInput)"
+                    hidden
+                />
+                <div class="file-meta" *ngIf="selectedPhotoName() as fileName">
+                    <mat-icon inline aria-hidden="true">image</mat-icon>
+                    <span>{{ fileName }}</span>
+                    <button mat-icon-button type="button" aria-label="Remove uploaded photo" (click)="clearPhotoSelection(true, photoInput)" [disabled]="creating()">
+                        <mat-icon>close</mat-icon>
+                    </button>
+                </div>
+                <p class="error" *ngIf="photoUploadError()">{{ photoUploadError() }}</p>
+                <p
+                    class="error"
+                    *ngIf="form.controls.photoUrl.invalid && form.controls.photoUrl.touched && !photoUploadError()"
+                >
+                    A shelf photo is required.
+                </p>
+            </div>
+
+            <mat-form-field appearance="outline">
+                <mat-label>Description</mat-label>
+                <textarea matInput rows="2" formControlName="description"></textarea>
+            </mat-form-field>
+        </form>
+    </mat-card>
+</div>

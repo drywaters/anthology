@@ -17,6 +17,10 @@ export const routes: Routes = [
                 loadComponent: () => import('./pages/shelves/shelves-page.component').then((m) => m.ShelvesPageComponent),
             },
             {
+                path: 'shelves/add',
+                loadComponent: () => import('./pages/shelves/add-shelf-page.component').then((m) => m.AddShelfPageComponent),
+            },
+            {
                 path: 'shelves/:id',
                 loadComponent: () =>
                     import('./pages/shelves/shelf-detail-page.component').then((m) => m.ShelfDetailPageComponent),

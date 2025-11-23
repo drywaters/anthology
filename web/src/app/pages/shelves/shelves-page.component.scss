@@ -1,35 +1,17 @@
+:host {
+    display: block;
+}
+
 .page {
+    --page-gap: 2rem;
+    --page-gutter: clamp(1.5rem, 3vw, 4rem);
+    min-height: 100%;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-}
-
-.page__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.subtitle {
-    color: #5f6368;
-    margin: 4px 0 0;
-}
-
-.create-card {
-    padding: 16px;
-}
-
-.create-card__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-}
-
-.create-card__form {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 12px;
+    gap: var(--page-gap);
+    padding: var(--page-gap) var(--page-gutter) 3rem;
+    width: 100%;
 }
 
 .shelf-grid {
