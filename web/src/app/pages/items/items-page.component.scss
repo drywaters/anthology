@@ -133,23 +133,23 @@ mat-progress-bar {
 }
 
 .item-type-chip--book {
-    --chip-bg: var(--mat-sys-primary-container);
-    --chip-color: var(--mat-sys-on-primary-container);
+    --chip-bg: color-mix(in srgb, var(--mat-sys-primary) 18%, white);
+    --chip-color: var(--mat-sys-primary);
 }
 
 .item-type-chip--game {
-    --chip-bg: var(--mat-sys-secondary-container);
-    --chip-color: var(--mat-sys-on-secondary-container);
+    --chip-bg: color-mix(in srgb, var(--mat-sys-secondary) 20%, white);
+    --chip-color: var(--mat-sys-secondary);
 }
 
 .item-type-chip--movie {
-    --chip-bg: var(--mat-sys-tertiary-container);
-    --chip-color: var(--mat-sys-on-tertiary-container);
+    --chip-bg: color-mix(in srgb, var(--mat-sys-tertiary) 24%, white);
+    --chip-color: var(--mat-sys-tertiary);
 }
 
 .item-type-chip--music {
-    --chip-bg: var(--mat-sys-error-container);
-    --chip-color: var(--mat-sys-on-error-container);
+    --chip-bg: color-mix(in srgb, var(--mat-sys-error) 22%, white);
+    --chip-color: var(--mat-sys-error);
 }
 
 .no-results {
@@ -343,23 +343,4 @@ mat-progress-bar {
         padding-inline: 1rem;
         width: 100%;
     }
-}
-.item-type-chip--book {
-    --chip-bg: #ede9fe;
-    --chip-color: #4c1d95;
-}
-
-.item-type-chip--game {
-    --chip-bg: #ecfccb;
-    --chip-color: #3f6212;
-}
-
-.item-type-chip--movie {
-    --chip-bg: #fee2e2;
-    --chip-color: #b91c1c;
-}
-
-.item-type-chip--music {
-    --chip-bg: #cffafe;
-    --chip-color: #0f766e;
 }
