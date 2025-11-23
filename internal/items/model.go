@@ -39,6 +39,7 @@ type Item struct {
 	ItemType      ItemType   `db:"item_type" json:"itemType"`
 	ReleaseYear   *int       `db:"release_year" json:"releaseYear,omitempty"`
 	PageCount     *int       `db:"page_count" json:"pageCount,omitempty"`
+	CurrentPage   *int       `db:"current_page" json:"currentPage,omitempty"`
 	ISBN13        string     `db:"isbn_13" json:"isbn13"`
 	ISBN10        string     `db:"isbn_10" json:"isbn10"`
 	Description   string     `db:"description" json:"description"`
@@ -57,6 +58,7 @@ type CreateItemInput struct {
 	ItemType      ItemType
 	ReleaseYear   *int
 	PageCount     *int
+	CurrentPage   *int
 	ISBN13        string
 	ISBN10        string
 	Description   string
@@ -73,6 +75,7 @@ type UpdateItemInput struct {
 	ItemType      *ItemType
 	ReleaseYear   **int
 	PageCount     **int
+	CurrentPage   **int
 	ISBN13        *string
 	ISBN10        *string
 	Description   *string

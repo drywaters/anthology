@@ -47,14 +47,14 @@ describe(SidebarComponent.name, () => {
 
     it('renders nav links for every nav item', () => {
         const fixture = createComponent();
-        const anchors = fixture.nativeElement.querySelectorAll('a.nav-link');
+        const anchors = fixture.nativeElement.querySelectorAll('.nav a.nav-link');
         expect(anchors.length).toBe(fixture.componentInstance.navItems.length);
     });
 
     it('logs out and routes to login when the logout button is pressed', fakeAsync(() => {
         authServiceSpy.logout.and.returnValue(of(void 0));
         const fixture = createComponent();
-        const logoutButton = fixture.nativeElement.querySelector('button.logout') as HTMLButtonElement;
+        const logoutButton = fixture.nativeElement.querySelector('.sidebar-footer .logout') as HTMLAnchorElement;
         logoutButton.click();
         flush();
         expect(authServiceSpy.logout).toHaveBeenCalled();
@@ -64,7 +64,7 @@ describe(SidebarComponent.name, () => {
     it('shows a snack bar message when logout fails but still navigates away', fakeAsync(() => {
         authServiceSpy.logout.and.returnValue(throwError(() => new Error('fail')));
         const fixture = createComponent();
-        const logoutButton = fixture.nativeElement.querySelector('button.logout') as HTMLButtonElement;
+        const logoutButton = fixture.nativeElement.querySelector('.sidebar-footer .logout') as HTMLAnchorElement;
         logoutButton.click();
         flush();
         expect(snackBarSpy.open).toHaveBeenCalled();

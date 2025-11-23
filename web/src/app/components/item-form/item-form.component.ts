@@ -17,8 +17,18 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 
-import { BookStatus, BOOK_STATUS_LABELS, Item, ItemForm, ItemType, ITEM_TYPE_LABELS } from '../../models/item';
+import {
+    ActiveBookStatus,
+    BookStatus,
+    BOOK_STATUS_LABELS,
+    Item,
+    ItemForm,
+    ItemType,
+    ITEM_TYPE_LABELS,
+} from '../../models/item';
 
 @Component({
     selector: 'app-item-form',
@@ -30,6 +40,8 @@ import { BookStatus, BOOK_STATUS_LABELS, Item, ItemForm, ItemType, ITEM_TYPE_LAB
         MatIconModule,
         MatInputModule,
         MatSelectModule,
+        MatDatepickerModule,
+        MatNativeDateModule,
         ReactiveFormsModule,
     ],
     templateUrl: './item-form.component.html',
@@ -51,7 +63,15 @@ export class ItemFormComponent implements OnChanges, OnInit {
 @Output() readonly deleteRequested = new EventEmitter<void>();
 
     readonly itemTypeOptions = Object.entries(ITEM_TYPE_LABELS) as [ItemType, string][];
-    readonly bookStatusOptions = Object.entries(BOOK_STATUS_LABELS) as [BookStatus, string][];
+    readonly bookStatusOptions: Array<{ value: BookStatus; label: string }> = [
+        { value: '', label: 'No status' },
+        ...(
+            Object.entries(BOOK_STATUS_LABELS) as [ActiveBookStatus, string][]
+        ).map(([value, label]) => ({
+            value,
+            label,
+        })),
+    ];
 
     coverImageError: string | null = null;
 
@@ -61,12 +81,13 @@ export class ItemFormComponent implements OnChanges, OnInit {
         itemType: ['book' as ItemType, Validators.required],
         releaseYear: [null, [Validators.min(0)]],
         pageCount: [null, [Validators.min(1)]],
+        currentPage: [null, [Validators.min(0)]],
         isbn13: ['', [Validators.maxLength(20)]],
         isbn10: ['', [Validators.maxLength(20)]],
         description: ['', [Validators.maxLength(2000)]],
         coverImage: [''],
         readingStatus: ['want_to_read' as BookStatus],
-        readAt: [''],
+        readAt: [null],
         notes: ['', [Validators.maxLength(500)]],
     });
 
@@ -76,6 +97,10 @@ export class ItemFormComponent implements OnChanges, OnInit {
 
     get isReadStatus(): boolean {
         return this.form.get('readingStatus')?.value === 'read';
+    }
+
+    get isReadingStatus(): boolean {
+        return this.form.get('readingStatus')?.value === 'reading';
     }
 
     ngOnInit(): void {
@@ -92,6 +117,7 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 itemType: 'book',
                 releaseYear: null,
                 pageCount: null,
+                currentPage: null,
                 isbn13: '',
                 isbn10: '',
                 description: '',
@@ -126,6 +152,16 @@ export class ItemFormComponent implements OnChanges, OnInit {
                     next.pageCount = draftPageCount;
                 }
 
+                const draftCurrentPage = this.draft.currentPage;
+                if (draftCurrentPage === undefined || draftCurrentPage === null) {
+                    next.currentPage = null;
+                } else if (typeof draftCurrentPage === 'string') {
+                    const parsed = Number.parseInt(draftCurrentPage, 10);
+                    next.currentPage = Number.isNaN(parsed) ? null : parsed;
+                } else {
+                    next.currentPage = draftCurrentPage;
+                }
+
                 next.notes = this.draft.notes ?? next.notes;
                 next.isbn13 = this.draft.isbn13 ?? next.isbn13;
                 next.isbn10 = this.draft.isbn10 ?? next.isbn10;
@@ -141,6 +177,7 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 next.itemType = this.item.itemType;
                 next.releaseYear = this.item.releaseYear ?? null;
                 next.pageCount = this.item.pageCount ?? null;
+                next.currentPage = this.item.currentPage ?? null;
                 next.isbn13 = this.item.isbn13 ?? '';
                 next.isbn10 = this.item.isbn10 ?? '';
                 next.description = this.item.description ?? '';
@@ -150,13 +187,16 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 next.readAt = this.normalizeDateInput(this.item.readAt) ?? next.readAt;
             }
 
-            if (next.readingStatus !== 'read') {
-                next.readAt = null;
-            }
+		if (next.readingStatus !== 'read') {
+			next.readAt = null;
+		}
+		if (next.readingStatus !== 'reading') {
+			next.currentPage = null;
+		}
 
-            this.form.reset(next);
-        }
-    }
+		this.form.reset(next);
+	}
+}
 
     submit(): void {
         if (this.form.invalid) {
@@ -171,12 +211,29 @@ export class ItemFormComponent implements OnChanges, OnInit {
             return;
         }
 
+        if (value.itemType === 'book' && value.readingStatus === 'reading') {
+            const totalPages = this.parseInteger(value.pageCount);
+            const currentPageValue = this.parseInteger(value.currentPage);
+            if (!this.ensureCurrentPageWithinTotal(totalPages, currentPageValue)) {
+                return;
+            }
+        } else {
+            this.ensureCurrentPageWithinTotal(null, null);
+        }
+
         const readingStatus = value.itemType === 'book' ? value.readingStatus ?? 'want_to_read' : undefined;
-        const readAt = value.itemType === 'book' ? value.readAt || null : null;
+        const readAt = value.itemType === 'book' ? this.normalizeDateOutput(value.readAt) : null;
+        const currentPage = value.itemType === 'book'
+            ? value.readingStatus === 'reading'
+                ? this.parseInteger(value.currentPage)
+                : null
+            : undefined;
+
         this.save.emit({
             ...value,
             releaseYear: value.releaseYear === null || value.releaseYear === undefined ? null : value.releaseYear,
             pageCount: value.pageCount === null || value.pageCount === undefined ? null : value.pageCount,
+            currentPage,
             description: value.description ?? '',
             isbn13: value.isbn13 ?? '',
             isbn10: value.isbn10 ?? '',
@@ -192,6 +249,22 @@ export class ItemFormComponent implements OnChanges, OnInit {
 
     clearPageCount(): void {
         this.form.patchValue({ pageCount: null });
+        const current = this.parseInteger(this.form.get('currentPage')?.value ?? null);
+        this.ensureCurrentPageWithinTotal(null, current);
+    }
+
+    clearCurrentPage(): void {
+        this.form.patchValue({ currentPage: null });
+        const currentPageControl = this.form.get('currentPage');
+        const errors = currentPageControl?.errors;
+        if (errors) {
+            const { maxPages, ...rest } = errors as Record<string, unknown>;
+            if (Object.keys(rest).length === 0) {
+                currentPageControl?.setErrors(null);
+            } else {
+                currentPageControl?.setErrors(rest);
+            }
+        }
     }
 
     clearCoverImage(): void {
@@ -206,8 +279,11 @@ export class ItemFormComponent implements OnChanges, OnInit {
 
     onStatusChange(status: BookStatus): void {
         if (status !== 'read') {
-            this.form.patchValue({ readAt: '' });
+            this.form.patchValue({ readAt: null });
             this.form.get('readAt')?.setErrors(null);
+        }
+        if (status !== 'reading') {
+            this.clearCurrentPage();
         }
     }
 
@@ -244,9 +320,12 @@ export class ItemFormComponent implements OnChanges, OnInit {
         }
     }
 
-    private normalizeDateInput(value: string | null | undefined): string | null {
+    private normalizeDateInput(value: string | Date | null | undefined): Date | null {
         if (!value) {
             return null;
+        }
+        if (value instanceof Date) {
+            return Number.isNaN(value.getTime()) ? null : value;
         }
 
         const date = new Date(value);
@@ -254,21 +333,71 @@ export class ItemFormComponent implements OnChanges, OnInit {
             return null;
         }
 
-        return date.toISOString().slice(0, 10);
+        return date;
     }
 
     private handleItemTypeChange(type: ItemType): void {
         if (type !== 'book') {
-            this.form.patchValue({ readingStatus: 'want_to_read', readAt: '' });
+            this.form.patchValue({ readingStatus: 'want_to_read', readAt: null });
             this.form.get('readAt')?.setErrors(null);
+            this.clearCurrentPage();
         }
     }
 
     private normalizeStatus(value: unknown): BookStatus | null {
-        return this.isValidStatus(value) ? value : null;
+        return this.isValidStatus(value) ? (value as BookStatus) : null;
     }
 
     private isValidStatus(value: unknown): value is BookStatus {
-        return value === 'read' || value === 'reading' || value === 'want_to_read';
+        return value === '' || value === 'read' || value === 'reading' || value === 'want_to_read';
+    }
+
+    private parseInteger(value: unknown): number | null {
+        if (value === null || value === undefined || value === '') {
+            return null;
+        }
+        if (typeof value === 'number') {
+            return Number.isFinite(value) ? value : null;
+        }
+        const parsed = Number.parseInt(String(value), 10);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    private ensureCurrentPageWithinTotal(totalPages: number | null, currentPage: number | null): boolean {
+        const control = this.form.get('currentPage');
+        if (!control) {
+            return true;
+        }
+
+        const errors = control.errors ?? {};
+        if (totalPages !== null && currentPage !== null && currentPage > totalPages) {
+            control.setErrors({ ...errors, maxPages: true });
+            control.markAsTouched();
+            return false;
+        }
+
+        if ('maxPages' in errors) {
+            const { maxPages, ...rest } = errors as Record<string, unknown>;
+            if (Object.keys(rest).length === 0) {
+                control.setErrors(null);
+            } else {
+                control.setErrors(rest);
+            }
+        }
+
+        return true;
+    }
+
+    private normalizeDateOutput(value: unknown): string | null {
+        if (!value) {
+            return null;
+        }
+
+        if (value instanceof Date) {
+            return Number.isNaN(value.getTime()) ? null : value.toISOString();
+        }
+
+        const date = new Date(value as string);
+        return Number.isNaN(date.getTime()) ? null : date.toISOString();
     }
 }

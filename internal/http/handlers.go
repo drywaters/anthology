@@ -90,6 +90,7 @@ func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
 		ItemType      string     `json:"itemType"`
 		ReleaseYear   *int       `json:"releaseYear"`
 		PageCount     *int       `json:"pageCount"`
+		CurrentPage   *int       `json:"currentPage"`
 		ISBN13        string     `json:"isbn13"`
 		ISBN10        string     `json:"isbn10"`
 		Description   string     `json:"description"`
@@ -110,6 +111,7 @@ func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
 		ItemType:      items.ItemType(payload.ItemType),
 		ReleaseYear:   payload.ReleaseYear,
 		PageCount:     payload.PageCount,
+		CurrentPage:   payload.CurrentPage,
 		ISBN13:        payload.ISBN13,
 		ISBN10:        payload.ISBN10,
 		Description:   payload.Description,
@@ -161,6 +163,7 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 		ItemType      *string    `json:"itemType"`
 		ReleaseYear   *int       `json:"releaseYear"`
 		PageCount     *int       `json:"pageCount"`
+		CurrentPage   *int       `json:"currentPage"`
 		ISBN13        *string    `json:"isbn13"`
 		ISBN10        *string    `json:"isbn10"`
 		Description   *string    `json:"description"`
@@ -197,6 +200,10 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if _, ok := raw["pageCount"]; ok {
 		value := payload.PageCount
 		input.PageCount = &value
+	}
+	if _, ok := raw["currentPage"]; ok {
+		value := payload.CurrentPage
+		input.CurrentPage = &value
 	}
 	if _, ok := raw["notes"]; ok {
 		input.Notes = payload.Notes

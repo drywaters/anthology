@@ -79,10 +79,13 @@ describe(ItemFormComponent.name, () => {
             itemType: 'movie',
             releaseYear: null,
             pageCount: null,
+            currentPage: null,
             isbn13: '',
             isbn10: '',
             description: '',
             coverImage: '',
+            readingStatus: '',
+            readAt: null,
             notes: '',
         });
 
@@ -115,5 +118,21 @@ describe(ItemFormComponent.name, () => {
         component.clearPageCount();
 
         expect(component.form.get('pageCount')?.value).toBeNull();
+    });
+
+    it('prevents current page from exceeding the total pages', () => {
+        const fixture = createComponent();
+        const component = fixture.componentInstance;
+        component.form.patchValue({
+            title: 'Test Book',
+            itemType: 'book',
+            pageCount: 100,
+            readingStatus: 'reading',
+            currentPage: 150,
+        });
+
+        component.submit();
+
+        expect(component.form.get('currentPage')?.hasError('maxPages')).toBeTrue();
     });
 });

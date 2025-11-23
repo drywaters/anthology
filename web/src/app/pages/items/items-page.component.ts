@@ -12,12 +12,12 @@ import { Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { EMPTY, catchError, switchMap, tap } from 'rxjs';
 
-import { BookStatus, BOOK_STATUS_LABELS, Item, ItemType, ITEM_TYPE_LABELS } from '../../models/item';
+import { ActiveBookStatus, BOOK_STATUS_LABELS, Item, ItemType, ITEM_TYPE_LABELS } from '../../models/item';
 import { ItemService } from '../../services/item.service';
 
 type ItemTypeFilter = ItemType | 'all';
 type LetterFilter = AlphabetLetter | 'ALL';
-type BookStatusFilter = BookStatus | 'all';
+type BookStatusFilter = ActiveBookStatus | 'all';
 
 type AlphabetLetter =
     | 'A'
@@ -76,7 +76,7 @@ export class ItemsPageComponent {
     private readonly destroyRef = inject(DestroyRef);
     private readonly router = inject(Router);
 
-    readonly displayedColumns = ['title', 'creator', 'itemType', 'readingStatus', 'releaseYear', 'updatedAt'] as const;
+    readonly displayedColumns = ['title', 'creator', 'itemType', 'releaseYear', 'updatedAt'] as const;
     readonly items = signal<Item[]>([]);
     readonly loading = signal(false);
     readonly letterFilter = signal<LetterFilter>('ALL');
@@ -94,7 +94,7 @@ export class ItemsPageComponent {
         { value: 'music', label: ITEM_TYPE_LABELS.music },
     ];
     readonly statusOptions: Array<{ value: BookStatusFilter; label: string }> = [
-        { value: 'all', label: 'All reading statuses' },
+        { value: 'all', label: 'All' },
         { value: 'want_to_read', label: BOOK_STATUS_LABELS.want_to_read },
         { value: 'reading', label: BOOK_STATUS_LABELS.reading },
         { value: 'read', label: BOOK_STATUS_LABELS.read },
@@ -182,6 +182,28 @@ export class ItemsPageComponent {
         return this.statusLabels[item.readingStatus];
     }
 
+    readingProgress(item: Item): { current: number; total?: number; percent?: number } | null {
+        if (item.itemType !== 'book' || item.readingStatus !== 'reading') {
+            return null;
+        }
+        if (item.currentPage === null || item.currentPage === undefined) {
+            return null;
+        }
+
+        const progress: { current: number; total?: number; percent?: number } = {
+            current: item.currentPage,
+        };
+
+        if (item.pageCount && item.pageCount > 0) {
+            const clampedCurrent = Math.max(0, Math.min(item.currentPage, item.pageCount));
+            progress.total = item.pageCount;
+            progress.percent = Math.round((clampedCurrent / item.pageCount) * 100);
+            progress.current = clampedCurrent;
+        }
+
+        return progress;
+    }
+
     chipClassFor(itemType: ItemType): string {
         return `item-type-chip--${itemType}`;
     }
@@ -213,8 +235,8 @@ export class ItemsPageComponent {
         }
     }
 
-    private currentFilters(): { itemType?: ItemType; letter?: string; status?: BookStatus } | undefined {
-        const filters: { itemType?: ItemType; letter?: string; status?: BookStatus } = {};
+    private currentFilters(): { itemType?: ItemType; letter?: string; status?: ActiveBookStatus } | undefined {
+        const filters: { itemType?: ItemType; letter?: string; status?: ActiveBookStatus } = {};
 
         const typeFilter = this.typeFilter();
         if (typeFilter !== 'all') {
