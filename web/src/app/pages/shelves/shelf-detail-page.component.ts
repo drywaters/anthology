@@ -167,11 +167,10 @@ export class ShelfDetailPageComponent {
     }
 
     addRow(): void {
-        const index = this.rows.length;
         this.rows.push(
             this.fb.group<LayoutRowGroup>({
                 rowId: this.fb.control<string | null>(null),
-                rowIndex: this.fb.control(index, { nonNullable: true }),
+                rowIndex: this.fb.control(0, { nonNullable: true }),
                 yStartNorm: this.fb.control(0, { nonNullable: true }),
                 yEndNorm: this.fb.control(1, { nonNullable: true }),
                 columns: this.fb.array([
@@ -184,6 +183,7 @@ export class ShelfDetailPageComponent {
                 ]),
             })
         );
+        this.reindexRows();
     }
 
     addColumn(rowIndex: number): void {
@@ -196,15 +196,27 @@ export class ShelfDetailPageComponent {
                 xEndNorm: this.fb.control(1, { nonNullable: true }),
             })
         );
+        this.reindexRows();
     }
 
     removeColumn(rowIndex: number, colIndex: number): void {
         const columns = this.rows.at(rowIndex).controls.columns;
         columns.removeAt(colIndex);
+        this.reindexRows();
     }
 
     removeRow(rowIndex: number): void {
         this.rows.removeAt(rowIndex);
+        this.reindexRows();
+    }
+
+    private reindexRows(): void {
+        this.rows.controls.forEach((row, rowIndex) => {
+            row.controls.rowIndex.setValue(rowIndex);
+            row.controls.columns.controls.forEach((column, colIndex) => {
+                column.controls.colIndex.setValue(colIndex);
+            });
+        });
     }
 
     saveLayout(): void {
