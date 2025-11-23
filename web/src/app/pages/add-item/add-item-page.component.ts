@@ -287,13 +287,26 @@ export class AddItemPageComponent {
                 return;
             }
 
-            this.scanStream = await navigator.mediaDevices.getUserMedia({
+            const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: 'environment' },
                 audio: false,
             });
 
+            if (!this.scannerActive()) {
+                stream.getTracks().forEach((track) => track.stop());
+                return;
+            }
+
+            this.scanStream = stream;
             video.srcObject = this.scanStream;
             await video.play();
+
+            if (!this.scannerActive()) {
+                this.stopScannerStream();
+                video.pause();
+                video.srcObject = null;
+                return;
+            }
 
             this.scannerMode = scannerMode;
             this.scannerStatus.set('Align a UPC or ISBN barcode within the frame.');
