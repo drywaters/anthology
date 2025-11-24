@@ -43,18 +43,21 @@
     position: relative;
     overflow: hidden;
     min-height: 320px;
+    padding: 0;
 }
 
 .canvas__image {
     width: 100%;
     display: block;
     border-radius: 4px;
+    object-fit: contain;
 }
 
 .canvas__overlay {
     position: absolute;
-    inset: 12px;
+    inset: 0;
     pointer-events: auto;
+    border-radius: 4px;
 }
 
 .slot {
@@ -91,12 +94,25 @@
     background: rgba(0, 0, 0, 0.4);
     padding: 2px 4px;
     border-radius: 2px;
+    border: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.slot__label-button {
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.slot__label-button--selected {
+    background: rgba(26, 115, 232, 0.8);
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.35);
 }
 
 .slot__handle {
     position: absolute;
-    width: 18px;
-    height: 18px;
+    width: 9px;
+    height: 9px;
     border-radius: 50%;
     border: 2px solid #fff;
     background: #1a73e8;
@@ -119,23 +135,23 @@
 }
 
 .slot__handle--top-left {
-    top: -9px;
-    left: -9px;
+    top: -6px;
+    left: -6px;
 }
 
 .slot__handle--top-right {
-    top: -9px;
-    right: -9px;
+    top: -6px;
+    right: -6px;
 }
 
 .slot__handle--bottom-left {
-    bottom: -9px;
-    left: -9px;
+    bottom: -6px;
+    left: -6px;
 }
 
 .slot__handle--bottom-right {
-    bottom: -9px;
-    right: -9px;
+    bottom: -6px;
+    right: -6px;
 }
 
 .sidebar {
@@ -266,6 +282,63 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+.column-card__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    background: none;
+    padding: 4px 0;
+    font: inherit;
+    cursor: pointer;
+    color: inherit;
+}
+
+.column-card__pill {
+    background: #e3f2fd;
+    color: #0d47a1;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.column-card__summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+.column-card__summary-label {
+    color: #5f6368;
+}
+
+.column-card__summary-value {
+    font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, SFMono-Text, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+        monospace;
+}
+
+.sidebar--editing {
+    gap: 16px;
+}
+
+.layout-values {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.layout-values__item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
 }
 
 /* removed back-link styles with layout refactor */

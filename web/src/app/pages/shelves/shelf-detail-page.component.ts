@@ -99,6 +99,7 @@ export class ShelfDetailPageComponent {
     readonly selectedSlot = signal<ShelfSlot | null>(null);
     readonly displaced = signal<PlacementWithItem[]>([]);
     readonly mode = signal<'view' | 'edit'>('view');
+    readonly activeLayoutSelection = signal<{ rowIndex: number; columnIndex: number } | null>(null);
     readonly itemSearchControl = this.fb.control('', { nonNullable: true });
     readonly itemSearchResults = signal<Item[]>([]);
     readonly searchingItems = signal(false);
@@ -290,6 +291,7 @@ export class ShelfDetailPageComponent {
 
     startEdit(): void {
         this.mode.set('edit');
+        this.activeLayoutSelection.set(null);
         this.resetLayoutForm();
     }
 
@@ -297,6 +299,7 @@ export class ShelfDetailPageComponent {
         this.endDrag();
         this.mode.set('view');
         this.displaced.set([]);
+        this.activeLayoutSelection.set(null);
         this.resetLayoutForm();
     }
 
@@ -341,6 +344,7 @@ export class ShelfDetailPageComponent {
                 column.controls.colIndex.setValue(colIndex);
             });
         });
+        this.ensureActiveLayoutSelection();
     }
 
     saveLayout(): void {
@@ -389,6 +393,13 @@ export class ShelfDetailPageComponent {
         this.selectedSlot.set(slot);
     }
 
+    selectLayoutSlot(rowIndex: number, columnIndex: number): void {
+        if (this.mode() !== 'edit') {
+            return;
+        }
+        this.activeLayoutSelection.set({ rowIndex, columnIndex });
+    }
+
     slotStyle(slot: ShelfSlot): Record<string, string> {
         return {
             left: `${slot.xStartNorm * 100}%`,
@@ -416,7 +427,7 @@ export class ShelfDetailPageComponent {
     }
 
     beginCornerDrag(rowIndex: number, columnIndex: number, corner: CornerPosition, event: PointerEvent): void {
-        if (this.mode() !== 'edit') {
+        if (this.mode() !== 'edit' || !this.isLayoutSlotSelected(rowIndex, columnIndex)) {
             return;
         }
         this.startDrag({ kind: 'corner', rowIndex, columnIndex, corner }, event);
@@ -424,24 +435,19 @@ export class ShelfDetailPageComponent {
 
     isSlotActive(rowIndex: number, columnIndex: number): boolean {
         const active = this.activeDrag;
-        return !!active && active.kind === 'corner' && active.rowIndex === rowIndex && active.columnIndex === columnIndex;
+        if (!!active && active.kind === 'corner' && active.rowIndex === rowIndex && active.columnIndex === columnIndex) {
+            return true;
+        }
+        return this.isLayoutSlotSelected(rowIndex, columnIndex);
+    }
+
+    isLayoutSlotSelected(rowIndex: number, columnIndex: number): boolean {
+        const selected = this.activeLayoutSelection();
+        return !!selected && selected.rowIndex === rowIndex && selected.columnIndex === columnIndex;
     }
 
     assignedItems(slotId: string): PlacementWithItem[] {
         return (this.shelf()?.placements ?? []).filter((p) => p.placement.shelfSlotId === slotId);
-    }
-
-    roundSlotValue(
-        rowIndex: number,
-        columnIndex: number,
-        key: 'xStartNorm' | 'xEndNorm' | 'yStartNorm' | 'yEndNorm'
-    ): void {
-        const column = this.rows.at(rowIndex)?.controls.columns.at(columnIndex);
-        if (!column) {
-            return;
-        }
-        const value = column.controls[key].value;
-        column.controls[key].setValue(this.roundTwo(value));
     }
 
     handleSearchSelection(itemId: string): void {
@@ -492,6 +498,7 @@ export class ShelfDetailPageComponent {
         event.preventDefault();
         event.stopPropagation();
         this.endDrag();
+        this.activeLayoutSelection.set({ rowIndex: context.rowIndex, columnIndex: context.columnIndex });
         this.activeDrag = context;
         this.overlayRect = this.canvasOverlay?.nativeElement.getBoundingClientRect() ?? null;
         this.dragLockedAxis = null;
@@ -609,6 +616,17 @@ export class ShelfDetailPageComponent {
             return 0;
         }
         return Math.round(value * 100) / 100;
+    }
+
+    private ensureActiveLayoutSelection(): void {
+        const selection = this.activeLayoutSelection();
+        if (!selection) {
+            return;
+        }
+        const row = this.rows.at(selection.rowIndex);
+        if (!row || selection.columnIndex >= row.controls.columns.length) {
+            this.activeLayoutSelection.set(null);
+        }
     }
 
     private get windowRef(): Window | null {
