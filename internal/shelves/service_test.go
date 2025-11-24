@@ -99,20 +99,15 @@ func TestUpdateLayoutReturnsOnlyDisplacedItems(t *testing.T) {
 	}
 
 	input := UpdateLayoutInput{
-		Rows: []LayoutRowInput{
+		Slots: []LayoutSlotInput{
 			{
-				RowID:      &rowID,
+				SlotID:     &slotLeftID,
 				RowIndex:   0,
+				ColIndex:   0,
+				XStartNorm: 0,
+				XEndNorm:   0.5,
 				YStartNorm: 0,
 				YEndNorm:   1,
-				Columns: []LayoutColumnInput{
-					{
-						ColumnID:   &colLeftID,
-						ColIndex:   0,
-						XStartNorm: 0,
-						XEndNorm:   0.5,
-					},
-				},
 			},
 		},
 	}

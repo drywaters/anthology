@@ -30,7 +30,7 @@ import { ShelfService } from '../../services/shelf.service';
     styleUrl: './add-shelf-page.component.scss',
 })
 export class AddShelfPageComponent {
-    private static readonly MAX_PHOTO_BYTES = 500 * 1024;
+    private static readonly MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
     private readonly shelfService = inject(ShelfService);
     private readonly snackBar = inject(MatSnackBar);
@@ -86,7 +86,7 @@ export class AddShelfPageComponent {
 
         if (file.size > AddShelfPageComponent.MAX_PHOTO_BYTES) {
             this.clearPhotoSelection(false, input);
-            this.photoUploadError.set('Photos must be under 500KB.');
+            this.photoUploadError.set('Photos must be under 5MB.');
             return;
         }
 

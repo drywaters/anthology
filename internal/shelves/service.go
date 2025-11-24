@@ -31,9 +31,9 @@ type CreateShelfInput struct {
 	PhotoURL    string `json:"photoUrl"`
 }
 
-// UpdateLayoutInput wraps the new rows for a shelf layout.
+// UpdateLayoutInput wraps the new slots for a shelf layout.
 type UpdateLayoutInput struct {
-	Rows []LayoutRowInput `json:"rows"`
+	Slots []LayoutSlotInput `json:"slots"`
 }
 
 // CreateShelf creates a shelf with an initial single-slot layout.
@@ -101,8 +101,8 @@ func (s *Service) GetShelf(ctx context.Context, shelfID uuid.UUID) (ShelfWithLay
 
 // UpdateLayout replaces the layout while keeping stable slot IDs when possible.
 func (s *Service) UpdateLayout(ctx context.Context, shelfID uuid.UUID, input UpdateLayoutInput) (ShelfWithLayout, []PlacementWithItem, error) {
-	if len(input.Rows) == 0 {
-		return ShelfWithLayout{}, nil, fmt.Errorf("at least one row is required")
+	if len(input.Slots) == 0 {
+		return ShelfWithLayout{}, nil, fmt.Errorf("at least one slot is required")
 	}
 
 	existing, err := s.repo.GetShelf(ctx, shelfID)
@@ -110,43 +110,29 @@ func (s *Service) UpdateLayout(ctx context.Context, shelfID uuid.UUID, input Upd
 		return ShelfWithLayout{}, nil, err
 	}
 
-	normalizedRows, normalizedColumns, err := normalizeRows(input.Rows, shelfID)
+	slotKey := func(rowIdx, colIdx int) string {
+		return fmt.Sprintf("%d-%d", rowIdx, colIdx)
+	}
+
+	rowIDs := make(map[int]uuid.UUID)
+	columnIDs := make(map[string]uuid.UUID)
+	slotIDs := make(map[string]uuid.UUID)
+	for _, row := range existing.Rows {
+		rowIDs[row.RowIndex] = row.ID
+		for _, col := range row.Columns {
+			columnIDs[slotKey(row.RowIndex, col.ColIndex)] = col.ID
+		}
+	}
+	for _, slot := range existing.Slots {
+		slotIDs[slotKey(slot.RowIndex, slot.ColIndex)] = slot.ID
+	}
+
+	normalizedRows, normalizedColumns, normalizedSlots, err := normalizeSlots(input.Slots, shelfID, rowIDs, columnIDs, slotIDs)
 	if err != nil {
 		return ShelfWithLayout{}, nil, err
 	}
 
-	slotMap := map[string]ShelfSlot{}
-	for _, slot := range existing.Slots {
-		key := fmt.Sprintf("%d-%d", slot.RowIndex, slot.ColIndex)
-		slotMap[key] = slot
-	}
-
-	var slots []ShelfSlot
-	for _, row := range normalizedRows {
-		cols := normalizedColumns[row.ID]
-		sort.Slice(cols, func(i, j int) bool { return cols[i].ColIndex < cols[j].ColIndex })
-		for _, col := range cols {
-			key := fmt.Sprintf("%d-%d", row.RowIndex, col.ColIndex)
-			slotID := uuid.New()
-			if existingSlot, ok := slotMap[key]; ok {
-				slotID = existingSlot.ID
-			}
-			slots = append(slots, ShelfSlot{
-				ID:            slotID,
-				ShelfID:       shelfID,
-				ShelfRowID:    row.ID,
-				ShelfColumnID: col.ID,
-				RowIndex:      row.RowIndex,
-				ColIndex:      col.ColIndex,
-				XStartNorm:    col.XStartNorm,
-				XEndNorm:      col.XEndNorm,
-				YStartNorm:    row.YStartNorm,
-				YEndNorm:      row.YEndNorm,
-			})
-		}
-	}
-
-	removedSlotIDs := removedSlots(existing.Slots, slots)
+	removedSlotIDs := removedSlots(existing.Slots, normalizedSlots)
 	displacedItemIDs := make(map[uuid.UUID]struct{})
 	if len(removedSlotIDs) > 0 {
 		removedSet := make(map[uuid.UUID]struct{}, len(removedSlotIDs))
@@ -162,7 +148,7 @@ func (s *Service) UpdateLayout(ctx context.Context, shelfID uuid.UUID, input Upd
 			}
 		}
 	}
-	if err := s.repo.SaveLayout(ctx, shelfID, slices.Clone(normalizedRows), flattenColumns(normalizedColumns), slots, removedSlotIDs); err != nil {
+	if err := s.repo.SaveLayout(ctx, shelfID, slices.Clone(normalizedRows), slices.Clone(normalizedColumns), normalizedSlots, removedSlotIDs); err != nil {
 		return ShelfWithLayout{}, nil, err
 	}
 
@@ -235,86 +221,117 @@ func removedSlots(previous, next []ShelfSlot) []uuid.UUID {
 	return removed
 }
 
-func normalizeRows(rows []LayoutRowInput, shelfID uuid.UUID) ([]ShelfRow, map[uuid.UUID][]ShelfColumn, error) {
-	normalized := make([]ShelfRow, len(rows))
-	columns := make(map[uuid.UUID][]ShelfColumn)
+func normalizeSlots(
+	slots []LayoutSlotInput,
+	shelfID uuid.UUID,
+	existingRowIDs map[int]uuid.UUID,
+	existingColumnIDs map[string]uuid.UUID,
+	existingSlotIDs map[string]uuid.UUID,
+) ([]ShelfRow, []ShelfColumn, []ShelfSlot, error) {
+	if len(slots) == 0 {
+		return nil, nil, nil, fmt.Errorf("at least one slot is required")
+	}
 
-	sort.Slice(rows, func(i, j int) bool { return rows[i].RowIndex < rows[j].RowIndex })
+	key := func(rowIdx, colIdx int) string {
+		return fmt.Sprintf("%d-%d", rowIdx, colIdx)
+	}
 
-	var lastEnd float64
-	for i, row := range rows {
-		if row.YStartNorm < 0 || row.YEndNorm > 1 || row.YEndNorm <= row.YStartNorm {
-			return nil, nil, fmt.Errorf("row %d has invalid boundaries", row.RowIndex)
+	rowGroups := make(map[int][]LayoutSlotInput)
+	seenKeys := make(map[string]struct{})
+
+	for _, slot := range slots {
+		if slot.RowIndex < 0 || slot.ColIndex < 0 {
+			return nil, nil, nil, fmt.Errorf("row and column indexes must be non-negative")
 		}
-		if i > 0 && row.YStartNorm < lastEnd {
-			return nil, nil, fmt.Errorf("rows overlap; check row %d", row.RowIndex)
+		if slot.XStartNorm < 0 || slot.XEndNorm > 1 || slot.XEndNorm <= slot.XStartNorm {
+			return nil, nil, nil, fmt.Errorf("slot %d/%d has invalid x boundaries", slot.RowIndex, slot.ColIndex)
 		}
-		lastEnd = row.YEndNorm
+		if slot.YStartNorm < 0 || slot.YEndNorm > 1 || slot.YEndNorm <= slot.YStartNorm {
+			return nil, nil, nil, fmt.Errorf("slot %d/%d has invalid y boundaries", slot.RowIndex, slot.ColIndex)
+		}
+		slotKey := key(slot.RowIndex, slot.ColIndex)
+		if _, exists := seenKeys[slotKey]; exists {
+			return nil, nil, nil, fmt.Errorf("duplicate definition for row %d column %d", slot.RowIndex, slot.ColIndex)
+		}
+		seenKeys[slotKey] = struct{}{}
+		rowGroups[slot.RowIndex] = append(rowGroups[slot.RowIndex], slot)
+	}
 
-		rowID := uuid.New()
-		if row.RowID != nil {
-			rowID = *row.RowID
+	rowIndexes := make([]int, 0, len(rowGroups))
+	for idx := range rowGroups {
+		rowIndexes = append(rowIndexes, idx)
+	}
+	sort.Ints(rowIndexes)
+
+	rows := make([]ShelfRow, 0, len(rowIndexes))
+	columns := make([]ShelfColumn, 0, len(slots))
+	normalizedSlots := make([]ShelfSlot, 0, len(slots))
+
+	for _, rowIdx := range rowIndexes {
+		rowSlots := rowGroups[rowIdx]
+		sort.Slice(rowSlots, func(i, j int) bool { return rowSlots[i].ColIndex < rowSlots[j].ColIndex })
+
+		rowYStart := rowSlots[0].YStartNorm
+		rowYEnd := rowSlots[0].YEndNorm
+		for _, slot := range rowSlots[1:] {
+			if slot.YStartNorm < rowYStart {
+				rowYStart = slot.YStartNorm
+			}
+			if slot.YEndNorm > rowYEnd {
+				rowYEnd = slot.YEndNorm
+			}
 		}
 
-		normalized[i] = ShelfRow{
+		rowID, ok := existingRowIDs[rowIdx]
+		if !ok {
+			rowID = uuid.New()
+		}
+		rows = append(rows, ShelfRow{
 			ID:         rowID,
 			ShelfID:    shelfID,
-			RowIndex:   row.RowIndex,
-			YStartNorm: row.YStartNorm,
-			YEndNorm:   row.YEndNorm,
-		}
+			RowIndex:   rowIdx,
+			YStartNorm: rowYStart,
+			YEndNorm:   rowYEnd,
+		})
 
-		cols, err := normalizeColumns(row.Columns, rowID)
-		if err != nil {
-			return nil, nil, err
-		}
-		columns[rowID] = cols
-	}
+		for _, slot := range rowSlots {
+			colKey := key(rowIdx, slot.ColIndex)
+			colID, ok := existingColumnIDs[colKey]
+			if !ok {
+				colID = uuid.New()
+			}
 
-	return normalized, columns, nil
-}
+			columns = append(columns, ShelfColumn{
+				ID:         colID,
+				ShelfRowID: rowID,
+				ColIndex:   slot.ColIndex,
+				XStartNorm: slot.XStartNorm,
+				XEndNorm:   slot.XEndNorm,
+			})
 
-func normalizeColumns(cols []LayoutColumnInput, rowID uuid.UUID) ([]ShelfColumn, error) {
-	if len(cols) == 0 {
-		return nil, fmt.Errorf("each row requires at least one column")
-	}
+			slotID := uuid.New()
+			if slot.SlotID != nil {
+				slotID = *slot.SlotID
+			} else if existingID, ok := existingSlotIDs[colKey]; ok {
+				slotID = existingID
+			}
 
-	sort.Slice(cols, func(i, j int) bool { return cols[i].ColIndex < cols[j].ColIndex })
-
-	var lastEnd float64
-	normalized := make([]ShelfColumn, len(cols))
-	for i, col := range cols {
-		if col.XStartNorm < 0 || col.XEndNorm > 1 || col.XEndNorm <= col.XStartNorm {
-			return nil, fmt.Errorf("column %d has invalid boundaries", col.ColIndex)
-		}
-		if i > 0 && col.XStartNorm < lastEnd {
-			return nil, fmt.Errorf("columns overlap near index %d", col.ColIndex)
-		}
-		lastEnd = col.XEndNorm
-
-		colID := uuid.New()
-		if col.ColumnID != nil {
-			colID = *col.ColumnID
-		}
-
-		normalized[i] = ShelfColumn{
-			ID:         colID,
-			ShelfRowID: rowID,
-			ColIndex:   col.ColIndex,
-			XStartNorm: col.XStartNorm,
-			XEndNorm:   col.XEndNorm,
+			normalizedSlots = append(normalizedSlots, ShelfSlot{
+				ID:            slotID,
+				ShelfID:       shelfID,
+				ShelfRowID:    rowID,
+				ShelfColumnID: colID,
+				RowIndex:      rowIdx,
+				ColIndex:      slot.ColIndex,
+				XStartNorm:    slot.XStartNorm,
+				XEndNorm:      slot.XEndNorm,
+				YStartNorm:    slot.YStartNorm,
+				YEndNorm:      slot.YEndNorm,
+			})
 		}
 	}
 
-	return normalized, nil
-}
-
-func flattenColumns(columns map[uuid.UUID][]ShelfColumn) []ShelfColumn {
-	var result []ShelfColumn
-	for _, cols := range columns {
-		result = append(result, cols...)
-	}
-	return result
+	return rows, columns, normalizedSlots, nil
 }
 
 func (s *Service) attachItems(ctx context.Context, layout ShelfWithLayout) (ShelfWithLayout, error) {

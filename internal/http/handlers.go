@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -49,6 +50,7 @@ func (h *ItemHandler) List(w http.ResponseWriter, r *http.Request) {
 
 func parseListOptions(values url.Values) (items.ListOptions, error) {
 	opts := items.ListOptions{}
+	const maxListLimit = 50
 
 	if rawType := strings.TrimSpace(values.Get("type")); rawType != "" {
 		typeValue := items.ItemType(rawType)
@@ -77,6 +79,19 @@ func parseListOptions(values url.Values) (items.ListOptions, error) {
 		} else {
 			return items.ListOptions{}, fmt.Errorf("invalid letter filter")
 		}
+	}
+
+	if rawQuery := strings.TrimSpace(values.Get("query")); rawQuery != "" {
+		query := rawQuery
+		opts.Query = &query
+	}
+
+	if rawLimit := strings.TrimSpace(values.Get("limit")); rawLimit != "" {
+		value, err := strconv.Atoi(rawLimit)
+		if err != nil || value <= 0 || value > maxListLimit {
+			return items.ListOptions{}, fmt.Errorf("invalid limit filter")
+		}
+		opts.Limit = &value
 	}
 
 	return opts, nil

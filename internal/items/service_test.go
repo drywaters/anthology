@@ -225,6 +225,31 @@ func TestServiceListAppliesFilters(t *testing.T) {
 	}
 }
 
+func TestServiceListSupportsSearchAndLimit(t *testing.T) {
+	repo := NewInMemoryRepository(nil)
+	svc := NewService(repo)
+
+	ctx := context.Background()
+
+	_, _ = svc.Create(ctx, CreateItemInput{Title: "The Pragmatic Programmer", ItemType: ItemTypeBook})
+	_, _ = svc.Create(ctx, CreateItemInput{Title: "Children of Dune", ItemType: ItemTypeBook})
+	time.Sleep(10 * time.Millisecond)
+	latest, _ := svc.Create(ctx, CreateItemInput{Title: "Dune", ItemType: ItemTypeBook})
+
+	query := "dune"
+	limit := 1
+	items, err := svc.List(ctx, ListOptions{Query: &query, Limit: &limit})
+	if err != nil {
+		t.Fatalf("list with search failed: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(items))
+	}
+	if items[0].ID != latest.ID {
+		t.Fatalf("expected newest matching item, got %q", items[0].Title)
+	}
+}
+
 func TestServiceCreateTrimsInputAndNormalizesYear(t *testing.T) {
 	repo := NewInMemoryRepository(nil)
 	svc := NewService(repo)
@@ -349,7 +374,7 @@ func TestServiceValidatesBookStatusTransitions(t *testing.T) {
 
 	readingUpdate, err := svc.Update(context.Background(), book.ID, UpdateItemInput{
 		ReadingStatus: ptrBookStatus(BookStatusReading),
-		CurrentPage:  ptrIntPtr(120),
+		CurrentPage:   ptrIntPtr(120),
 	})
 	if err != nil {
 		t.Fatalf("expected reading status update to succeed: %v", err)

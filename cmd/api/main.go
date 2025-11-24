@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -80,9 +81,16 @@ func main() {
 func buildRepositories(ctx context.Context, cfg config.Config, logger *slog.Logger) (items.Repository, shelves.Repository, func(), error) {
 	if cfg.UseInMemoryStore() {
 		logger.Info("using in-memory repository")
-		itemRepo := items.NewInMemoryRepository(seedLocalItems())
+		demoItems := seedLocalItems()
 		shelfRepo := shelves.NewInMemoryRepository()
-		seedShelves(ctx, shelfRepo)
+		placements := seedShelves(ctx, shelfRepo, demoItems)
+		for i := range demoItems {
+			if placement, ok := placements[demoItems[i].ID]; ok {
+				placementCopy := placement
+				demoItems[i].ShelfPlacement = &placementCopy
+			}
+		}
+		itemRepo := items.NewInMemoryRepository(demoItems)
 		return itemRepo, shelfRepo, nil, nil
 	}
 
@@ -159,7 +167,7 @@ func seedLocalItems() []items.Item {
 	}
 }
 
-func seedShelves(ctx context.Context, repo shelves.Repository) {
+func seedShelves(ctx context.Context, repo shelves.Repository, demoItems []items.Item) map[uuid.UUID]items.ShelfPlacement {
 	now := time.Now().UTC()
 	shelf := shelves.Shelf{
 		ID:          uuid.New(),
@@ -206,5 +214,53 @@ func seedShelves(ctx context.Context, repo shelves.Repository) {
 		}
 	}
 
-	_, _ = repo.CreateShelf(ctx, shelf, rows, cols, slots)
+	layout, err := repo.CreateShelf(ctx, shelf, rows, cols, slots)
+	if err != nil {
+		return map[uuid.UUID]items.ShelfPlacement{}
+	}
+
+	slotLookup := make(map[string]uuid.UUID, len(layout.Slots))
+	for _, slot := range layout.Slots {
+		key := fmt.Sprintf("%d-%d", slot.RowIndex, slot.ColIndex)
+		slotLookup[key] = slot.ID
+	}
+
+	itemLookup := make(map[string]uuid.UUID, len(demoItems))
+	for _, item := range demoItems {
+		itemLookup[item.Title] = item.ID
+	}
+
+	placements := make(map[uuid.UUID]items.ShelfPlacement)
+	assignments := []struct {
+		title    string
+		rowIndex int
+		colIndex int
+	}{
+		{"The Night Circus", 0, 0},
+		{"Stardew Valley", 0, 1},
+		{"Arrival", 1, 0},
+	}
+
+	for _, placement := range assignments {
+		itemID, ok := itemLookup[placement.title]
+		if !ok {
+			continue
+		}
+		slotID, ok := slotLookup[fmt.Sprintf("%d-%d", placement.rowIndex, placement.colIndex)]
+		if !ok {
+			continue
+		}
+		if _, err := repo.AssignItemToSlot(ctx, shelf.ID, slotID, itemID); err != nil {
+			continue
+		}
+		placements[itemID] = items.ShelfPlacement{
+			ShelfID:   shelf.ID,
+			ShelfName: shelf.Name,
+			SlotID:    slotID,
+			RowIndex:  placement.rowIndex,
+			ColIndex:  placement.colIndex,
+		}
+	}
+
+	return placements
 }

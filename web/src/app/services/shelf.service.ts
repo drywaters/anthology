@@ -3,12 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 
 import { environment } from '../config/environment';
-import {
-    LayoutRowInput,
-    LayoutUpdateResponse,
-    ShelfSummary,
-    ShelfWithLayout,
-} from '../models/shelf';
+import { LayoutSlotInput, LayoutUpdateResponse, ShelfSummary, ShelfWithLayout } from '../models/shelf';
 
 @Injectable({ providedIn: 'root' })
 export class ShelfService {
@@ -27,8 +22,8 @@ export class ShelfService {
         return this.http.get<ShelfWithLayout>(`${this.baseUrl}/${id}`);
     }
 
-    updateLayout(id: string, rows: LayoutRowInput[]): Observable<LayoutUpdateResponse> {
-        return this.http.put<LayoutUpdateResponse>(`${this.baseUrl}/${id}/layout`, { rows });
+    updateLayout(id: string, slots: LayoutSlotInput[]): Observable<LayoutUpdateResponse> {
+        return this.http.put<LayoutUpdateResponse>(`${this.baseUrl}/${id}/layout`, { slots });
     }
 
     assignItem(shelfId: string, slotId: string, itemId: string): Observable<ShelfWithLayout> {

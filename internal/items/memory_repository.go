@@ -2,6 +2,7 @@ package items
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"sync"
 
@@ -54,6 +55,11 @@ func (r *InMemoryRepository) List(_ context.Context, opts ListOptions) ([]Item, 
 	defer r.mu.RUnlock()
 
 	items := make([]Item, 0, len(r.order))
+	queryFilter := ""
+	if opts.Query != nil {
+		queryFilter = strings.ToLower(strings.TrimSpace(*opts.Query))
+	}
+
 	for _, id := range r.order {
 		if item, ok := r.data[id]; ok {
 			if opts.ItemType != nil && item.ItemType != *opts.ItemType {
@@ -83,9 +89,23 @@ func (r *InMemoryRepository) List(_ context.Context, opts ListOptions) ([]Item, 
 				}
 			}
 
+			if queryFilter != "" {
+				title := strings.ToLower(strings.TrimSpace(item.Title))
+				if !strings.Contains(title, queryFilter) {
+					continue
+				}
+			}
+
 			items = append(items, item)
 		}
 	}
+
+	if opts.Limit != nil && *opts.Limit > 0 && len(items) > *opts.Limit {
+		sorted := append([]Item(nil), items...)
+		slices.SortFunc(sorted, compareItemsByCreatedDesc)
+		items = sorted[:*opts.Limit]
+	}
+
 	return items, nil
 }
 

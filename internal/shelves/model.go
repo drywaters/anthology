@@ -96,21 +96,15 @@ type ShelfSummary struct {
 	SlotCount   int   `json:"slotCount"`
 }
 
-// LayoutRowInput captures layout updates for a row.
-type LayoutRowInput struct {
-	RowID      *uuid.UUID          `json:"rowId"`
-	RowIndex   int                 `json:"rowIndex"`
-	YStartNorm float64             `json:"yStartNorm"`
-	YEndNorm   float64             `json:"yEndNorm"`
-	Columns    []LayoutColumnInput `json:"columns"`
-}
-
-// LayoutColumnInput captures layout updates for a column.
-type LayoutColumnInput struct {
-	ColumnID   *uuid.UUID `json:"columnId"`
+// LayoutSlotInput captures layout updates for a slot's bounding box.
+type LayoutSlotInput struct {
+	SlotID     *uuid.UUID `json:"slotId"`
+	RowIndex   int        `json:"rowIndex"`
 	ColIndex   int        `json:"colIndex"`
 	XStartNorm float64    `json:"xStartNorm"`
 	XEndNorm   float64    `json:"xEndNorm"`
+	YStartNorm float64    `json:"yStartNorm"`
+	YEndNorm   float64    `json:"yEndNorm"`
 }
 
 // Repository defines persistence for shelves and layouts.

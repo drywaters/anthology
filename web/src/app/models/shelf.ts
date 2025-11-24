@@ -67,22 +67,17 @@ export interface ShelfSummary {
     slotCount: number;
 }
 
-export interface LayoutRowInput {
-    rowId?: string;
+export interface LayoutSlotInput {
+    slotId?: string;
     rowIndex: number;
-    yStartNorm: number;
-    yEndNorm: number;
-    columns: LayoutColumnInput[];
-}
-
-export interface LayoutColumnInput {
-    columnId?: string;
     colIndex: number;
     xStartNorm: number;
     xEndNorm: number;
+    yStartNorm: number;
+    yEndNorm: number;
 }
 
 export interface LayoutUpdateResponse {
     shelf: ShelfWithLayout;
-    displaced: PlacementWithItem[];
+    displaced: PlacementWithItem[] | null;
 }

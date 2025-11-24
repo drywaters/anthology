@@ -20,7 +20,72 @@ func NewPostgresRepository(db *sqlx.DB) *PostgresRepository {
 	return &PostgresRepository{db: db}
 }
 
-const baseSelect = "SELECT id, title, creator, item_type, release_year, page_count, current_page, isbn_13, isbn_10, description, cover_image, reading_status, read_at, notes, created_at, updated_at FROM items"
+const baseSelect = `
+SELECT
+    i.id,
+    i.title,
+    i.creator,
+    i.item_type,
+    i.release_year,
+    i.page_count,
+    i.current_page,
+    i.isbn_13,
+    i.isbn_10,
+    i.description,
+    i.cover_image,
+    i.reading_status,
+    i.read_at,
+    i.notes,
+    i.created_at,
+    i.updated_at,
+    placement.shelf_id AS placement_shelf_id,
+    placement.shelf_slot_id AS placement_shelf_slot_id,
+    placement.shelf_name AS placement_shelf_name,
+    placement.row_index AS placement_row_index,
+    placement.col_index AS placement_col_index
+FROM items i
+LEFT JOIN LATERAL (
+    SELECT
+        isl.shelf_id,
+        isl.shelf_slot_id,
+        ss.row_index,
+        ss.col_index,
+        s.name AS shelf_name
+    FROM item_shelf_locations isl
+    JOIN shelves s ON s.id = isl.shelf_id
+    JOIN shelf_slots ss ON ss.id = isl.shelf_slot_id
+    WHERE isl.item_id = i.id AND isl.shelf_slot_id IS NOT NULL
+    ORDER BY isl.created_at DESC
+    LIMIT 1
+) AS placement ON true
+`
+
+type itemRow struct {
+	Item                 Item
+	PlacementShelfID     *uuid.UUID `db:"placement_shelf_id"`
+	PlacementShelfSlotID *uuid.UUID `db:"placement_shelf_slot_id"`
+	PlacementShelfName   *string    `db:"placement_shelf_name"`
+	PlacementRowIndex    *int       `db:"placement_row_index"`
+	PlacementColIndex    *int       `db:"placement_col_index"`
+}
+
+func (row itemRow) toItem() Item {
+	item := row.Item
+	if row.PlacementShelfID != nil &&
+		row.PlacementShelfSlotID != nil &&
+		row.PlacementShelfName != nil &&
+		row.PlacementRowIndex != nil &&
+		row.PlacementColIndex != nil {
+		item.ShelfPlacement = &ShelfPlacement{
+			ShelfID:   *row.PlacementShelfID,
+			ShelfName: *row.PlacementShelfName,
+			SlotID:    *row.PlacementShelfSlotID,
+			RowIndex:  *row.PlacementRowIndex,
+			ColIndex:  *row.PlacementColIndex,
+		}
+	}
+	return item
+}
 
 // Create inserts a new row and returns the stored representation.
 func (r *PostgresRepository) Create(ctx context.Context, item Item) (Item, error) {
@@ -36,14 +101,14 @@ VALUES (:id, :title, :creator, :item_type, :release_year, :page_count, :current_
 
 // Get retrieves a row by primary key.
 func (r *PostgresRepository) Get(ctx context.Context, id uuid.UUID) (Item, error) {
-	var item Item
-	if err := r.db.GetContext(ctx, &item, baseSelect+" WHERE id = $1", id); err != nil {
+	var row itemRow
+	if err := r.db.GetContext(ctx, &row, baseSelect+" WHERE i.id = $1", id); err != nil {
 		if err == sql.ErrNoRows {
 			return Item{}, ErrNotFound
 		}
 		return Item{}, fmt.Errorf("get item: %w", err)
 	}
-	return item, nil
+	return row.toItem(), nil
 }
 
 // List returns items ordered by creation timestamp descending, filtered by the provided options.
@@ -53,22 +118,30 @@ func (r *PostgresRepository) List(ctx context.Context, opts ListOptions) ([]Item
 	args := []any{}
 
 	if opts.ItemType != nil {
-		clauses = append(clauses, fmt.Sprintf("item_type = $%d", len(args)+1))
+		clauses = append(clauses, fmt.Sprintf("i.item_type = $%d", len(args)+1))
 		args = append(args, *opts.ItemType)
 	}
 
 	if opts.ReadingStatus != nil {
-		clauses = append(clauses, fmt.Sprintf("reading_status = $%d", len(args)+1))
+		clauses = append(clauses, fmt.Sprintf("i.reading_status = $%d", len(args)+1))
 		args = append(args, *opts.ReadingStatus)
 	}
 
 	if opts.Initial != nil {
 		initial := strings.ToUpper(strings.TrimSpace(*opts.Initial))
 		if initial == "#" {
-			clauses = append(clauses, "NOT (upper(substr(trim(title), 1, 1)) BETWEEN 'A' AND 'Z')")
+			clauses = append(clauses, "NOT (upper(substr(trim(i.title), 1, 1)) BETWEEN 'A' AND 'Z')")
 		} else {
-			clauses = append(clauses, fmt.Sprintf("upper(substr(trim(title), 1, 1)) = $%d", len(args)+1))
+			clauses = append(clauses, fmt.Sprintf("upper(substr(trim(i.title), 1, 1)) = $%d", len(args)+1))
 			args = append(args, initial)
+		}
+	}
+
+	if opts.Query != nil {
+		search := strings.TrimSpace(*opts.Query)
+		if search != "" {
+			clauses = append(clauses, fmt.Sprintf("i.title ILIKE $%d", len(args)+1))
+			args = append(args, "%"+search+"%")
 		}
 	}
 
@@ -76,11 +149,20 @@ func (r *PostgresRepository) List(ctx context.Context, opts ListOptions) ([]Item
 		query = query + " WHERE " + strings.Join(clauses, " AND ")
 	}
 
-	query = query + " ORDER BY created_at DESC, title ASC"
+	query = query + " ORDER BY i.created_at DESC, i.title ASC"
 
-	items := []Item{}
-	if err := r.db.SelectContext(ctx, &items, query, args...); err != nil {
+	if opts.Limit != nil && *opts.Limit > 0 {
+		query = fmt.Sprintf("%s LIMIT %d", query, *opts.Limit)
+	}
+
+	rows := []itemRow{}
+	if err := r.db.SelectContext(ctx, &rows, query, args...); err != nil {
 		return nil, fmt.Errorf("list items: %w", err)
+	}
+
+	items := make([]Item, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, row.toItem())
 	}
 	return items, nil
 }

@@ -19,16 +19,54 @@
     <div class="content">
         <mat-card class="canvas" [ngClass]="{ 'canvas--editing': mode() === 'edit' }">
             <img class="canvas__image" [src]="shelfData.shelf.photoUrl" [alt]="shelfData.shelf.name" />
-            <div class="canvas__overlay">
-                <div
-                    *ngFor="let slot of shelfData.slots"
-                    class="slot"
-                    [ngClass]="{ 'slot--selected': selectedSlot()?.id === slot.id }"
-                    [ngStyle]="slotStyle(slot)"
-                    (click)="selectSlot(slot)"
-                >
-                    <span class="slot__label">{{ slot.rowIndex + 1 }} / {{ slot.colIndex + 1 }}</span>
-                </div>
+            <div class="canvas__overlay" #canvasOverlay>
+                <ng-container *ngIf="mode() === 'edit'; else viewOverlay">
+                    <ng-container *ngFor="let row of rows.controls; let rowIdx = index">
+                        <div
+                            class="slot slot--draft"
+                            *ngFor="let col of row.controls.columns.controls; let colIdx = index"
+                            [ngClass]="{ 'slot--active': isSlotActive(rowIdx, colIdx) }"
+                            [ngStyle]="formSlotStyle(rowIdx, colIdx)"
+                        >
+                            <span class="slot__label">{{ rowIdx + 1 }} / {{ colIdx + 1 }}</span>
+                            <button
+                                type="button"
+                                class="slot__handle slot__handle--top-left slot__handle--start"
+                                (pointerdown)="beginCornerDrag(rowIdx, colIdx, 'top-left', $event)"
+                                [attr.aria-label]="'Adjust top-left corner of slot ' + (rowIdx + 1) + '/' + (colIdx + 1)"
+                            ></button>
+                            <button
+                                type="button"
+                                class="slot__handle slot__handle--top-right slot__handle--end"
+                                (pointerdown)="beginCornerDrag(rowIdx, colIdx, 'top-right', $event)"
+                                [attr.aria-label]="'Adjust top-right corner of slot ' + (rowIdx + 1) + '/' + (colIdx + 1)"
+                            ></button>
+                            <button
+                                type="button"
+                                class="slot__handle slot__handle--bottom-left slot__handle--start"
+                                (pointerdown)="beginCornerDrag(rowIdx, colIdx, 'bottom-left', $event)"
+                                [attr.aria-label]="'Adjust bottom-left corner of slot ' + (rowIdx + 1) + '/' + (colIdx + 1)"
+                            ></button>
+                            <button
+                                type="button"
+                                class="slot__handle slot__handle--bottom-right slot__handle--end"
+                                (pointerdown)="beginCornerDrag(rowIdx, colIdx, 'bottom-right', $event)"
+                                [attr.aria-label]="'Adjust bottom-right corner of slot ' + (rowIdx + 1) + '/' + (colIdx + 1)"
+                            ></button>
+                        </div>
+                    </ng-container>
+                </ng-container>
+                <ng-template #viewOverlay>
+                    <div
+                        *ngFor="let slot of shelfData.slots"
+                        class="slot"
+                        [ngClass]="{ 'slot--selected': selectedSlot()?.id === slot.id }"
+                        [ngStyle]="slotStyle(slot)"
+                        (click)="selectSlot(slot)"
+                    >
+                        <span class="slot__label">{{ slot.rowIndex + 1 }} / {{ slot.colIndex + 1 }}</span>
+                    </div>
+                </ng-template>
             </div>
         </mat-card>
 
@@ -55,12 +93,53 @@
             </ng-template>
 
             <div class="sidebar__section">
-                <mat-form-field appearance="outline">
-                    <mat-label>Add item</mat-label>
-                    <mat-select (selectionChange)="assignToSelected($event.value)">
-                        <mat-option *ngFor="let item of items()" [value]="item.id">{{ item.title }}</mat-option>
-                    </mat-select>
-                </mat-form-field>
+                <div class="sidebar__search-controls">
+                    <mat-form-field appearance="outline">
+                        <mat-label>Item type</mat-label>
+                        <mat-select [formControl]="itemSearchType">
+                            <mat-option *ngFor="let option of itemTypeOptions" [value]="option.value">
+                                {{ option.label }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="sidebar__search-field">
+                        <mat-label>Add item</mat-label>
+                        <input
+                            matInput
+                            type="text"
+                            placeholder="Search by title"
+                            [formControl]="itemSearchControl"
+                            [matAutocomplete]="itemSearchAutocomplete"
+                        />
+                        <mat-autocomplete #itemSearchAutocomplete="matAutocomplete" (optionSelected)="handleSearchSelection($event.option.value)">
+                            <mat-option *ngIf="searchingItems()" disabled>Searching...</mat-option>
+                            <mat-option *ngFor="let item of itemSearchResults()" [value]="item.id">
+                                <span class="item-option__title">{{ item.title }}</span>
+                                <span class="item-option__creator" *ngIf="item.creator">{{ item.creator }}</span>
+                            </mat-option>
+                            <mat-option
+                                *ngIf="
+                                    !searchingItems() &&
+                                    !itemSearchResults().length &&
+                                    itemSearchQuery.length >= minSearchLength
+                                "
+                                disabled
+                            >
+                                No matches found
+                            </mat-option>
+                            <mat-option
+                                *ngIf="
+                                    !searchingItems() &&
+                                    !itemSearchResults().length &&
+                                    itemSearchQuery.length < minSearchLength
+                                "
+                                disabled
+                            >
+                                Type at least {{ minSearchLength }} characters
+                            </mat-option>
+                        </mat-autocomplete>
+                    </mat-form-field>
+                </div>
             </div>
 
             <div class="sidebar__section" *ngIf="unplacedItems().length">
@@ -91,37 +170,59 @@
             <p class="helper">Rows and columns are normalized (0-1) relative to the photo.</p>
         </div>
         <div class="layout-editor__rows">
-            <div class="layout-row" *ngFor="let row of rows.controls; let idx = index" [formGroup]="row">
-                <div class="layout-row__header">
-                    <div>Row {{ idx + 1 }}</div>
-                    <div class="layout-row__actions">
-                        <button mat-icon-button (click)="addColumn(idx)"><mat-icon>add</mat-icon></button>
-                        <button mat-icon-button color="warn" (click)="removeRow(idx)"><mat-icon>delete</mat-icon></button>
+                <div class="layout-row" *ngFor="let row of rows.controls; let idx = index" [formGroup]="row">
+                    <div class="layout-row__header">
+                        <div>Row {{ idx + 1 }}</div>
+                        <div class="layout-row__actions">
+                            <button mat-icon-button (click)="addColumn(idx)"><mat-icon>add</mat-icon></button>
+                            <button mat-icon-button color="warn" (click)="removeRow(idx)"><mat-icon>delete</mat-icon></button>
+                        </div>
                     </div>
-                </div>
-                <div class="layout-row__fields">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Start</mat-label>
-                        <input matInput type="number" step="0.01" formControlName="yStartNorm" />
-                    </mat-form-field>
-                    <mat-form-field appearance="outline">
-                        <mat-label>End</mat-label>
-                        <input matInput type="number" step="0.01" formControlName="yEndNorm" />
-                    </mat-form-field>
-                </div>
-                <div formArrayName="columns" class="columns">
-                    <div *ngFor="let col of row.controls.columns.controls; let colIdx = index" [formGroupName]="colIdx" class="column-card">
-                        <div class="column-card__header">
+                    <div formArrayName="columns" class="columns">
+                        <div *ngFor="let col of row.controls.columns.controls; let colIdx = index" [formGroupName]="colIdx" class="column-card">
+                            <div class="column-card__header">
                             <div>Column {{ colIdx + 1 }}</div>
                             <button mat-icon-button color="warn" (click)="removeColumn(idx, colIdx)"><mat-icon>close</mat-icon></button>
                         </div>
                         <mat-form-field appearance="outline">
-                            <mat-label>Start</mat-label>
-                            <input matInput type="number" step="0.01" formControlName="xStartNorm" />
+                            <mat-label>X start</mat-label>
+                            <input
+                                matInput
+                                type="number"
+                                step="0.01"
+                                formControlName="xStartNorm"
+                                (blur)="roundSlotValue(idx, colIdx, 'xStartNorm')"
+                            />
                         </mat-form-field>
                         <mat-form-field appearance="outline">
-                            <mat-label>End</mat-label>
-                            <input matInput type="number" step="0.01" formControlName="xEndNorm" />
+                            <mat-label>X end</mat-label>
+                            <input
+                                matInput
+                                type="number"
+                                step="0.01"
+                                formControlName="xEndNorm"
+                                (blur)="roundSlotValue(idx, colIdx, 'xEndNorm')"
+                            />
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Y start</mat-label>
+                            <input
+                                matInput
+                                type="number"
+                                step="0.01"
+                                formControlName="yStartNorm"
+                                (blur)="roundSlotValue(idx, colIdx, 'yStartNorm')"
+                            />
+                        </mat-form-field>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Y end</mat-label>
+                            <input
+                                matInput
+                                type="number"
+                                step="0.01"
+                                formControlName="yEndNorm"
+                                (blur)="roundSlotValue(idx, colIdx, 'yEndNorm')"
+                            />
                         </mat-form-field>
                     </div>
                 </div>

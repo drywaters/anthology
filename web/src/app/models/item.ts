@@ -19,6 +19,7 @@ export interface Item {
     notes: string;
     createdAt: string;
     updatedAt: string;
+    shelfPlacement?: ShelfPlacementSummary;
 }
 
 export interface ItemForm {
@@ -49,3 +50,11 @@ export const BOOK_STATUS_LABELS: Record<ActiveBookStatus, string> = {
     reading: 'Reading',
     want_to_read: 'Up Next',
 };
+
+export interface ShelfPlacementSummary {
+    shelfId: string;
+    shelfName: string;
+    slotId: string;
+    rowIndex: number;
+    colIndex: number;
+}
