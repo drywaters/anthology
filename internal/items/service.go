@@ -78,15 +78,11 @@ func (s *Service) List(ctx context.Context, opts ListOptions) ([]Item, error) {
 		return nil, err
 	}
 
-	slices.SortFunc(items, func(a, b Item) int {
-		if a.CreatedAt.Equal(b.CreatedAt) {
-			return strings.Compare(a.Title, b.Title)
-		}
-		if a.CreatedAt.After(b.CreatedAt) {
-			return -1
-		}
-		return 1
-	})
+	slices.SortFunc(items, compareItemsByCreatedDesc)
+
+	if opts.Limit != nil && *opts.Limit >= 0 && len(items) > *opts.Limit {
+		items = items[:*opts.Limit]
+	}
 
 	return items, nil
 }
@@ -198,6 +194,16 @@ func validateItemInput(title string, itemType ItemType) error {
 		return fmt.Errorf("itemType is required")
 	}
 	return nil
+}
+
+func compareItemsByCreatedDesc(a, b Item) int {
+	if a.CreatedAt.Equal(b.CreatedAt) {
+		return strings.Compare(a.Title, b.Title)
+	}
+	if a.CreatedAt.After(b.CreatedAt) {
+		return -1
+	}
+	return 1
 }
 
 func normalizeYear(year *int) *int {

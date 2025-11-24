@@ -204,6 +204,12 @@ mat-progress-bar {
     outline-offset: -4px;
 }
 
+.item-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
 .item-title {
     font-weight: 600;
 }

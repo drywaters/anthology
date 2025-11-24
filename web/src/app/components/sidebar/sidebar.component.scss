@@ -45,7 +45,13 @@
 .nav {
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
+    gap: 1rem;
+}
+
+.nav-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
 .nav-link {
@@ -68,6 +74,33 @@
 
 .nav-link mat-icon {
     font-size: 20px;
+}
+
+.nav-link__chevron {
+    margin-left: auto;
+    font-size: 18px;
+    opacity: 0.7;
+}
+
+
+.nav-submenu {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: 0.1rem 0 0.35rem 1.25rem;
+    padding-left: 0.75rem;
+    border-left: 1px solid color-mix(in srgb, var(--mat-sys-outline-variant) 65%, transparent);
+}
+
+.nav-link--sub {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    padding: 0.35rem 0.5rem;
+    border-radius: 0.4rem;
+}
+
+.nav-link--sub mat-icon {
+    font-size: 18px;
 }
 
 .nav-link::after {
@@ -128,14 +161,11 @@
     }
 
     .nav {
-        flex-direction: row;
-        flex-wrap: wrap;
-        column-gap: 1.25rem;
-        row-gap: 0.2rem;
+        flex-direction: column;
     }
 
-    .nav-link {
-        padding: 0.5rem 0.6rem;
+    .nav-submenu {
+        margin-left: 0.65rem;
     }
 
     .sidebar-footer {

@@ -8,16 +8,37 @@
 
     <nav class="nav">
         <ng-container *ngFor="let item of navItems">
-            <a
-                *ngIf="item.route"
-                class="nav-link"
-                [routerLink]="item.route"
-                routerLinkActive="active"
-                [routerLinkActiveOptions]="{ exact: item.route === '/' }"
-            >
-                <mat-icon>{{ item.icon }}</mat-icon>
-                <span>{{ item.label }}</span>
-            </a>
+            <div class="nav-section">
+                <a
+                    *ngIf="item.route"
+                    class="nav-link"
+                    [class.nav-link--expandable]="item.children?.length"
+                    [attr.aria-expanded]="item.children?.length ? expandedSection === item.route : null"
+                    [routerLink]="item.route"
+                    routerLinkActive="active"
+                    [routerLinkActiveOptions]="item.exact ? exactOptions : defaultOptions"
+                    (click)="handleSectionClick(item)"
+                >
+                    <mat-icon>{{ item.icon }}</mat-icon>
+                    <span>{{ item.label }}</span>
+                    <mat-icon class="nav-link__chevron" *ngIf="item.children?.length">
+                        {{ expandedSection === item.route ? 'expand_less' : 'expand_more' }}
+                    </mat-icon>
+                </a>
+
+                <div class="nav-submenu" *ngIf="item.children?.length && expandedSection === item.route">
+                    <a
+                        *ngFor="let child of item.children"
+                        class="nav-link nav-link--sub"
+                        [routerLink]="child.route"
+                        routerLinkActive="active"
+                        [routerLinkActiveOptions]="child.exact ? exactOptions : defaultOptions"
+                    >
+                        <mat-icon>{{ child.icon }}</mat-icon>
+                        <span>{{ child.label }}</span>
+                    </a>
+                </div>
+            </div>
         </ng-container>
     </nav>
 

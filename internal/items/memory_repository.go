@@ -2,6 +2,7 @@ package items
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"sync"
 
@@ -54,6 +55,11 @@ func (r *InMemoryRepository) List(_ context.Context, opts ListOptions) ([]Item, 
 	defer r.mu.RUnlock()
 
 	items := make([]Item, 0, len(r.order))
+	queryFilter := ""
+	if opts.Query != nil {
+		queryFilter = strings.ToLower(strings.TrimSpace(*opts.Query))
+	}
+
 	for _, id := range r.order {
 		if item, ok := r.data[id]; ok {
 			if opts.ItemType != nil && item.ItemType != *opts.ItemType {
@@ -83,9 +89,23 @@ func (r *InMemoryRepository) List(_ context.Context, opts ListOptions) ([]Item, 
 				}
 			}
 
+			if queryFilter != "" {
+				title := strings.ToLower(strings.TrimSpace(item.Title))
+				if !strings.Contains(title, queryFilter) {
+					continue
+				}
+			}
+
 			items = append(items, item)
 		}
 	}
+
+	if opts.Limit != nil && *opts.Limit > 0 && len(items) > *opts.Limit {
+		sorted := append([]Item(nil), items...)
+		slices.SortFunc(sorted, compareItemsByCreatedDesc)
+		items = sorted[:*opts.Limit]
+	}
+
 	return items, nil
 }
 
@@ -116,5 +136,26 @@ func (r *InMemoryRepository) Delete(_ context.Context, id uuid.UUID) error {
 			break
 		}
 	}
+	return nil
+}
+
+// UpdateShelfPlacement updates the cached placement for an item.
+func (r *InMemoryRepository) UpdateShelfPlacement(_ context.Context, itemID uuid.UUID, placement *ShelfPlacement) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	item, ok := r.data[itemID]
+	if !ok {
+		return ErrNotFound
+	}
+
+	if placement == nil {
+		item.ShelfPlacement = nil
+	} else {
+		copy := *placement
+		item.ShelfPlacement = &copy
+	}
+
+	r.data[itemID] = item
 	return nil
 }

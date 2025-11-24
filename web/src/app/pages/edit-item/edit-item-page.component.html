@@ -22,6 +22,31 @@
                 </div>
             </div>
 
+            <div
+                class="placement-banner"
+                *ngIf="item() && !loading() && !loadError() && item()?.shelfPlacement as placement"
+            >
+                <mat-icon aria-hidden="true">inventory_2</mat-icon>
+                <div class="placement-banner__details">
+                    <div>
+                        <span class="placement-banner__meta-label">Shelf</span>
+                        <span class="placement-banner__meta-value">{{ placement.shelfName }}</span>
+                    </div>
+                    <div>
+                        <span class="placement-banner__meta-label">Slot</span>
+                        <span class="placement-banner__meta-value"
+                            >Row {{ placement.rowIndex + 1 }} · Column {{ placement.colIndex + 1 }}</span
+                        >
+                    </div>
+                </div>
+                <a
+                    mat-stroked-button
+                    [routerLink]="['/shelves', placement.shelfId]"
+                    [queryParams]="{ slot: placement.slotId }"
+                    >View shelf</a
+                >
+            </div>
+
             <app-item-form
                 *ngIf="item() && !loading() && !loadError()"
                 [item]="item()"

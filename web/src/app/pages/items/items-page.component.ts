@@ -143,7 +143,10 @@ export class ItemsPageComponent {
                     this.loading.set(true);
                     return this.itemService.list(filters).pipe(
                         tap((items) => {
-                            this.items.set(items);
+                            const sortedItems = [...items].sort((a, b) =>
+                                a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+                            );
+                            this.items.set(sortedItems);
                             this.loading.set(false);
                         }),
                         catchError(() => {
@@ -164,6 +167,17 @@ export class ItemsPageComponent {
 
     startEdit(item: Item): void {
         this.router.navigate(['/items', item.id, 'edit']);
+    }
+
+    viewShelfPlacement(item: Item, event: MouseEvent): void {
+        event.stopPropagation();
+        const placement = item.shelfPlacement;
+        if (!placement) {
+            return;
+        }
+        this.router.navigate(['/shelves', placement.shelfId], {
+            queryParams: { slot: placement.slotId },
+        });
     }
 
     trackById(_: number, item: Item): string {

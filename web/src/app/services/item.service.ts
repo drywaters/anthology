@@ -11,7 +11,13 @@ export class ItemService {
     private readonly http = inject(HttpClient);
     private readonly baseUrl = `${environment.apiUrl}/items`;
 
-    list(filters?: { itemType?: ItemType; letter?: string; status?: ActiveBookStatus }): Observable<Item[]> {
+    list(filters?: {
+        itemType?: ItemType;
+        letter?: string;
+        status?: ActiveBookStatus;
+        query?: string;
+        limit?: number;
+    }): Observable<Item[]> {
         let params = new HttpParams();
         if (filters?.itemType) {
             params = params.set('type', filters.itemType);
@@ -21,6 +27,12 @@ export class ItemService {
         }
         if (filters?.status) {
             params = params.set('status', filters.status);
+        }
+        if (filters?.query) {
+            params = params.set('query', filters.query);
+        }
+        if (filters?.limit && filters.limit > 0) {
+            params = params.set('limit', filters.limit.toString());
         }
 
         return this.http

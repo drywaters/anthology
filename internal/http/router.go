@@ -15,10 +15,11 @@ import (
 	"anthology/internal/config"
 	"anthology/internal/importer"
 	"anthology/internal/items"
+	"anthology/internal/shelves"
 )
 
 // NewRouter wires application routes and middleware using chi.
-func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Service, logger *slog.Logger) http.Handler {
+func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Service, shelfSvc *shelves.Service, logger *slog.Logger) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -46,6 +47,7 @@ func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Servic
 	bulkImporter := importer.NewCSVImporter(svc, catalogSvc)
 	handler := NewItemHandler(svc, bulkImporter, logger)
 	catalogHandler := NewCatalogHandler(catalogSvc, logger)
+	shelfHandler := NewShelfHandler(shelfSvc, logger)
 
 	if strings.TrimSpace(cfg.APIToken) == "" {
 		logger.Warn("API token authentication disabled; /api endpoints are unauthenticated")
@@ -68,6 +70,18 @@ func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Servic
 					r.Get("/", handler.Get)
 					r.Put("/", handler.Update)
 					r.Delete("/", handler.Delete)
+				})
+			})
+			r.Route("/shelves", func(r chi.Router) {
+				r.Get("/", shelfHandler.List)
+				r.Post("/", shelfHandler.Create)
+				r.Route("/{id}", func(r chi.Router) {
+					r.Get("/", shelfHandler.Get)
+					r.Put("/layout", shelfHandler.UpdateLayout)
+					r.Route("/slots/{slotId}/items", func(r chi.Router) {
+						r.Post("/", shelfHandler.AssignItem)
+						r.Delete("/{itemId}", shelfHandler.RemoveItem)
+					})
 				})
 			})
 			r.Route("/catalog", func(r chi.Router) {

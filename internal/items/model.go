@@ -33,22 +33,32 @@ const (
 
 // Item represents a catalog entry in Anthology.
 type Item struct {
-	ID            uuid.UUID  `db:"id" json:"id"`
-	Title         string     `db:"title" json:"title"`
-	Creator       string     `db:"creator" json:"creator"`
-	ItemType      ItemType   `db:"item_type" json:"itemType"`
-	ReleaseYear   *int       `db:"release_year" json:"releaseYear,omitempty"`
-	PageCount     *int       `db:"page_count" json:"pageCount,omitempty"`
-	CurrentPage   *int       `db:"current_page" json:"currentPage,omitempty"`
-	ISBN13        string     `db:"isbn_13" json:"isbn13"`
-	ISBN10        string     `db:"isbn_10" json:"isbn10"`
-	Description   string     `db:"description" json:"description"`
-	CoverImage    string     `db:"cover_image" json:"coverImage"`
-	ReadingStatus BookStatus `db:"reading_status" json:"readingStatus"`
-	ReadAt        *time.Time `db:"read_at" json:"readAt,omitempty"`
-	Notes         string     `db:"notes" json:"notes"`
-	CreatedAt     time.Time  `db:"created_at" json:"createdAt"`
-	UpdatedAt     time.Time  `db:"updated_at" json:"updatedAt"`
+	ID             uuid.UUID       `db:"id" json:"id"`
+	Title          string          `db:"title" json:"title"`
+	Creator        string          `db:"creator" json:"creator"`
+	ItemType       ItemType        `db:"item_type" json:"itemType"`
+	ReleaseYear    *int            `db:"release_year" json:"releaseYear,omitempty"`
+	PageCount      *int            `db:"page_count" json:"pageCount,omitempty"`
+	CurrentPage    *int            `db:"current_page" json:"currentPage,omitempty"`
+	ISBN13         string          `db:"isbn_13" json:"isbn13"`
+	ISBN10         string          `db:"isbn_10" json:"isbn10"`
+	Description    string          `db:"description" json:"description"`
+	CoverImage     string          `db:"cover_image" json:"coverImage"`
+	ReadingStatus  BookStatus      `db:"reading_status" json:"readingStatus"`
+	ReadAt         *time.Time      `db:"read_at" json:"readAt,omitempty"`
+	Notes          string          `db:"notes" json:"notes"`
+	CreatedAt      time.Time       `db:"created_at" json:"createdAt"`
+	UpdatedAt      time.Time       `db:"updated_at" json:"updatedAt"`
+	ShelfPlacement *ShelfPlacement `db:"-" json:"shelfPlacement,omitempty"`
+}
+
+// ShelfPlacement summarizes where an item lives on a shelf layout.
+type ShelfPlacement struct {
+	ShelfID   uuid.UUID `json:"shelfId"`
+	ShelfName string    `json:"shelfName"`
+	SlotID    uuid.UUID `json:"slotId"`
+	RowIndex  int       `json:"rowIndex"`
+	ColIndex  int       `json:"colIndex"`
 }
 
 // CreateItemInput captures the data needed to create a new Item.
@@ -90,6 +100,8 @@ type ListOptions struct {
 	ItemType      *ItemType
 	ReadingStatus *BookStatus
 	Initial       *string
+	Query         *string
+	Limit         *int
 }
 
 // Repository defines persistence operations for Items.

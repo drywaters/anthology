@@ -96,6 +96,23 @@
                                     </div>
                                     <p class="card-meta">{{ item.creator || 'Unknown creator' }}</p>
                                     <p class="card-sub" *ngIf="item.releaseYear">Released {{ item.releaseYear }}</p>
+                                    <button
+                                        *ngIf="item.shelfPlacement"
+                                        type="button"
+                                        mat-icon-button
+                                        class="shelf-location-button shelf-location-button--card"
+                                        (click)="viewShelfPlacement(item, $event)"
+                                        [attr.aria-label]="
+                                            'View shelf slot ' +
+                                            (item.shelfPlacement.rowIndex + 1) +
+                                            '/' +
+                                            (item.shelfPlacement.colIndex + 1) +
+                                            ' on ' +
+                                            item.shelfPlacement.shelfName
+                                        "
+                                    >
+                                        <mat-icon aria-hidden="true">visibility</mat-icon>
+                                    </button>
                                     <p class="card-sub" *ngIf="readingStatusLabel(item) as statusLabel">
                                         <span class="status-chip">{{ statusLabel }}</span>
                                         <ng-container *ngIf="item.readingStatus === 'read' && item.readAt">
@@ -128,7 +145,26 @@
                                 <ng-container matColumnDef="title">
                                     <th mat-header-cell *matHeaderCellDef>Title</th>
                                     <td mat-cell *matCellDef="let item">
-                                        <div class="item-title">{{ item.title }}</div>
+                                        <div class="item-title-row">
+                                            <div class="item-title">{{ item.title }}</div>
+                                            <button
+                                                *ngIf="item.shelfPlacement"
+                                                mat-icon-button
+                                                type="button"
+                                                class="shelf-location-button"
+                                                (click)="viewShelfPlacement(item, $event)"
+                                                [attr.aria-label]="
+                                                    'View shelf slot ' +
+                                                    (item.shelfPlacement.rowIndex + 1) +
+                                                    '/' +
+                                                    (item.shelfPlacement.colIndex + 1) +
+                                                    ' on ' +
+                                                    item.shelfPlacement.shelfName
+                                                "
+                                            >
+                                                <mat-icon aria-hidden="true">visibility</mat-icon>
+                                            </button>
+                                        </div>
                                         <div class="item-subtext" *ngIf="readingProgress(item) as progress">
                                             Reading •
                                             <ng-container *ngIf="progress.percent !== undefined; else tableProgressFallback">
