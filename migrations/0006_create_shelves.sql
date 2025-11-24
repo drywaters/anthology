@@ -1,5 +1,3 @@
-BEGIN;
-
 CREATE TABLE IF NOT EXISTS shelves (
     id UUID PRIMARY KEY,
     name TEXT NOT NULL,
@@ -51,5 +49,3 @@ CREATE INDEX IF NOT EXISTS idx_shelf_columns_row_id ON shelf_columns (shelf_row_
 CREATE INDEX IF NOT EXISTS idx_shelf_slots_shelf_id ON shelf_slots (shelf_id);
 CREATE INDEX IF NOT EXISTS idx_item_shelf_locations_shelf_id ON item_shelf_locations (shelf_id);
 CREATE INDEX IF NOT EXISTS idx_item_shelf_locations_item_id ON item_shelf_locations (item_id);
-
-COMMIT;
