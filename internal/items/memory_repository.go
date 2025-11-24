@@ -138,3 +138,24 @@ func (r *InMemoryRepository) Delete(_ context.Context, id uuid.UUID) error {
 	}
 	return nil
 }
+
+// UpdateShelfPlacement updates the cached placement for an item.
+func (r *InMemoryRepository) UpdateShelfPlacement(_ context.Context, itemID uuid.UUID, placement *ShelfPlacement) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	item, ok := r.data[itemID]
+	if !ok {
+		return ErrNotFound
+	}
+
+	if placement == nil {
+		item.ShelfPlacement = nil
+	} else {
+		copy := *placement
+		item.ShelfPlacement = &copy
+	}
+
+	r.data[itemID] = item
+	return nil
+}

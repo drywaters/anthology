@@ -19,6 +19,10 @@ type Service struct {
 	itemsRepo items.Repository
 }
 
+type placementCacheUpdater interface {
+	UpdateShelfPlacement(ctx context.Context, itemID uuid.UUID, placement *items.ShelfPlacement) error
+}
+
 // NewService wires a shelf service.
 func NewService(repo Repository, itemsRepo items.Repository) *Service {
 	return &Service{repo: repo, itemsRepo: itemsRepo}
@@ -162,6 +166,10 @@ func (s *Service) UpdateLayout(ctx context.Context, shelfID uuid.UUID, input Upd
 		return ShelfWithLayout{}, nil, err
 	}
 
+	if err := s.updateItemPlacementCache(ctx, hydrated, itemIDsFromLayout(hydrated)); err != nil {
+		return ShelfWithLayout{}, nil, err
+	}
+
 	var displaced []PlacementWithItem
 	if len(displacedItemIDs) > 0 {
 		for _, placement := range hydrated.Unplaced {
@@ -189,7 +197,16 @@ func (s *Service) AssignItem(ctx context.Context, shelfID, slotID, itemID uuid.U
 		return ShelfWithLayout{}, err
 	}
 
-	return s.attachItems(ctx, updated)
+	hydrated, err := s.attachItems(ctx, updated)
+	if err != nil {
+		return ShelfWithLayout{}, err
+	}
+
+	if err := s.updateItemPlacementCache(ctx, hydrated, []uuid.UUID{itemID}); err != nil {
+		return ShelfWithLayout{}, err
+	}
+
+	return hydrated, nil
 }
 
 // RemoveItem removes an item from a slot, leaving it unplaced on the shelf.
@@ -203,7 +220,16 @@ func (s *Service) RemoveItem(ctx context.Context, shelfID, slotID, itemID uuid.U
 		return ShelfWithLayout{}, err
 	}
 
-	return s.attachItems(ctx, updated)
+	hydrated, err := s.attachItems(ctx, updated)
+	if err != nil {
+		return ShelfWithLayout{}, err
+	}
+
+	if err := s.updateItemPlacementCache(ctx, hydrated, []uuid.UUID{itemID}); err != nil {
+		return ShelfWithLayout{}, err
+	}
+
+	return hydrated, nil
 }
 
 func removedSlots(previous, next []ShelfSlot) []uuid.UUID {
@@ -362,4 +388,66 @@ func (s *Service) attachItems(ctx context.Context, layout ShelfWithLayout) (Shel
 	layout.Placements = placements
 	layout.Unplaced = unplaced
 	return layout, nil
+}
+
+func (s *Service) updateItemPlacementCache(ctx context.Context, layout ShelfWithLayout, itemIDs []uuid.UUID) error {
+	updater, ok := s.itemsRepo.(placementCacheUpdater)
+	if !ok || len(itemIDs) == 0 {
+		return nil
+	}
+
+	slotLookup := make(map[uuid.UUID]ShelfSlot, len(layout.Slots))
+	for _, slot := range layout.Slots {
+		slotLookup[slot.ID] = slot
+	}
+
+	placementByItem := make(map[uuid.UUID]*items.ShelfPlacement, len(layout.Placements))
+	for _, placement := range layout.Placements {
+		if placement.Placement.ShelfSlotID == nil {
+			continue
+		}
+		slot, ok := slotLookup[*placement.Placement.ShelfSlotID]
+		if !ok {
+			continue
+		}
+		slotID := *placement.Placement.ShelfSlotID
+		placementCopy := items.ShelfPlacement{
+			ShelfID:   layout.Shelf.ID,
+			ShelfName: layout.Shelf.Name,
+			SlotID:    slotID,
+			RowIndex:  slot.RowIndex,
+			ColIndex:  slot.ColIndex,
+		}
+		placementByItem[placement.Placement.ItemID] = &placementCopy
+	}
+
+	for _, id := range itemIDs {
+		if err := updater.UpdateShelfPlacement(ctx, id, placementByItem[id]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func itemIDsFromLayout(layout ShelfWithLayout) []uuid.UUID {
+	seen := make(map[uuid.UUID]struct{})
+	var ids []uuid.UUID
+	for _, placement := range layout.Placements {
+		itemID := placement.Placement.ItemID
+		if _, ok := seen[itemID]; ok {
+			continue
+		}
+		seen[itemID] = struct{}{}
+		ids = append(ids, itemID)
+	}
+	for _, placement := range layout.Unplaced {
+		itemID := placement.Placement.ItemID
+		if _, ok := seen[itemID]; ok {
+			continue
+		}
+		seen[itemID] = struct{}{}
+		ids = append(ids, itemID)
+	}
+	return ids
 }
