@@ -61,7 +61,7 @@ LEFT JOIN LATERAL (
 `
 
 type itemRow struct {
-	Item                 Item
+	Item
 	PlacementShelfID     *uuid.UUID `db:"placement_shelf_id"`
 	PlacementShelfSlotID *uuid.UUID `db:"placement_shelf_slot_id"`
 	PlacementShelfName   *string    `db:"placement_shelf_name"`
