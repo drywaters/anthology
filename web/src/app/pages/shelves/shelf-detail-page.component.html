@@ -16,61 +16,72 @@
 
     <mat-progress-bar *ngIf="loading()" mode="indeterminate"></mat-progress-bar>
 
-    <div class="content">
+    <div class="content" [class.content--single]="mode() === 'edit'">
         <mat-card class="canvas" [ngClass]="{ 'canvas--editing': mode() === 'edit' }">
-            <img class="canvas__image" [src]="shelfData.shelf.photoUrl" [alt]="shelfData.shelf.name" />
-            <div class="canvas__overlay" #canvasOverlay>
-                <ng-container *ngIf="mode() === 'edit'; else viewOverlay">
-                    <ng-container *ngFor="let row of rows.controls; let rowIdx = index">
-                        <div
-                            class="slot slot--draft"
-                            *ngFor="let col of row.controls.columns.controls; let colIdx = index"
-                            [ngClass]="{ 'slot--active': isSlotActive(rowIdx, colIdx) }"
-                            [ngStyle]="formSlotStyle(rowIdx, colIdx)"
-                        >
-                            <span class="slot__label">{{ rowIdx + 1 }} / {{ colIdx + 1 }}</span>
-                            <button
-                                type="button"
-                                class="slot__handle slot__handle--top-left slot__handle--start"
-                                (pointerdown)="beginCornerDrag(rowIdx, colIdx, 'top-left', $event)"
-                                [attr.aria-label]="'Adjust top-left corner of slot ' + (rowIdx + 1) + '/' + (colIdx + 1)"
-                            ></button>
-                            <button
-                                type="button"
-                                class="slot__handle slot__handle--top-right slot__handle--end"
-                                (pointerdown)="beginCornerDrag(rowIdx, colIdx, 'top-right', $event)"
-                                [attr.aria-label]="'Adjust top-right corner of slot ' + (rowIdx + 1) + '/' + (colIdx + 1)"
-                            ></button>
-                            <button
-                                type="button"
-                                class="slot__handle slot__handle--bottom-left slot__handle--start"
-                                (pointerdown)="beginCornerDrag(rowIdx, colIdx, 'bottom-left', $event)"
-                                [attr.aria-label]="'Adjust bottom-left corner of slot ' + (rowIdx + 1) + '/' + (colIdx + 1)"
-                            ></button>
-                            <button
-                                type="button"
-                                class="slot__handle slot__handle--bottom-right slot__handle--end"
-                                (pointerdown)="beginCornerDrag(rowIdx, colIdx, 'bottom-right', $event)"
-                                [attr.aria-label]="'Adjust bottom-right corner of slot ' + (rowIdx + 1) + '/' + (colIdx + 1)"
-                            ></button>
-                        </div>
+            <div class="canvas__figure">
+                <img class="canvas__image" [src]="shelfData.shelf.photoUrl" [alt]="shelfData.shelf.name" />
+                <div class="canvas__overlay" #canvasOverlay>
+                    <ng-container *ngIf="mode() === 'edit'; else viewOverlay">
+                        <ng-container *ngFor="let row of rows.controls; let rowIdx = index">
+                            <div
+                                class="slot slot--draft"
+                                *ngFor="let col of row.controls.columns.controls; let colIdx = index"
+                                [ngClass]="{ 'slot--active': isSlotActive(rowIdx, colIdx) }"
+                                [ngStyle]="formSlotStyle(rowIdx, colIdx)"
+                            >
+                                <button
+                                    type="button"
+                                    class="slot__label slot__label-button"
+                                    [class.slot__label-button--selected]="isLayoutSlotSelected(rowIdx, colIdx)"
+                                    (click)="selectLayoutSlot(rowIdx, colIdx)"
+                                >
+                                    {{ rowIdx + 1 }} / {{ colIdx + 1 }}
+                                </button>
+                                <ng-container *ngIf="isLayoutSlotSelected(rowIdx, colIdx)">
+                                    <button
+                                        type="button"
+                                        class="slot__handle slot__handle--top-left slot__handle--start"
+                                        (pointerdown)="beginCornerDrag(rowIdx, colIdx, 'top-left', $event)"
+                                        [attr.aria-label]="'Adjust top-left corner of slot ' + (rowIdx + 1) + '/' + (colIdx + 1)"
+                                    ></button>
+                                    <button
+                                        type="button"
+                                        class="slot__handle slot__handle--top-right slot__handle--end"
+                                        (pointerdown)="beginCornerDrag(rowIdx, colIdx, 'top-right', $event)"
+                                        [attr.aria-label]="'Adjust top-right corner of slot ' + (rowIdx + 1) + '/' + (colIdx + 1)"
+                                    ></button>
+                                    <button
+                                        type="button"
+                                        class="slot__handle slot__handle--bottom-left slot__handle--start"
+                                        (pointerdown)="beginCornerDrag(rowIdx, colIdx, 'bottom-left', $event)"
+                                        [attr.aria-label]="'Adjust bottom-left corner of slot ' + (rowIdx + 1) + '/' + (colIdx + 1)"
+                                    ></button>
+                                    <button
+                                        type="button"
+                                        class="slot__handle slot__handle--bottom-right slot__handle--end"
+                                        (pointerdown)="beginCornerDrag(rowIdx, colIdx, 'bottom-right', $event)"
+                                        [attr.aria-label]="'Adjust bottom-right corner of slot ' + (rowIdx + 1) + '/' + (colIdx + 1)"
+                                    ></button>
+                                </ng-container>
+                            </div>
+                        </ng-container>
                     </ng-container>
-                </ng-container>
-                <ng-template #viewOverlay>
-                    <div
-                        *ngFor="let slot of shelfData.slots"
-                        class="slot"
-                        [ngClass]="{ 'slot--selected': selectedSlot()?.id === slot.id }"
-                        [ngStyle]="slotStyle(slot)"
-                        (click)="selectSlot(slot)"
-                    >
-                        <span class="slot__label">{{ slot.rowIndex + 1 }} / {{ slot.colIndex + 1 }}</span>
-                    </div>
-                </ng-template>
+                    <ng-template #viewOverlay>
+                        <div
+                            *ngFor="let slot of shelfData.slots"
+                            class="slot"
+                            [ngClass]="{ 'slot--selected': selectedSlot()?.id === slot.id }"
+                            [ngStyle]="slotStyle(slot)"
+                            (click)="selectSlot(slot)"
+                        >
+                            <span class="slot__label">{{ slot.rowIndex + 1 }} / {{ slot.colIndex + 1 }}</span>
+                        </div>
+                    </ng-template>
+                </div>
             </div>
         </mat-card>
 
-        <mat-card class="sidebar" *ngIf="selectedSlot() as slot">
+        <mat-card class="sidebar" *ngIf="mode() === 'view' && selectedSlot() as slot">
             <div class="sidebar__header">
                 <div>
                     <h3>Slot {{ slot.rowIndex + 1 }} · {{ slot.colIndex + 1 }}</h3>
@@ -162,68 +173,32 @@
                 </div>
             </div>
         </mat-card>
+
     </div>
 
     <mat-card class="layout-editor" *ngIf="mode() === 'edit'">
         <div class="layout-editor__header">
             <h3>Edit layout</h3>
-            <p class="helper">Rows and columns are normalized (0-1) relative to the photo.</p>
+            <p class="helper">Add rows or columns, then pick a label to edit the slot directly on the photo.</p>
         </div>
         <div class="layout-editor__rows">
-                <div class="layout-row" *ngFor="let row of rows.controls; let idx = index" [formGroup]="row">
-                    <div class="layout-row__header">
-                        <div>Row {{ idx + 1 }}</div>
-                        <div class="layout-row__actions">
-                            <button mat-icon-button (click)="addColumn(idx)"><mat-icon>add</mat-icon></button>
-                            <button mat-icon-button color="warn" (click)="removeRow(idx)"><mat-icon>delete</mat-icon></button>
-                        </div>
+            <div class="layout-row" *ngFor="let row of rows.controls; let idx = index" [formGroup]="row">
+                <div class="layout-row__header">
+                    <div>Row {{ idx + 1 }}</div>
+                    <div class="layout-row__actions">
+                        <button mat-icon-button (click)="addColumn(idx)"><mat-icon>add</mat-icon></button>
+                        <button mat-icon-button color="warn" (click)="removeRow(idx)"><mat-icon>delete</mat-icon></button>
                     </div>
-                    <div formArrayName="columns" class="columns">
-                        <div *ngFor="let col of row.controls.columns.controls; let colIdx = index" [formGroupName]="colIdx" class="column-card">
-                            <div class="column-card__header">
-                            <div>Column {{ colIdx + 1 }}</div>
+                </div>
+                <div formArrayName="columns" class="columns">
+                    <div *ngFor="let col of row.controls.columns.controls; let colIdx = index" [formGroupName]="colIdx" class="column-card">
+                        <div class="column-card__header">
+                            <button type="button" class="column-card__label" (click)="selectLayoutSlot(idx, colIdx)">
+                                <span>Column {{ colIdx + 1 }}</span>
+                                <span *ngIf="isLayoutSlotSelected(idx, colIdx)" class="column-card__pill">Selected</span>
+                            </button>
                             <button mat-icon-button color="warn" (click)="removeColumn(idx, colIdx)"><mat-icon>close</mat-icon></button>
                         </div>
-                        <mat-form-field appearance="outline">
-                            <mat-label>X start</mat-label>
-                            <input
-                                matInput
-                                type="number"
-                                step="0.01"
-                                formControlName="xStartNorm"
-                                (blur)="roundSlotValue(idx, colIdx, 'xStartNorm')"
-                            />
-                        </mat-form-field>
-                        <mat-form-field appearance="outline">
-                            <mat-label>X end</mat-label>
-                            <input
-                                matInput
-                                type="number"
-                                step="0.01"
-                                formControlName="xEndNorm"
-                                (blur)="roundSlotValue(idx, colIdx, 'xEndNorm')"
-                            />
-                        </mat-form-field>
-                        <mat-form-field appearance="outline">
-                            <mat-label>Y start</mat-label>
-                            <input
-                                matInput
-                                type="number"
-                                step="0.01"
-                                formControlName="yStartNorm"
-                                (blur)="roundSlotValue(idx, colIdx, 'yStartNorm')"
-                            />
-                        </mat-form-field>
-                        <mat-form-field appearance="outline">
-                            <mat-label>Y end</mat-label>
-                            <input
-                                matInput
-                                type="number"
-                                step="0.01"
-                                formControlName="yEndNorm"
-                                (blur)="roundSlotValue(idx, colIdx, 'yEndNorm')"
-                            />
-                        </mat-form-field>
                     </div>
                 </div>
             </div>
