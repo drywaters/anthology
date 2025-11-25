@@ -246,8 +246,8 @@ mat-progress-bar {
 
 .card-grid {
     display: grid;
-    gap: 1rem;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 0.85rem;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
 }
 
 .item-card {
@@ -273,7 +273,7 @@ mat-progress-bar {
 .card-cover {
     position: relative;
     width: 100%;
-    padding-top: 140%;
+    padding-top: 70%;
     background: repeating-linear-gradient(
         45deg,
         color-mix(in srgb, var(--mat-sys-primary) 6%, #f8fafc),
@@ -310,7 +310,7 @@ mat-progress-bar {
 }
 
 .card-body {
-    padding: 0.9rem 1rem 1rem;
+    padding: 0.7rem 0.8rem 0.9rem;
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
@@ -318,13 +318,13 @@ mat-progress-bar {
 
 .card-title-row {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.4rem;
     align-items: center;
     justify-content: space-between;
 
     h4 {
         margin: 0;
-        font-size: 1.05rem;
+        font-size: 0.95rem;
         flex: 1;
     }
 }
@@ -335,21 +335,23 @@ mat-progress-bar {
     background: var(--chip-bg);
     color: var(--chip-color);
     border-radius: 999px;
-    padding: 0.25rem 0.75rem;
-    font-size: 0.8rem;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.7rem;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
 }
 
 .card-meta {
     margin: 0;
     color: var(--mat-sys-on-surface-variant);
     font-weight: 600;
+    font-size: 0.85rem;
 }
 
 .card-sub {
     margin: 0;
     color: color-mix(in srgb, var(--mat-sys-primary) 80%, #0f172a);
+    font-size: 0.8rem;
 }
 
 @media (max-width: 960px) {
