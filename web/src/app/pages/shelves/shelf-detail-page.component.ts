@@ -269,19 +269,19 @@ export class ShelfDetailPageComponent {
         return this.fb.group<LayoutColumnGroup>({
             columnId: this.fb.control(initial?.columnId ?? null, { nonNullable: false }),
             colIndex: this.fb.control(colIndex, { nonNullable: true, validators: [Validators.required] }),
-            xStartNorm: this.fb.control(this.roundTwo(initial?.xStartNorm ?? 0), {
+            xStartNorm: this.fb.control(initial?.xStartNorm ?? 0, {
                 nonNullable: true,
                 validators: [Validators.required, Validators.min(0), Validators.max(1)],
             }),
-            xEndNorm: this.fb.control(this.roundTwo(initial?.xEndNorm ?? 1), {
+            xEndNorm: this.fb.control(initial?.xEndNorm ?? 1, {
                 nonNullable: true,
                 validators: [Validators.required, Validators.min(0), Validators.max(1)],
             }),
-            yStartNorm: this.fb.control(this.roundTwo(initial?.yStartNorm ?? 0), {
+            yStartNorm: this.fb.control(initial?.yStartNorm ?? 0, {
                 nonNullable: true,
                 validators: [Validators.required, Validators.min(0), Validators.max(1)],
             }),
-            yEndNorm: this.fb.control(this.roundTwo(initial?.yEndNorm ?? 1), {
+            yEndNorm: this.fb.control(initial?.yEndNorm ?? 1, {
                 nonNullable: true,
                 validators: [Validators.required, Validators.min(0), Validators.max(1)],
             }),
@@ -558,18 +558,18 @@ export class ShelfDetailPageComponent {
 
         if (allowY && isTop) {
             const max = column.controls.yEndNorm.value - ShelfDetailPageComponent.MIN_SEGMENT;
-            column.controls.yStartNorm.setValue(this.roundTwo(this.clamp(normalizedY, 0, max)));
+            column.controls.yStartNorm.setValue(this.clamp(normalizedY, 0, max));
         } else if (allowY && !isTop) {
             const min = column.controls.yStartNorm.value + ShelfDetailPageComponent.MIN_SEGMENT;
-            column.controls.yEndNorm.setValue(this.roundTwo(this.clamp(normalizedY, min, 1)));
+            column.controls.yEndNorm.setValue(this.clamp(normalizedY, min, 1));
         }
 
         if (allowX && isLeft) {
             const max = column.controls.xEndNorm.value - ShelfDetailPageComponent.MIN_SEGMENT;
-            column.controls.xStartNorm.setValue(this.roundTwo(this.clamp(normalizedX, 0, max)));
+            column.controls.xStartNorm.setValue(this.clamp(normalizedX, 0, max));
         } else if (allowX && !isLeft) {
             const min = column.controls.xStartNorm.value + ShelfDetailPageComponent.MIN_SEGMENT;
-            column.controls.xEndNorm.setValue(this.roundTwo(this.clamp(normalizedX, min, 1)));
+            column.controls.xEndNorm.setValue(this.clamp(normalizedX, min, 1));
         }
 
         if (
@@ -609,13 +609,6 @@ export class ShelfDetailPageComponent {
             return min;
         }
         return Math.min(Math.max(value, min), max);
-    }
-
-    private roundTwo(value: number): number {
-        if (typeof value !== 'number' || Number.isNaN(value)) {
-            return 0;
-        }
-        return Math.round(value * 100) / 100;
     }
 
     private ensureActiveLayoutSelection(): void {
