@@ -39,14 +39,15 @@ describe(SidebarComponent.name, () => {
         return fixture;
     }
 
-    it('renders only the Anthology brand mark', () => {
+    it('renders the Anthology brand mark and title', () => {
         const fixture = createComponent();
         const compiled = fixture.nativeElement as HTMLElement;
         const brandMark = compiled.querySelector('.brand-mark') as HTMLImageElement | null;
+        const brandTitle = compiled.querySelector('.brand-title');
 
         expect(brandMark).not.toBeNull();
         expect(brandMark?.getAttribute('alt')).toContain('Anthology');
-        expect(compiled.querySelector('.brand-title')).toBeNull();
+        expect(brandTitle?.textContent?.trim()).toBe('Anthology');
     });
 
     it('renders nav links for every nav item', () => {

@@ -13,6 +13,8 @@ import (
 	"anthology/internal/items"
 )
 
+const defaultSlotMargin = 0.02
+
 // Service coordinates layout validation and persistence.
 type Service struct {
 	repo      Repository
@@ -65,8 +67,20 @@ func (s *Service) CreateShelf(ctx context.Context, input CreateShelfInput) (Shel
 	colID := uuid.New()
 	slotID := uuid.New()
 
-	row := ShelfRow{ID: rowID, ShelfID: shelf.ID, RowIndex: 0, YStartNorm: 0, YEndNorm: 1}
-	column := ShelfColumn{ID: colID, ShelfRowID: rowID, ColIndex: 0, XStartNorm: 0, XEndNorm: 1}
+	row := ShelfRow{
+		ID:         rowID,
+		ShelfID:    shelf.ID,
+		RowIndex:   0,
+		YStartNorm: defaultSlotMargin,
+		YEndNorm:   1 - defaultSlotMargin,
+	}
+	column := ShelfColumn{
+		ID:         colID,
+		ShelfRowID: rowID,
+		ColIndex:   0,
+		XStartNorm: defaultSlotMargin,
+		XEndNorm:   1 - defaultSlotMargin,
+	}
 	slot := ShelfSlot{
 		ID:            slotID,
 		ShelfID:       shelf.ID,
@@ -74,10 +88,10 @@ func (s *Service) CreateShelf(ctx context.Context, input CreateShelfInput) (Shel
 		ShelfColumnID: colID,
 		RowIndex:      0,
 		ColIndex:      0,
-		XStartNorm:    0,
-		XEndNorm:      1,
-		YStartNorm:    0,
-		YEndNorm:      1,
+		XStartNorm:    defaultSlotMargin,
+		XEndNorm:      1 - defaultSlotMargin,
+		YStartNorm:    defaultSlotMargin,
+		YEndNorm:      1 - defaultSlotMargin,
 	}
 
 	created, err := s.repo.CreateShelf(ctx, shelf, []ShelfRow{row}, []ShelfColumn{column}, []ShelfSlot{slot})

@@ -76,6 +76,7 @@ export class ShelfDetailPageComponent {
     private static readonly AXIS_LOCK_THRESHOLD_PX = 4;
     private static readonly MIN_SEARCH_LENGTH = 2;
     private static readonly SEARCH_RESULT_LIMIT = 10;
+    private static readonly DEFAULT_SLOT_MARGIN = 0.02;
 
     private readonly route = inject(ActivatedRoute);
     private readonly shelfService = inject(ShelfService);
@@ -304,11 +305,19 @@ export class ShelfDetailPageComponent {
     }
 
     addRow(): void {
+        const margin = ShelfDetailPageComponent.DEFAULT_SLOT_MARGIN;
         this.rows.push(
             this.fb.group<LayoutRowGroup>({
                 rowId: this.fb.control<string | null>(null),
                 rowIndex: this.fb.control(0, { nonNullable: true }),
-                columns: this.fb.array([this.createColumnGroup(0)]),
+                columns: this.fb.array([
+                    this.createColumnGroup(0, {
+                        xStartNorm: margin,
+                        xEndNorm: 1 - margin,
+                        yStartNorm: margin,
+                        yEndNorm: 1 - margin,
+                    }),
+                ]),
             })
         );
         this.reindexRows();
@@ -317,10 +326,13 @@ export class ShelfDetailPageComponent {
     addColumn(rowIndex: number): void {
         const columns = this.rows.at(rowIndex).controls.columns;
         const lastColumn = columns.length ? columns.at(columns.length - 1) : null;
+        const margin = ShelfDetailPageComponent.DEFAULT_SLOT_MARGIN;
         columns.push(
             this.createColumnGroup(columns.length, {
-                yStartNorm: lastColumn?.controls.yStartNorm.value ?? 0,
-                yEndNorm: lastColumn?.controls.yEndNorm.value ?? 1,
+                xStartNorm: lastColumn?.controls.xStartNorm.value ?? margin,
+                xEndNorm: lastColumn?.controls.xEndNorm.value ?? 1 - margin,
+                yStartNorm: lastColumn?.controls.yStartNorm.value ?? margin,
+                yEndNorm: lastColumn?.controls.yEndNorm.value ?? 1 - margin,
             })
         );
         this.reindexRows();
