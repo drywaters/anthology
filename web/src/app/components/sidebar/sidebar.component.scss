@@ -28,6 +28,19 @@
     object-fit: contain;
 }
 
+.brand-copy {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+}
+
+.brand-title {
+    font-family: 'Alegreya', 'Alegreya Sans', 'Segoe UI', sans-serif;
+    font-weight: 600;
+    font-size: 1.5rem;
+    letter-spacing: 0.04em;
+}
+
 .nav {
     display: flex;
     flex-direction: column;
@@ -219,6 +232,10 @@
     .brand {
         grid-column: 1;
         grid-row: 1;
+    }
+
+    .brand-copy {
+        display: none;
     }
 
     .nav {
