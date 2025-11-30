@@ -1,0 +1,97 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.subpanel {
+  height: 100%;
+  background: color-mix(in srgb, #f4fbf7 78%, white);
+  box-shadow: -6px 0 24px rgba(15, 23, 42, 0.08);
+  padding: 1.6rem 1.5rem 2rem 1.5rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  border-left: 1px solid var(--mat-sys-outline-variant);
+}
+
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline-variant) 60%, transparent);
+  background: color-mix(in srgb, #e6f3ec 75%, white 25%);
+  color: inherit;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: 'Alegreya Sans', 'Alegreya', 'Segoe UI', sans-serif;
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+
+.back-button mat-icon {
+  font-size: 20px;
+}
+
+.back-button:hover,
+.back-button:focus-visible {
+  background: color-mix(in srgb, #d8ece1 80%, white 20%);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.1);
+}
+
+.subpanel-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--mat-sys-on-surface) 65%, transparent);
+}
+
+.title {
+  margin: 0;
+  font-family: 'Alegreya', 'Alegreya Sans', 'Segoe UI', sans-serif;
+  font-weight: 600;
+  font-size: 1.4rem;
+}
+
+.action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.action-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline-variant) 55%, transparent);
+  background: color-mix(in srgb, #f1faf5 85%, white 15%);
+  font-family: 'Alegreya Sans', 'Alegreya', 'Segoe UI', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: color-mix(in srgb, var(--mat-sys-primary) 85%, #0f172a 15%);
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  text-align: left;
+}
+
+.action-pill mat-icon {
+  font-size: 22px;
+}
+
+.action-pill:hover,
+.action-pill:focus-visible {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, #e6f3ec 90%, white 10%);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
+}

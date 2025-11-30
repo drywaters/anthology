@@ -1,0 +1,18 @@
+<section class="subpanel" [attr.aria-label]="sectionTitle + ' actions'">
+  <button type="button" class="back-button" (click)="handleBack()">
+    <mat-icon>arrow_back</mat-icon>
+    <span>Back</span>
+  </button>
+
+  <div class="subpanel-header">
+    <p class="eyebrow">Section</p>
+    <h3 class="title">{{ sectionTitle }}</h3>
+  </div>
+
+  <div class="action-list" *ngIf="actions.length > 0">
+    <button type="button" class="action-pill" *ngFor="let action of actions" (click)="handleAction(action)">
+      <mat-icon *ngIf="action.icon">{{ action.icon }}</mat-icon>
+      <span>{{ action.label }}</span>
+    </button>
+  </div>
+</section>

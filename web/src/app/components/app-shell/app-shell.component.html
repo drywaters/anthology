@@ -1,8 +1,38 @@
-<div class="app-shell">
-    <app-sidebar class="sidebar"></app-sidebar>
-    <div class="content">
-        <div class="content-inner">
-            <router-outlet></router-outlet>
-        </div>
+<div class="app-shell" [class.is-mobile]="isMobile()" [class.subpanel-open]="subpanelVisible()" [class.sidebar-open]="sidebarOpen()">
+  <header class="mobile-header" *ngIf="isMobile()">
+    <button type="button" class="icon-button" (click)="toggleSidebar()" aria-label="Toggle navigation drawer">
+      <mat-icon>{{ sidebarOpen() ? 'close' : 'menu' }}</mat-icon>
+    </button>
+    <span class="mobile-title">Anthology</span>
+  </header>
+
+  <div class="sidebar-container" [class.open]="sidebarOpen()" [class.drawer]="isMobile()">
+    <app-sidebar
+      class="sidebar"
+      [activeSection]="currentSection()"
+      (selectSection)="handleSelectSection($event)"
+    ></app-sidebar>
+  </div>
+
+  <div
+    class="subpanel-container"
+    *ngIf="subpanelVisible()"
+    [class.open]="subpanelVisible()"
+    [class.mobile]="isMobile()"
+  >
+    <app-subpanel
+      [section]="currentSection()"
+      [actions]="panelActions(activePanel())"
+      (back)="handleBack()"
+      (actionTriggered)="handleActionTriggered($event)"
+    ></app-subpanel>
+  </div>
+
+  <div class="content" [class.dimmed]="subpanelVisible() && !isMobile()">
+    <div class="content-inner">
+      <router-outlet></router-outlet>
     </div>
+  </div>
+
+  <div class="scrim" *ngIf="isMobile() && sidebarOpen()" (click)="closeAllPanels()"></div>
 </div>
