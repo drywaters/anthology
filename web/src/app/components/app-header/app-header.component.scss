@@ -1,0 +1,62 @@
+:host {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 12;
+}
+
+.app-header {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 1.25rem;
+    background: color-mix(in srgb, #e8f5ef 90%, white 10%);
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+button[mat-icon-button] {
+    --mdc-icon-button-size: 44px;
+    --mdc-icon-button-icon-size: 24px;
+    color: var(--mat-sys-primary);
+}
+
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+}
+
+.brand-mark {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+}
+
+.brand-title {
+    font-family: 'Alegreya', 'Alegreya Sans', 'Segoe UI', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--mat-sys-on-surface);
+    white-space: nowrap;
+}
+
+.header-actions {
+    display: inline-flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+@media (max-width: 600px) {
+    .app-header {
+        padding: 0.6rem 1rem;
+    }
+
+    .brand-title {
+        font-size: 1.1rem;
+    }
+}

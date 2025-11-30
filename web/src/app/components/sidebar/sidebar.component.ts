@@ -1,78 +1,35 @@
-import { Component, DestroyRef, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
-import { Router, RouterLinkActive, RouterModule } from '@angular/router';
+import { RouterLinkActive, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AuthService } from '../../services/auth.service';
+import { MatButtonModule } from '@angular/material/button';
 
-interface SidebarNavItem {
-    label: string;
-    icon: string;
-    route?: string;
-    disabled?: boolean;
-    exact?: boolean;
-    children?: SidebarNavItem[];
-}
+import { ActionButton, NavigationItem } from '../../models/navigation';
 
 @Component({
     selector: 'app-sidebar',
     standalone: true,
-    imports: [NgFor, NgIf, RouterModule, RouterLinkActive, MatIconModule, MatSnackBarModule],
+    imports: [NgFor, NgIf, RouterModule, RouterLinkActive, MatIconModule, MatButtonModule],
     templateUrl: './sidebar.component.html',
     styleUrl: './sidebar.component.scss',
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SidebarComponent {
-    private readonly authService = inject(AuthService);
-    private readonly router = inject(Router);
-    private readonly snackBar = inject(MatSnackBar);
-    private readonly destroyRef = inject(DestroyRef);
+    @Input() navItems: NavigationItem[] = [];
+    @Input() actionItems: ActionButton[] = [];
+    @Input() open = false;
 
-    readonly navItems: SidebarNavItem[] = [
-        {
-            label: 'Library',
-            icon: 'menu_book',
-            route: '/',
-            exact: true,
-            children: [{ label: 'Add Item', icon: 'library_add', route: '/items/add', exact: true }],
-        },
-        {
-            label: 'Shelves',
-            icon: 'grid_on',
-            route: '/shelves',
-            children: [{ label: 'Add Shelf', icon: 'add_photo_alternate', route: '/shelves/add', exact: true }],
-        },
-    ];
+    @Output() readonly closed = new EventEmitter<void>();
+    @Output() readonly navigate = new EventEmitter<string>();
+    @Output() readonly actionTriggered = new EventEmitter<string>();
 
     readonly exactOptions = { exact: true } as const;
-    readonly defaultOptions = { exact: false } as const;
-    expandedSection: string | null = null;
 
-    handleSectionClick(item: SidebarNavItem): void {
-        if (!item.children?.length || !item.route) {
-            return;
-        }
-
-        this.expandedSection = this.expandedSection === item.route ? null : item.route;
+    handleNavigate(route: string): void {
+        this.navigate.emit(route);
     }
 
-    handleLogoutClick(event: Event): void {
-        event.preventDefault();
-        this.logout();
-    }
-
-    logout(): void {
-        this.authService
-            .logout()
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: () => {
-                    this.router.navigate(['/login']);
-                },
-                error: () => {
-                    this.snackBar.open('We could not clear your session; please try again.', 'Dismiss', { duration: 5000 });
-                    this.router.navigate(['/login']);
-                },
-            });
+    handleAction(actionId: string): void {
+        this.actionTriggered.emit(actionId);
     }
 }

@@ -6,6 +6,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MatButtonModule } from '@angular/material/button';
 
 import { ShelfService } from '../../services/shelf.service';
 import { ShelfSummary } from '../../models/shelf';
@@ -21,6 +22,7 @@ import { ShelfSummary } from '../../models/shelf';
         MatProgressBarModule,
         MatSnackBarModule,
         RouterModule,
+        MatButtonModule,
     ],
     templateUrl: './shelves-page.component.html',
     styleUrl: './shelves-page.component.scss',

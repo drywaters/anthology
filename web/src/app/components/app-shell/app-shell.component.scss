@@ -4,48 +4,37 @@
 }
 
 .app-shell {
-    display: flex;
+    position: relative;
     min-height: 100vh;
-    align-items: flex-start;
-    background: var(--mat-sys-surface-container-lowest);
-}
-
-.sidebar {
-    flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    align-self: flex-start;
-    height: 100vh;
-}
-
-.content {
-    flex: 1;
-    min-height: 100vh;
-    background: linear-gradient(180deg,
+    background: linear-gradient(
+            180deg,
             color-mix(in srgb, var(--mat-sys-surface) 90%, white) 0%,
-            var(--mat-sys-surface-container-high) 65%);
+            var(--mat-sys-surface-container-high) 65%
+        );
     color: var(--mat-sys-on-surface);
-    overflow-y: auto;
+}
+
+.main-content {
+    min-height: calc(100vh - 64px);
 }
 
 .content-inner {
-    min-height: 100vh;
+    min-height: calc(100vh - 64px);
 }
 
-@media (max-width: 960px) {
-    .app-shell {
-        flex-direction: column;
-        align-items: stretch;
-    }
+.backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    z-index: 9;
+    animation: fadeIn 150ms ease forwards;
+}
 
-    .sidebar {
-        position: static;
-        height: auto;
-        align-self: stretch;
-        width: 100%;
+@keyframes fadeIn {
+    from {
+        opacity: 0;
     }
-
-    .content {
-        min-height: auto;
+    to {
+        opacity: 1;
     }
 }
