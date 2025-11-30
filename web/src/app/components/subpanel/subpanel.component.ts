@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
-import { SidebarSection } from '../sidebar/sidebar.component';
+import { SidebarChildItem, SidebarSection } from '../sidebar/sidebar.component';
 
 export interface ActionButton {
   id: string;
@@ -20,8 +20,10 @@ export interface ActionButton {
 export class SubpanelComponent {
   @Input() section: SidebarSection | null = null;
   @Input() actions: ActionButton[] = [];
+  @Input() links: SidebarChildItem[] = [];
   @Output() back = new EventEmitter<void>();
   @Output() actionTriggered = new EventEmitter<string>();
+  @Output() linkSelected = new EventEmitter<SidebarChildItem>();
 
   get sectionTitle(): string {
     return this.section === 'shelves' ? 'Shelves' : 'Library';
@@ -33,5 +35,9 @@ export class SubpanelComponent {
 
   handleAction(action: ActionButton): void {
     this.actionTriggered.emit(action.id);
+  }
+
+  handleLink(link: SidebarChildItem): void {
+    this.linkSelected.emit(link);
   }
 }

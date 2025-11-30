@@ -53,7 +53,7 @@ describe(SidebarComponent.name, () => {
   it('renders nav links for every nav item', () => {
     const fixture = createComponent();
     const anchors = fixture.nativeElement.querySelectorAll('.nav a.nav-link');
-    expect(anchors.length).toBe(fixture.componentInstance.navItems.length);
+    expect(anchors.length).toBe(fixture.componentInstance.sections.length);
   });
 
   it('emits the selected section and navigates when a nav link is clicked', () => {
@@ -63,9 +63,9 @@ describe(SidebarComponent.name, () => {
     const firstLink = fixture.nativeElement.querySelector('.nav a.nav-link') as HTMLAnchorElement;
     firstLink.click();
 
-    const firstSection = component.navItems[0].id;
+    const firstSection = component.sections[0].id;
     expect(component.selectSection.emit).toHaveBeenCalledWith(firstSection);
-    expect(router.navigate).toHaveBeenCalledWith([component.navItems[0].route]);
+    expect(router.navigate).toHaveBeenCalledWith([component.sections[0].route]);
   });
 
   it('logs out and routes to login when the logout button is pressed', fakeAsync(() => {

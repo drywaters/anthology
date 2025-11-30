@@ -8,13 +8,71 @@ import { AuthService } from '../../services/auth.service';
 
 export type SidebarSection = 'library' | 'shelves';
 
-interface SidebarNavItem {
+export interface SidebarChildItem {
+  id: string;
+  label: string;
+  icon: string;
+  route: string;
+  exact?: boolean;
+  isAction?: boolean;
+  hint?: string;
+}
+
+export interface SidebarNavSection {
   id: SidebarSection;
   label: string;
   icon: string;
   route: string;
   exact?: boolean;
+  children: SidebarChildItem[];
 }
+
+export const SIDEBAR_SECTIONS: SidebarNavSection[] = [
+  {
+    id: 'library',
+    label: 'Library',
+    icon: 'menu_book',
+    route: '/',
+    exact: true,
+    children: [
+      {
+        id: 'library-home',
+        label: 'All Items',
+        icon: 'collections_bookmark',
+        route: '/',
+        exact: true,
+        hint: 'Browse your entire collection',
+      },
+      {
+        id: 'add-item',
+        label: 'Add Item',
+        icon: 'library_add',
+        route: '/items/add',
+        exact: true,
+        isAction: true,
+        hint: 'Capture a new title',
+      },
+    ],
+  },
+  {
+    id: 'shelves',
+    label: 'Shelves',
+    icon: 'grid_on',
+    route: '/shelves',
+    children: [
+      { id: 'shelf-list', label: 'All Shelves', icon: 'view_list', route: '/shelves', hint: 'Arrange your collection' },
+      {
+        id: 'add-shelf',
+        label: 'Add Shelf',
+        icon: 'add_photo_alternate',
+        route: '/shelves/add',
+        exact: true,
+        isAction: true,
+        hint: 'Create a new shelf',
+      },
+    ],
+  },
+];
 
 @Component({
   selector: 'app-sidebar',
@@ -30,28 +88,13 @@ export class SidebarComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   @Input() activeSection: SidebarSection | null = null;
+  @Input() sections: SidebarNavSection[] = SIDEBAR_SECTIONS;
   @Output() selectSection = new EventEmitter<SidebarSection>();
-
-  readonly navItems: SidebarNavItem[] = [
-    {
-      id: 'library',
-      label: 'Library',
-      icon: 'menu_book',
-      route: '/',
-      exact: true,
-    },
-    {
-      id: 'shelves',
-      label: 'Shelves',
-      icon: 'grid_on',
-      route: '/shelves',
-    },
-  ];
 
   readonly exactOptions = { exact: true } as const;
   readonly defaultOptions = { exact: false } as const;
 
-  handleSectionClick(item: SidebarNavItem): void {
+  handleSectionClick(item: SidebarNavSection): void {
     this.selectSection.emit(item.id);
     this.router.navigate([item.route]);
   }

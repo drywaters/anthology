@@ -7,7 +7,7 @@
   </div>
 
   <nav class="nav" aria-label="Primary">
-    <ng-container *ngFor="let item of navItems">
+    <ng-container *ngFor="let item of sections">
       <a
         class="nav-link"
         [attr.aria-current]="item.route === '/' ? 'page' : null"

@@ -6,10 +6,22 @@
     <span class="mobile-title">Anthology</span>
   </header>
 
+  <button
+    *ngIf="!isMobile()"
+    class="sidebar-toggle icon-button"
+    type="button"
+    [class.collapsed]="!sidebarOpen()"
+    (click)="toggleSidebar()"
+    [attr.aria-label]="sidebarOpen() ? 'Collapse navigation' : 'Expand navigation'"
+  >
+    <mat-icon>{{ sidebarOpen() ? 'chevron_left' : 'chevron_right' }}</mat-icon>
+  </button>
+
   <div class="sidebar-container" [class.open]="sidebarOpen()" [class.drawer]="isMobile()">
     <app-sidebar
       class="sidebar"
       [activeSection]="currentSection()"
+      [sections]="sections"
       (selectSection)="handleSelectSection($event)"
     ></app-sidebar>
   </div>
@@ -23,8 +35,10 @@
     <app-subpanel
       [section]="currentSection()"
       [actions]="panelActions(activePanel())"
+      [links]="panelLinks(activePanel())"
       (back)="handleBack()"
       (actionTriggered)="handleActionTriggered($event)"
+      (linkSelected)="handleLinkSelected($event)"
     ></app-subpanel>
   </div>
 

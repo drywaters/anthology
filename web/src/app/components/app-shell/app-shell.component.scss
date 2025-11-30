@@ -29,6 +29,11 @@ $app-surface: linear-gradient(
   height: 100vh;
   transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 3;
+  transform: translateX(0);
+}
+
+.sidebar-container:not(.open) {
+  transform: translateX(-100%);
 }
 
 .sidebar-container.drawer {
@@ -115,6 +120,18 @@ $app-surface: linear-gradient(
 
 .icon-button mat-icon {
   font-size: 22px;
+}
+
+.sidebar-toggle {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 4;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.15);
+}
+
+.sidebar-toggle.collapsed {
+  left: 0.5rem;
 }
 
 .mobile-title {

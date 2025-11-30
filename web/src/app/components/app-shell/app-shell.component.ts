@@ -4,7 +4,7 @@ import { NgIf } from '@angular/common';
 import { Router, RouterOutlet } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { SidebarComponent, SidebarSection } from '../sidebar/sidebar.component';
+import { SidebarChildItem, SidebarComponent, SidebarNavSection, SidebarSection, SIDEBAR_SECTIONS } from '../sidebar/sidebar.component';
 import { ActionButton, SubpanelComponent } from '../subpanel/subpanel.component';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -26,13 +26,17 @@ export class AppShellComponent {
   readonly sidebarOpen = signal(true);
   readonly isMobile = signal(false);
 
-  readonly libraryActions: ActionButton[] = [
-    { id: 'add-item', label: 'Add Item', icon: 'library_add', route: '/items/add' },
-  ];
+  readonly sections: SidebarNavSection[] = SIDEBAR_SECTIONS;
 
-  readonly shelfActions: ActionButton[] = [
-    { id: 'add-shelf', label: 'Add Shelf', icon: 'add_photo_alternate', route: '/shelves/add' },
-  ];
+  readonly libraryActions: ActionButton[] = this.sections
+    .find((section) => section.id === 'library')
+    ?.children.filter((child) => child.isAction)
+    .map((child) => ({ id: child.id, label: child.label, icon: child.icon, route: child.route })) ?? [];
+
+  readonly shelfActions: ActionButton[] = this.sections
+    .find((section) => section.id === 'shelves')
+    ?.children.filter((child) => child.isAction)
+    .map((child) => ({ id: child.id, label: child.label, icon: child.icon, route: child.route })) ?? [];
 
   readonly subpanelVisible = computed(() => this.activePanel() !== 'main');
   readonly currentSection = computed<SidebarSection | null>(() => {
@@ -68,7 +72,7 @@ export class AppShellComponent {
   }
 
   closeAllPanels(): void {
-    this.sidebarOpen.set(!this.isMobile());
+    this.sidebarOpen.set(false);
     this.activePanel.set('main');
   }
 
@@ -87,9 +91,7 @@ export class AppShellComponent {
 
   handleBack(): void {
     this.activePanel.set('main');
-    if (this.isMobile()) {
-      this.sidebarOpen.set(true);
-    }
+    this.sidebarOpen.set(!this.isMobile());
   }
 
   handleActionTriggered(actionId: string): void {
@@ -117,5 +119,22 @@ export class AppShellComponent {
     }
 
     return [];
+  }
+
+  panelLinks(section: SidebarPanel): SidebarChildItem[] {
+    const target = this.sections.find((candidate) => candidate.id === section);
+    return target?.children ?? [];
+  }
+
+  handleLinkSelected(link: SidebarChildItem): void {
+    if (link.route) {
+      this.router.navigate([link.route]);
+    }
+
+    if (this.isMobile()) {
+      this.sidebarOpen.set(false);
+    }
+
+    this.activePanel.set('main');
   }
 }

@@ -9,6 +9,25 @@
     <h3 class="title">{{ sectionTitle }}</h3>
   </div>
 
+  <div class="link-list" *ngIf="links.length > 0">
+    <button
+      type="button"
+      class="link-tile"
+      *ngFor="let link of links"
+      (click)="handleLink(link)"
+      [attr.data-testid]="'link-' + link.id"
+    >
+      <div class="link-icon">
+        <mat-icon>{{ link.icon }}</mat-icon>
+      </div>
+      <div class="link-body">
+        <span class="link-label">{{ link.label }}</span>
+        <span class="link-hint" *ngIf="link.hint">{{ link.hint }}</span>
+      </div>
+      <mat-icon class="chevron" aria-hidden="true">chevron_right</mat-icon>
+    </button>
+  </div>
+
   <div class="action-list" *ngIf="actions.length > 0">
     <button type="button" class="action-pill" *ngFor="let action of actions" (click)="handleAction(action)">
       <mat-icon *ngIf="action.icon">{{ action.icon }}</mat-icon>
