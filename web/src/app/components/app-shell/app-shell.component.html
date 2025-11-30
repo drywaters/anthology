@@ -11,7 +11,7 @@
         [open]="sidebarOpen()"
         [navItems]="navItems"
         [actionItems]="actionItems"
-        (close)="closeSidebar()"
+        (closed)="closeSidebar()"
         (navigate)="handleNavigate($event)"
         (actionTriggered)="handleAction($event)"
     ></app-sidebar>

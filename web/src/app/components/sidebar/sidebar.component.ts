@@ -19,7 +19,7 @@ export class SidebarComponent {
     @Input() actionItems: ActionButton[] = [];
     @Input() open = false;
 
-    @Output() readonly close = new EventEmitter<void>();
+    @Output() readonly closed = new EventEmitter<void>();
     @Output() readonly navigate = new EventEmitter<string>();
     @Output() readonly actionTriggered = new EventEmitter<string>();
 
