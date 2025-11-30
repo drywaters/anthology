@@ -14,13 +14,22 @@ describe(SidebarComponent.name, () => {
 
         fixture = TestBed.createComponent(SidebarComponent);
         fixture.componentInstance.navItems = [
-            { id: 'library', label: 'Library', icon: 'menu_book', route: '/' },
-            { id: 'shelves', label: 'Shelves', icon: 'grid_on', route: '/shelves' },
+            {
+                id: 'library',
+                label: 'Library',
+                icon: 'menu_book',
+                route: '/',
+                actions: [{ id: 'add-item', label: 'Add Item', icon: 'library_add', route: '/items/add' }],
+            },
+            {
+                id: 'shelves',
+                label: 'Shelves',
+                icon: 'grid_on',
+                route: '/shelves',
+                actions: [{ id: 'add-shelf', label: 'Add Shelf', icon: 'add_photo_alternate', route: '/shelves/add' }],
+            },
         ];
-        fixture.componentInstance.actionItems = [
-            { id: 'add-item', label: 'Add Item', icon: 'library_add', route: '/items/add' },
-            { id: 'logout', label: 'Log out', icon: 'logout' },
-        ];
+        fixture.componentInstance.actionItems = [{ id: 'logout', label: 'Log out', icon: 'logout' }];
         fixture.detectChanges();
     });
 
@@ -34,13 +43,15 @@ describe(SidebarComponent.name, () => {
         expect(brandTitle?.textContent?.trim()).toBe('Anthology');
     });
 
-    it('shows nav links and actions for provided items', () => {
+    it('shows nav links, contextual actions, and footer actions', () => {
         const compiled = fixture.nativeElement as HTMLElement;
         const navLinks = compiled.querySelectorAll('.nav a.nav-link');
-        const actionButtons = compiled.querySelectorAll('.actions .action-button');
+        const contextualActions = compiled.querySelectorAll('.nav-section__actions .action-button');
+        const footerActions = compiled.querySelectorAll('.actions .action-button');
 
         expect(navLinks.length).toBe(2);
-        expect(actionButtons.length).toBe(2);
+        expect(contextualActions.length).toBe(2);
+        expect(footerActions.length).toBe(1);
     });
 
     it('emits navigation and action events', () => {
@@ -52,9 +63,13 @@ describe(SidebarComponent.name, () => {
         firstNav.click();
         expect(navigateSpy).toHaveBeenCalledWith('/');
 
-        const firstAction = compiled.querySelector('.actions .action-button') as HTMLButtonElement;
-        firstAction.click();
+        const contextualAction = compiled.querySelector('.nav-section__actions .action-button') as HTMLButtonElement;
+        contextualAction.click();
         expect(actionSpy).toHaveBeenCalledWith('add-item');
+
+        const logoutAction = compiled.querySelector('.actions .action-button') as HTMLButtonElement;
+        logoutAction.click();
+        expect(actionSpy).toHaveBeenCalledWith('logout');
     });
 
     it('applies the open class when visible', () => {

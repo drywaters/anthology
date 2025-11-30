@@ -3,6 +3,7 @@ export interface NavigationItem {
     label: string;
     icon?: string;
     route: string;
+    actions?: ActionButton[];
 }
 
 export interface ActionButton {

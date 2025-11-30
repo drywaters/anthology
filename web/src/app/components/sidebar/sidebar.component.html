@@ -12,27 +12,45 @@
     </div>
 
     <nav class="nav">
-        <a
-            *ngFor="let item of navItems"
-            class="nav-link"
-            [routerLink]="item.route"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="exactOptions"
-            (click)="handleNavigate(item.route)"
-        >
-            <mat-icon aria-hidden="true" *ngIf="item.icon">{{ item.icon }}</mat-icon>
-            <span>{{ item.label }}</span>
-        </a>
+        <div class="nav-section" *ngFor="let item of navItems">
+            <a
+                class="nav-link"
+                [routerLink]="item.route"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="exactOptions"
+                (click)="handleNavigate(item.route)"
+            >
+                <mat-icon aria-hidden="true" *ngIf="item.icon">{{ item.icon }}</mat-icon>
+                <span>{{ item.label }}</span>
+            </a>
+
+            <div class="nav-section__actions" *ngIf="item.actions?.length">
+                <button
+                    *ngFor="let action of item.actions"
+                    mat-stroked-button
+                    type="button"
+                    class="action-button action-button--inline"
+                    [routerLink]="action.route || null"
+                    routerLinkActive="action-button--active"
+                    [routerLinkActiveOptions]="exactOptions"
+                    (click)="handleAction(action.id)"
+                >
+                    <mat-icon aria-hidden="true" *ngIf="action.icon">{{ action.icon }}</mat-icon>
+                    <span>{{ action.label }}</span>
+                </button>
+            </div>
+        </div>
     </nav>
 
     <div class="actions" *ngIf="actionItems.length">
-        <div class="actions__label">Actions</div>
         <button
             *ngFor="let action of actionItems"
             mat-stroked-button
             type="button"
             class="action-button"
             [routerLink]="action.route || null"
+            routerLinkActive="action-button--active"
+            [routerLinkActiveOptions]="exactOptions"
             (click)="handleAction(action.id)"
         >
             <mat-icon aria-hidden="true" *ngIf="action.icon">{{ action.icon }}</mat-icon>

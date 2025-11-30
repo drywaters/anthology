@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { NgIf } from '@angular/common';
 
 import { SidebarComponent } from '../sidebar/sidebar.component';
@@ -12,7 +12,7 @@ import { AuthService } from '../../services/auth.service';
 @Component({
     selector: 'app-shell',
     standalone: true,
-    imports: [RouterOutlet, SidebarComponent, AppHeaderComponent, NgIf],
+    imports: [RouterOutlet, SidebarComponent, AppHeaderComponent, NgIf, MatSnackBarModule],
     templateUrl: './app-shell.component.html',
     styleUrl: './app-shell.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -26,15 +26,23 @@ export class AppShellComponent {
     readonly sidebarOpen = signal(false);
 
     readonly navItems: NavigationItem[] = [
-        { id: 'library', label: 'Library', icon: 'menu_book', route: '/' },
-        { id: 'shelves', label: 'Shelves', icon: 'grid_on', route: '/shelves' },
+        {
+            id: 'library',
+            label: 'Library',
+            icon: 'menu_book',
+            route: '/',
+            actions: [{ id: 'add-item', label: 'Add Item', icon: 'library_add', route: '/items/add' }],
+        },
+        {
+            id: 'shelves',
+            label: 'Shelves',
+            icon: 'grid_on',
+            route: '/shelves',
+            actions: [{ id: 'add-shelf', label: 'Add Shelf', icon: 'add_photo_alternate', route: '/shelves/add' }],
+        },
     ];
 
-    readonly actionItems: ActionButton[] = [
-        { id: 'add-item', label: 'Add Item', icon: 'library_add', route: '/items/add' },
-        { id: 'add-shelf', label: 'Add Shelf', icon: 'add_photo_alternate', route: '/shelves/add' },
-        { id: 'logout', label: 'Log out', icon: 'logout' },
-    ];
+    readonly actionItems: ActionButton[] = [{ id: 'logout', label: 'Log out', icon: 'logout' }];
 
     toggleSidebar(): void {
         this.sidebarOpen.update((open) => !open);
@@ -55,12 +63,23 @@ export class AppShellComponent {
             return;
         }
 
-        const action = this.actionItems.find((item) => item.id === actionId);
+        const action = this.findAction(actionId);
         if (action?.route) {
             this.router.navigateByUrl(action.route);
         }
 
         this.closeSidebar();
+    }
+
+    private findAction(actionId: string): ActionButton | undefined {
+        for (const item of this.navItems) {
+            const match = item.actions?.find((action) => action.id === actionId);
+            if (match) {
+                return match;
+            }
+        }
+
+        return this.actionItems.find((action) => action.id === actionId);
     }
 
     private logout(): void {

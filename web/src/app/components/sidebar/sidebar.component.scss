@@ -73,6 +73,19 @@ button[mat-icon-button] {
     gap: 0.35rem;
 }
 
+.nav-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.nav-section__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding-left: 2.6rem;
+}
+
 .nav-link {
     display: inline-flex;
     align-items: center;
@@ -97,7 +110,7 @@ button[mat-icon-button] {
 
 .nav-link.active {
     background: color-mix(in srgb, var(--mat-sys-primary-container) 45%, transparent);
-    color: var(--mat-sys-on-primary-container);
+    color: var(--mat-sys-primary);
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mat-sys-primary) 45%, transparent);
 }
 
@@ -108,23 +121,42 @@ button[mat-icon-button] {
     margin-top: auto;
 }
 
-.actions__label {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: color-mix(in srgb, var(--mat-sys-on-surface) 80%, transparent);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-}
-
 .action-button {
     justify-content: flex-start;
     gap: 0.65rem;
     text-transform: none;
     font-weight: 700;
+    border: none;
+    border-left: 0 solid transparent;
+    border-radius: 0;
+    background: transparent;
+    color: #000;
+    --mdc-theme-primary: #000;
+    padding-left: 1rem;
+    padding-right: 0.65rem;
+    transition:
+        color 160ms ease,
+        border-left-color 200ms ease,
+        border-left-width 200ms ease;
 }
 
 .action-button mat-icon {
     font-size: 20px;
+    color: inherit;
+}
+
+.action-button .mdc-button__label {
+    color: inherit;
+}
+
+.action-button:hover,
+.action-button:focus-visible,
+.action-button--active {
+    color: var(--mat-sys-primary);
+    --mdc-theme-primary: var(--mat-sys-primary);
+    border-left-color: var(--mat-sys-primary);
+    border-left-width: 3px;
+    background: transparent;
 }
 
 @media (max-width: 720px) {
