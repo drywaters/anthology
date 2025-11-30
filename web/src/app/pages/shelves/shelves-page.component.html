@@ -16,9 +16,24 @@
     </div>
 
     <ng-template #emptyState>
-        <div class="empty">
-            <mat-icon>grid_view</mat-icon>
-            <p>Create your first shelf to begin placing items.</p>
+        <div class="empty" role="status">
+            <div class="empty__copy">
+                <mat-icon aria-hidden="true">grid_view</mat-icon>
+                <div>
+                    <p class="empty__title">No shelves yet</p>
+                    <p class="empty__subtitle">Create your first shelf to begin placing items.</p>
+                </div>
+            </div>
+            <div class="empty__actions">
+                <button mat-flat-button color="primary" routerLink="/shelves/add">
+                    <mat-icon aria-hidden="true">add_photo_alternate</mat-icon>
+                    Add shelf
+                </button>
+                <button mat-stroked-button type="button" routerLink="/">
+                    <mat-icon aria-hidden="true">menu_book</mat-icon>
+                    Go to library
+                </button>
+            </div>
         </div>
     </ng-template>
 </div>

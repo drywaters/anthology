@@ -64,8 +64,40 @@
 
 .empty {
     display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    color: #2f3135;
+    margin-top: 1rem;
+    padding: 1.25rem;
+    border: 1px dashed color-mix(in srgb, var(--mat-sys-outline) 45%, transparent);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--mat-sys-surface) 72%, white 28%);
+}
+
+.empty__copy {
+    display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.75rem;
+}
+
+.empty__title {
+    margin: 0 0 4px;
+    font-weight: 700;
+}
+
+.empty__subtitle {
+    margin: 0;
     color: #5f6368;
-    margin-top: 12px;
+}
+
+.empty__actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.empty__actions button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
 }

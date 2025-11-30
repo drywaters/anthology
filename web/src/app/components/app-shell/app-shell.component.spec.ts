@@ -62,4 +62,24 @@ describe(AppShellComponent.name, () => {
 
         expect(compiled.querySelector('.backdrop')).not.toBeNull();
     });
+
+    it('can toggle the sidebar closed and reopen it again', () => {
+        const fixture = TestBed.createComponent(AppShellComponent);
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+
+        const menuButton = compiled.querySelector('app-header button[mat-icon-button]') as HTMLButtonElement;
+
+        menuButton.click();
+        fixture.detectChanges();
+        expect(compiled.querySelector('.backdrop')).not.toBeNull();
+
+        menuButton.click();
+        fixture.detectChanges();
+        expect(compiled.querySelector('.backdrop')).toBeNull();
+
+        menuButton.click();
+        fixture.detectChanges();
+        expect(compiled.querySelector('.backdrop')).not.toBeNull();
+    });
 });
