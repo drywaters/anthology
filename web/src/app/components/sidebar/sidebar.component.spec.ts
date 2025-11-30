@@ -1,46 +1,30 @@
-import { fakeAsync, flush, TestBed } from '@angular/core/testing';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { Router } from '@angular/router';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, withDisabledInitialNavigation } from '@angular/router';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { of, throwError } from 'rxjs';
 
 import { SidebarComponent } from './sidebar.component';
-import { AuthService } from '../../services/auth.service';
 
 describe(SidebarComponent.name, () => {
-    let authServiceSpy: jasmine.SpyObj<AuthService>;
-    let router: Router;
-    let snackBarSpy: jasmine.SpyObj<MatSnackBar>;
+    let fixture: ComponentFixture<SidebarComponent>;
 
     beforeEach(async () => {
-        authServiceSpy = jasmine.createSpyObj<AuthService>('AuthService', ['logout']);
-        snackBarSpy = jasmine.createSpyObj<MatSnackBar>('MatSnackBar', ['open']);
-
         await TestBed.configureTestingModule({
             imports: [SidebarComponent],
-            providers: [
-                provideRouter([], withDisabledInitialNavigation()),
-                provideNoopAnimations(),
-                { provide: AuthService, useValue: authServiceSpy },
-                { provide: MatSnackBar, useValue: snackBarSpy },
-            ],
-        })
-            .overrideProvider(MatSnackBar, { useValue: snackBarSpy })
-            .compileComponents();
+            providers: [provideRouter([], withDisabledInitialNavigation())],
+        }).compileComponents();
 
-        router = TestBed.inject(Router);
-        spyOn(router, 'navigate').and.resolveTo(true);
+        fixture = TestBed.createComponent(SidebarComponent);
+        fixture.componentInstance.navItems = [
+            { id: 'library', label: 'Library', icon: 'menu_book', route: '/' },
+            { id: 'shelves', label: 'Shelves', icon: 'grid_on', route: '/shelves' },
+        ];
+        fixture.componentInstance.actionItems = [
+            { id: 'add-item', label: 'Add Item', icon: 'library_add', route: '/items/add' },
+            { id: 'logout', label: 'Log out', icon: 'logout' },
+        ];
+        fixture.detectChanges();
     });
 
-    function createComponent() {
-        const fixture = TestBed.createComponent(SidebarComponent);
-        fixture.detectChanges();
-        return fixture;
-    }
-
     it('renders the Anthology brand mark and title', () => {
-        const fixture = createComponent();
         const compiled = fixture.nativeElement as HTMLElement;
         const brandMark = compiled.querySelector('.brand-mark') as HTMLImageElement | null;
         const brandTitle = compiled.querySelector('.brand-title');
@@ -50,29 +34,33 @@ describe(SidebarComponent.name, () => {
         expect(brandTitle?.textContent?.trim()).toBe('Anthology');
     });
 
-    it('renders nav links for every nav item', () => {
-        const fixture = createComponent();
-        const anchors = fixture.nativeElement.querySelectorAll('.nav a.nav-link');
-        expect(anchors.length).toBe(fixture.componentInstance.navItems.length);
+    it('shows nav links and actions for provided items', () => {
+        const compiled = fixture.nativeElement as HTMLElement;
+        const navLinks = compiled.querySelectorAll('.nav a.nav-link');
+        const actionButtons = compiled.querySelectorAll('.actions .action-button');
+
+        expect(navLinks.length).toBe(2);
+        expect(actionButtons.length).toBe(2);
     });
 
-    it('logs out and routes to login when the logout button is pressed', fakeAsync(() => {
-        authServiceSpy.logout.and.returnValue(of(void 0));
-        const fixture = createComponent();
-        const logoutButton = fixture.nativeElement.querySelector('.sidebar-footer .logout') as HTMLAnchorElement;
-        logoutButton.click();
-        flush();
-        expect(authServiceSpy.logout).toHaveBeenCalled();
-        expect(router.navigate).toHaveBeenCalledWith(['/login']);
-    }));
+    it('emits navigation and action events', () => {
+        const navigateSpy = spyOn(fixture.componentInstance.navigate, 'emit');
+        const actionSpy = spyOn(fixture.componentInstance.actionTriggered, 'emit');
+        const compiled = fixture.nativeElement as HTMLElement;
 
-    it('shows a snack bar message when logout fails but still navigates away', fakeAsync(() => {
-        authServiceSpy.logout.and.returnValue(throwError(() => new Error('fail')));
-        const fixture = createComponent();
-        const logoutButton = fixture.nativeElement.querySelector('.sidebar-footer .logout') as HTMLAnchorElement;
-        logoutButton.click();
-        flush();
-        expect(snackBarSpy.open).toHaveBeenCalled();
-        expect(router.navigate).toHaveBeenCalledWith(['/login']);
-    }));
+        const firstNav = compiled.querySelector('.nav a.nav-link') as HTMLAnchorElement;
+        firstNav.click();
+        expect(navigateSpy).toHaveBeenCalledWith('/');
+
+        const firstAction = compiled.querySelector('.actions .action-button') as HTMLButtonElement;
+        firstAction.click();
+        expect(actionSpy).toHaveBeenCalledWith('add-item');
+    });
+
+    it('applies the open class when visible', () => {
+        fixture.componentInstance.open = true;
+        fixture.detectChanges();
+        const sidebar = fixture.nativeElement.querySelector('.sidebar');
+        expect(sidebar?.classList.contains('sidebar--open')).toBeTrue();
+    });
 });

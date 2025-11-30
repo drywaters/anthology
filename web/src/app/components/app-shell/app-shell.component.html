@@ -1,8 +1,20 @@
 <div class="app-shell">
-    <app-sidebar class="sidebar"></app-sidebar>
-    <div class="content">
+    <app-header (menuToggle)="toggleSidebar()"></app-header>
+
+    <main class="main-content">
         <div class="content-inner">
             <router-outlet></router-outlet>
         </div>
-    </div>
+    </main>
+
+    <app-sidebar
+        [open]="sidebarOpen()"
+        [navItems]="navItems"
+        [actionItems]="actionItems"
+        (close)="closeSidebar()"
+        (navigate)="handleNavigate($event)"
+        (actionTriggered)="handleAction($event)"
+    ></app-sidebar>
+
+    <div class="backdrop" *ngIf="sidebarOpen()" (click)="closeSidebar()"></div>
 </div>

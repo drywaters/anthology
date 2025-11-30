@@ -1,50 +1,42 @@
-<aside class="sidebar" data-testid="sidebar">
-    <div class="brand">
-        <img src="/anthology-logo.png" alt="Anthology logo" class="brand-mark" />
-        <div class="brand-copy">
-            <span class="brand-title">Anthology</span>
+<aside class="sidebar" [class.sidebar--open]="open" data-testid="sidebar">
+    <div class="sidebar__header">
+        <div class="brand">
+            <img src="/anthology-logo.png" alt="Anthology logo" class="brand-mark" />
+            <div class="brand-copy">
+                <span class="brand-title">Anthology</span>
+            </div>
         </div>
+        <button mat-icon-button type="button" aria-label="Close navigation" (click)="close.emit()">
+            <mat-icon>close</mat-icon>
+        </button>
     </div>
 
     <nav class="nav">
-        <ng-container *ngFor="let item of navItems">
-            <div class="nav-section">
-                <a
-                    *ngIf="item.route"
-                    class="nav-link"
-                    [class.nav-link--expandable]="item.children?.length"
-                    [attr.aria-expanded]="item.children?.length ? expandedSection === item.route : null"
-                    [routerLink]="item.route"
-                    routerLinkActive="active"
-                    [routerLinkActiveOptions]="item.exact ? exactOptions : defaultOptions"
-                    (click)="handleSectionClick(item)"
-                >
-                    <mat-icon>{{ item.icon }}</mat-icon>
-                    <span>{{ item.label }}</span>
-                    <mat-icon class="nav-link__chevron" *ngIf="item.children?.length">
-                        {{ expandedSection === item.route ? 'expand_less' : 'expand_more' }}
-                    </mat-icon>
-                </a>
-
-                <div class="nav-submenu" *ngIf="item.children?.length && expandedSection === item.route">
-                    <a
-                        *ngFor="let child of item.children"
-                        class="nav-link nav-link--sub"
-                        [routerLink]="child.route"
-                        routerLinkActive="active"
-                        [routerLinkActiveOptions]="child.exact ? exactOptions : defaultOptions"
-                    >
-                        <mat-icon>{{ child.icon }}</mat-icon>
-                        <span>{{ child.label }}</span>
-                    </a>
-                </div>
-            </div>
-        </ng-container>
+        <a
+            *ngFor="let item of navItems"
+            class="nav-link"
+            [routerLink]="item.route"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="exactOptions"
+            (click)="handleNavigate(item.route)"
+        >
+            <mat-icon aria-hidden="true" *ngIf="item.icon">{{ item.icon }}</mat-icon>
+            <span>{{ item.label }}</span>
+        </a>
     </nav>
 
-    <div class="sidebar-footer">
-        <a href="#" class="nav-link logout" (click)="handleLogoutClick($event)">
-            <span>Log out</span>
-        </a>
+    <div class="actions" *ngIf="actionItems.length">
+        <div class="actions__label">Actions</div>
+        <button
+            *ngFor="let action of actionItems"
+            mat-stroked-button
+            type="button"
+            class="action-button"
+            [routerLink]="action.route || null"
+            (click)="handleAction(action.id)"
+        >
+            <mat-icon aria-hidden="true" *ngIf="action.icon">{{ action.icon }}</mat-icon>
+            <span>{{ action.label }}</span>
+        </button>
     </div>
 </aside>
