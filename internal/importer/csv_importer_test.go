@@ -3,6 +3,7 @@ package importer
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -108,5 +109,24 @@ func TestCSVImporter_MissingColumns(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "missing required columns") {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestCSVImporter_RejectsOversizedUploadBeforeWriting(t *testing.T) {
+	store := &stubStore{}
+	importer := NewCSVImporter(store, &stubCatalog{})
+
+	var builder strings.Builder
+	builder.WriteString("title,creator,itemType,releaseYear,pageCount,isbn13,isbn10,description,coverImage,notes\n")
+	for idx := 0; idx < MaxImportRows+1; idx++ {
+		fmt.Fprintf(&builder, "Title %d,Creator %d,book,2024,100,,,,,\n", idx, idx)
+	}
+
+	_, err := importer.Import(context.Background(), strings.NewReader(builder.String()))
+	if err == nil {
+		t.Fatal("expected error for oversized CSV")
+	}
+	if len(store.items) != 0 {
+		t.Fatalf("expected no items to be created, got %d", len(store.items))
 	}
 }

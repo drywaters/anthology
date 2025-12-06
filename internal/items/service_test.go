@@ -342,6 +342,28 @@ func TestServiceRejectsOversizedCoverImage(t *testing.T) {
 	}
 }
 
+func TestServiceRejectsNonImageDataURI(t *testing.T) {
+	repo := NewInMemoryRepository(nil)
+	svc := NewService(repo)
+
+	// Attempt to use a non-image MIME type (e.g., text/html for XSS)
+	htmlPayload := "data:text/html;base64," + base64.StdEncoding.EncodeToString([]byte("<script>alert(1)</script>"))
+	_, err := svc.Create(context.Background(), CreateItemInput{Title: "XSS Attempt", ItemType: ItemTypeBook, CoverImage: htmlPayload})
+	if err == nil {
+		t.Fatalf("expected non-image data URI to be rejected")
+	}
+	if !strings.Contains(err.Error(), "valid image type") {
+		t.Fatalf("expected error about image type, got: %v", err)
+	}
+
+	// Attempt with application/javascript
+	jsPayload := "data:application/javascript;base64," + base64.StdEncoding.EncodeToString([]byte("alert(1)"))
+	_, err = svc.Create(context.Background(), CreateItemInput{Title: "JS Attempt", ItemType: ItemTypeBook, CoverImage: jsPayload})
+	if err == nil {
+		t.Fatalf("expected non-image data URI to be rejected")
+	}
+}
+
 func TestServiceValidatesBookStatusTransitions(t *testing.T) {
 	repo := NewInMemoryRepository(nil)
 	svc := NewService(repo)

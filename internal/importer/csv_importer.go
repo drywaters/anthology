@@ -27,6 +27,7 @@ type Summary struct {
 	Imported          int             `json:"imported"`
 	SkippedDuplicates []SkippedRecord `json:"skippedDuplicates"`
 	Failed            []FailedRecord  `json:"failed"`
+	TruncatedRecords  bool            `json:"truncatedRecords,omitempty"`
 }
 
 type SkippedRecord struct {
@@ -44,6 +45,14 @@ type FailedRecord struct {
 }
 
 var ErrInvalidCSV = errors.New("invalid csv upload")
+
+// MaxImportRows limits the number of data rows processed per CSV import to
+// prevent excessive memory usage and long-running requests.
+const MaxImportRows = 1000
+
+// MaxFailedRecords caps the number of failed/skipped records stored in the
+// summary to avoid unbounded memory growth from malformed uploads.
+const MaxFailedRecords = 100
 
 var requiredColumns = []string{
 	"title",
@@ -96,8 +105,14 @@ func (i *CSVImporter) Import(ctx context.Context, reader io.Reader) (Summary, er
 		return Summary{}, err
 	}
 
-	summary := Summary{}
+	type parsedRow struct {
+		number int
+		values map[string]string
+	}
+
+	var rows []parsedRow
 	rowNumber := 1
+	totalRows := 0
 
 	for {
 		record, err := csvReader.Read()
@@ -112,36 +127,62 @@ func (i *CSVImporter) Import(ctx context.Context, reader io.Reader) (Summary, er
 		if isRowEmpty(values) {
 			continue
 		}
-		summary.TotalRows++
 
+		totalRows++
+		if totalRows > MaxImportRows {
+			return Summary{}, fmt.Errorf("%w: CSV exceeds maximum of %d rows", ErrInvalidCSV, MaxImportRows)
+		}
+
+		rows = append(rows, parsedRow{
+			number: rowNumber,
+			values: values,
+		})
+	}
+
+	summary := Summary{TotalRows: totalRows}
+
+	for _, row := range rows {
+		values := row.values
 		input, meta, rowErr := i.buildInput(ctx, values)
 		if rowErr != nil {
-			summary.Failed = append(summary.Failed, FailedRecord{
-				Row:        rowNumber,
-				Title:      meta.title,
-				Identifier: meta.identifier,
-				Error:      rowErr.Error(),
-			})
+			if len(summary.Failed) < MaxFailedRecords {
+				summary.Failed = append(summary.Failed, FailedRecord{
+					Row:        row.number,
+					Title:      meta.title,
+					Identifier: meta.identifier,
+					Error:      rowErr.Error(),
+				})
+			} else {
+				summary.TruncatedRecords = true
+			}
 			continue
 		}
 
 		if reason, ok := tracker.Check(input); ok {
-			summary.SkippedDuplicates = append(summary.SkippedDuplicates, SkippedRecord{
-				Row:        rowNumber,
-				Title:      input.Title,
-				Identifier: firstIdentifier(input),
-				Reason:     reason,
-			})
+			if len(summary.SkippedDuplicates) < MaxFailedRecords {
+				summary.SkippedDuplicates = append(summary.SkippedDuplicates, SkippedRecord{
+					Row:        row.number,
+					Title:      input.Title,
+					Identifier: firstIdentifier(input),
+					Reason:     reason,
+				})
+			} else {
+				summary.TruncatedRecords = true
+			}
 			continue
 		}
 
 		if _, err := i.items.Create(ctx, input); err != nil {
-			summary.Failed = append(summary.Failed, FailedRecord{
-				Row:        rowNumber,
-				Title:      input.Title,
-				Identifier: firstIdentifier(input),
-				Error:      err.Error(),
-			})
+			if len(summary.Failed) < MaxFailedRecords {
+				summary.Failed = append(summary.Failed, FailedRecord{
+					Row:        row.number,
+					Title:      input.Title,
+					Identifier: firstIdentifier(input),
+					Error:      err.Error(),
+				})
+			} else {
+				summary.TruncatedRecords = true
+			}
 			continue
 		}
 

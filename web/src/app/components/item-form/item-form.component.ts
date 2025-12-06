@@ -50,6 +50,8 @@ import {
 export class ItemFormComponent implements OnChanges, OnInit {
     private readonly fb = inject(FormBuilder);
     private static readonly MAX_COVER_BYTES = 500 * 1024;
+    private static readonly ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    private static readonly ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
 
     @ViewChild('coverInput') coverInput?: ElementRef<HTMLInputElement>;
 
@@ -205,6 +207,14 @@ export class ItemFormComponent implements OnChanges, OnInit {
         }
 
         const value = this.form.value as ItemForm;
+
+        // Validate cover image URL
+        const coverImageError = this.validateCoverImageUrl(value.coverImage);
+        if (coverImageError) {
+            this.coverImageError = coverImageError;
+            return;
+        }
+
         if (value.itemType === 'book' && value.readingStatus === 'read' && !value.readAt) {
             this.form.get('readAt')?.setErrors({ required: true });
             this.form.get('readAt')?.markAsTouched();
@@ -299,8 +309,9 @@ export class ItemFormComponent implements OnChanges, OnInit {
             return;
         }
 
-        if (file.size > ItemFormComponent.MAX_COVER_BYTES) {
-            this.coverImageError = 'Cover images must be under 500KB.';
+        const validationError = this.validateImageFile(file, ItemFormComponent.MAX_COVER_BYTES, '500KB');
+        if (validationError) {
+            this.coverImageError = validationError;
             this.resetCoverInput();
             return;
         }
@@ -312,6 +323,24 @@ export class ItemFormComponent implements OnChanges, OnInit {
             this.coverImageError = null;
         };
         reader.readAsDataURL(file);
+    }
+
+    private validateImageFile(file: File, maxBytes: number, maxSizeLabel: string): string | null {
+        const fileName = file.name.toLowerCase();
+        const hasValidExtension = ItemFormComponent.ALLOWED_IMAGE_EXTENSIONS.some((ext) => fileName.endsWith(ext));
+        if (!hasValidExtension) {
+            return 'Only image files (JPEG, PNG, GIF, WebP, SVG) are allowed.';
+        }
+
+        if (file.type && !ItemFormComponent.ALLOWED_IMAGE_TYPES.includes(file.type)) {
+            return 'Only image files (JPEG, PNG, GIF, WebP, SVG) are allowed.';
+        }
+
+        if (file.size > maxBytes) {
+            return `Cover images must be under ${maxSizeLabel}.`;
+        }
+
+        return null;
     }
 
     private resetCoverInput(): void {
@@ -399,5 +428,37 @@ export class ItemFormComponent implements OnChanges, OnInit {
 
         const date = new Date(value as string);
         return Number.isNaN(date.getTime()) ? null : date.toISOString();
+    }
+
+    private validateCoverImageUrl(coverImage: string | null | undefined): string | null {
+        if (!coverImage || coverImage.trim() === '') {
+            return null;
+        }
+
+        const trimmed = coverImage.trim();
+
+        // Allow data URIs - MIME type validated by handleCoverFileChange for uploads,
+        // server-side validation handles manually entered data URIs
+        if (trimmed.startsWith('data:')) {
+            return null;
+        }
+
+        // Block dangerous schemes
+        const lowerTrimmed = trimmed.toLowerCase();
+        if (lowerTrimmed.startsWith('javascript:') || lowerTrimmed.startsWith('vbscript:')) {
+            return 'Invalid image URL scheme.';
+        }
+
+        // Validate URL format and require HTTPS
+        try {
+            const url = new URL(trimmed);
+            if (url.protocol !== 'https:') {
+                return 'Cover image URL must use HTTPS.';
+            }
+        } catch {
+            return 'Cover image must be a valid URL or data URI.';
+        }
+
+        return null;
     }
 }
