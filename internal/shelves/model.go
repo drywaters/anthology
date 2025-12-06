@@ -16,6 +16,9 @@ var ErrNotFound = errors.New("shelf not found")
 // ErrSlotNotFound is returned when a slot cannot be located for a shelf.
 var ErrSlotNotFound = errors.New("shelf slot not found")
 
+// ErrValidation wraps user-correctable validation errors safe to expose to clients.
+var ErrValidation = errors.New("validation error")
+
 // Shelf represents a physical shelf image and metadata.
 type Shelf struct {
 	ID          uuid.UUID `db:"id" json:"id"`

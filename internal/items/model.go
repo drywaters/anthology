@@ -11,6 +11,23 @@ import (
 // ErrNotFound is returned when an item cannot be located.
 var ErrNotFound = errors.New("item not found")
 
+// ErrValidation is returned when input validation fails.
+var ErrValidation = errors.New("validation error")
+
+// ValidationError wraps a validation message so callers can distinguish
+// client errors from internal failures.
+type ValidationError struct {
+	Message string
+}
+
+func (e *ValidationError) Error() string {
+	return e.Message
+}
+
+func (e *ValidationError) Unwrap() error {
+	return ErrValidation
+}
+
 // ItemType enumerates the primary categories supported by the MVP.
 type ItemType string
 

@@ -73,7 +73,7 @@ describe(SidebarComponent.name, () => {
     });
 
     it('applies the open class when visible', () => {
-        fixture.componentInstance.open = true;
+        fixture.componentRef.setInput('open', true);
         fixture.detectChanges();
         const sidebar = fixture.nativeElement.querySelector('.sidebar');
         expect(sidebar?.classList.contains('sidebar--open')).toBeTrue();

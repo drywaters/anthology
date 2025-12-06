@@ -26,6 +26,7 @@ func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Servic
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
+	r.Use(newSecurityHeadersMiddleware(cfg.Environment))
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   cfg.AllowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -38,12 +39,11 @@ func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Servic
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
-			"status":      "ok",
-			"environment": cfg.Environment,
+			"status": "ok",
 		})
 	})
 
-	sessionHandler := NewSessionHandler(cfg.APIToken, cfg.Environment)
+	sessionHandler := NewSessionHandler(cfg.APIToken, cfg.Environment, logger)
 	bulkImporter := importer.NewCSVImporter(svc, catalogSvc)
 	handler := NewItemHandler(svc, bulkImporter, logger)
 	catalogHandler := NewCatalogHandler(catalogSvc, logger)
