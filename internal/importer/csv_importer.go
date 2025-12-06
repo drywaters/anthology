@@ -105,8 +105,14 @@ func (i *CSVImporter) Import(ctx context.Context, reader io.Reader) (Summary, er
 		return Summary{}, err
 	}
 
-	summary := Summary{}
+	type parsedRow struct {
+		number int
+		values map[string]string
+	}
+
+	var rows []parsedRow
 	rowNumber := 1
+	totalRows := 0
 
 	for {
 		record, err := csvReader.Read()
@@ -121,17 +127,27 @@ func (i *CSVImporter) Import(ctx context.Context, reader io.Reader) (Summary, er
 		if isRowEmpty(values) {
 			continue
 		}
-		summary.TotalRows++
 
-		if summary.TotalRows > MaxImportRows {
+		totalRows++
+		if totalRows > MaxImportRows {
 			return Summary{}, fmt.Errorf("%w: CSV exceeds maximum of %d rows", ErrInvalidCSV, MaxImportRows)
 		}
 
+		rows = append(rows, parsedRow{
+			number: rowNumber,
+			values: values,
+		})
+	}
+
+	summary := Summary{TotalRows: totalRows}
+
+	for _, row := range rows {
+		values := row.values
 		input, meta, rowErr := i.buildInput(ctx, values)
 		if rowErr != nil {
 			if len(summary.Failed) < MaxFailedRecords {
 				summary.Failed = append(summary.Failed, FailedRecord{
-					Row:        rowNumber,
+					Row:        row.number,
 					Title:      meta.title,
 					Identifier: meta.identifier,
 					Error:      rowErr.Error(),
@@ -145,7 +161,7 @@ func (i *CSVImporter) Import(ctx context.Context, reader io.Reader) (Summary, er
 		if reason, ok := tracker.Check(input); ok {
 			if len(summary.SkippedDuplicates) < MaxFailedRecords {
 				summary.SkippedDuplicates = append(summary.SkippedDuplicates, SkippedRecord{
-					Row:        rowNumber,
+					Row:        row.number,
 					Title:      input.Title,
 					Identifier: firstIdentifier(input),
 					Reason:     reason,
@@ -159,7 +175,7 @@ func (i *CSVImporter) Import(ctx context.Context, reader io.Reader) (Summary, er
 		if _, err := i.items.Create(ctx, input); err != nil {
 			if len(summary.Failed) < MaxFailedRecords {
 				summary.Failed = append(summary.Failed, FailedRecord{
-					Row:        rowNumber,
+					Row:        row.number,
 					Title:      input.Title,
 					Identifier: firstIdentifier(input),
 					Error:      err.Error(),
