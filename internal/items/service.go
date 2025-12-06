@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -15,6 +16,15 @@ const (
 	maxCoverImageBytes     = 500 * 1024
 	maxCoverImageURLLength = 4096
 )
+
+// allowedImageMIMETypes lists permitted MIME types for data URI images.
+var allowedImageMIMETypes = map[string]bool{
+	"image/jpeg":    true,
+	"image/png":     true,
+	"image/gif":     true,
+	"image/webp":    true,
+	"image/svg+xml": true,
+}
 
 // Service orchestrates validation and persistence for items.
 type Service struct {
@@ -255,6 +265,15 @@ func sanitizeCoverImage(raw string) (string, error) {
 			return "", validationErr("coverImage data URI is invalid")
 		}
 
+		// Extract and validate MIME type from the data URI header (e.g., "data:image/png;base64")
+		header := parts[0]
+		mimeType := strings.TrimPrefix(header, "data:")
+		mimeType = strings.TrimSuffix(mimeType, ";base64")
+		mimeType = strings.ToLower(mimeType)
+		if !allowedImageMIMETypes[mimeType] {
+			return "", validationErr("coverImage must be a valid image type (JPEG, PNG, GIF, WebP, or SVG)")
+		}
+
 		if _, err := base64.StdEncoding.DecodeString(parts[1]); err != nil {
 			return "", validationErr("coverImage must contain valid base64 image data")
 		}
@@ -269,6 +288,18 @@ func sanitizeCoverImage(raw string) (string, error) {
 
 	if len(trimmed) > maxCoverImageURLLength {
 		return "", validationErr(fmt.Sprintf("coverImage must be shorter than %d characters", maxCoverImageURLLength))
+	}
+
+	// Validate external URL: must be valid URL with https scheme
+	parsed, err := url.Parse(trimmed)
+	if err != nil {
+		return "", validationErr("coverImage must be a valid URL")
+	}
+	if parsed.Scheme != "https" {
+		return "", validationErr("coverImage URL must use HTTPS")
+	}
+	if parsed.Host == "" {
+		return "", validationErr("coverImage URL must have a valid host")
 	}
 
 	return trimmed, nil

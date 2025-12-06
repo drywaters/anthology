@@ -82,14 +82,14 @@ func Apply(ctx context.Context, db *sqlx.DB, logger *slog.Logger) error {
 }
 
 func fetchApplied(ctx context.Context, q sqlx.QueryerContext) (map[string]bool, error) {
-        rows, err := q.QueryxContext(ctx, fmt.Sprintf(`SELECT name FROM %s`, schemaMigrationsTable))
-        if err != nil {
-                // table creation should guarantee existence, so propagate errors here
-                return nil, fmt.Errorf("migrate: fetch applied: %w", err)
-        }
-        defer func() {
-                _ = rows.Close()
-        }()
+	rows, err := q.QueryxContext(ctx, fmt.Sprintf(`SELECT name FROM %s`, schemaMigrationsTable))
+	if err != nil {
+		// table creation should guarantee existence, so propagate errors here
+		return nil, fmt.Errorf("migrate: fetch applied: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	applied := make(map[string]bool)
 	for rows.Next() {

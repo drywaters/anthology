@@ -64,6 +64,10 @@ interface SearchCategoryConfig {
     disabled?: boolean;
 }
 
+const CSV_MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB - matches server limit
+const CSV_ALLOWED_MIME_TYPES = ['text/csv', 'application/vnd.ms-excel'];
+const CSV_ALLOWED_EXTENSIONS = ['.csv'];
+
 @Component({
     selector: 'app-add-item-page',
     standalone: true,
@@ -639,10 +643,44 @@ this.lookupResults.set([]);
     handleCsvFileChange(event: Event): void {
         const input = event.target as HTMLInputElement | null;
         const file = input?.files?.[0] ?? null;
-        this.selectedCsvFile.set(file);
+
         this.importError.set(null);
         this.importSummary.set(null);
+
+        const validationError = this.validateCsvFile(file);
+        if (validationError) {
+            this.selectedCsvFile.set(null);
+            this.importError.set(validationError);
+            this.resetCsvInput();
+            this.activateCsvImportTab();
+            return;
+        }
+
+        this.selectedCsvFile.set(file);
         this.activateCsvImportTab();
+    }
+
+    private validateCsvFile(file: File | null): string | null {
+        if (!file) {
+            return null;
+        }
+
+        const fileName = file.name.toLowerCase();
+        const hasValidExtension = CSV_ALLOWED_EXTENSIONS.some((ext) => fileName.endsWith(ext));
+        if (!hasValidExtension) {
+            return 'Only CSV files are allowed.';
+        }
+
+        if (file.type && !CSV_ALLOWED_MIME_TYPES.includes(file.type)) {
+            return 'Only CSV files are allowed.';
+        }
+
+        if (file.size > CSV_MAX_FILE_SIZE_BYTES) {
+            const maxSizeMB = CSV_MAX_FILE_SIZE_BYTES / (1024 * 1024);
+            return `File size exceeds ${maxSizeMB} MB limit.`;
+        }
+
+        return null;
     }
 
     handleImportSubmit(event?: Event): void {
@@ -654,6 +692,14 @@ this.lookupResults.set([]);
         if (!file || this.importBusy()) {
             return;
         }
+
+        const validationError = this.validateCsvFile(file);
+        if (validationError) {
+            this.importError.set(validationError);
+            this.activateCsvImportTab();
+            return;
+        }
+
         this.selectedCsvFile.set(file);
 
         this.activateCsvImportTab();
