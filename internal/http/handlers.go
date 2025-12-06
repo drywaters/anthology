@@ -136,7 +136,12 @@ func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Notes:         payload.Notes,
 	})
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		if errors.Is(err, items.ErrValidation) {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		h.logger.Error("create item", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to create item")
 		return
 	}
 
@@ -152,7 +157,7 @@ func (h *ItemHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	item, err := h.service.Get(r.Context(), id)
 	if err != nil {
-		handleServiceError(w, err)
+		handleServiceError(w, err, h.logger)
 		return
 	}
 
@@ -189,7 +194,7 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := decodeInto(raw, &payload); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
@@ -252,7 +257,7 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	item, err := h.service.Update(r.Context(), id, input)
 	if err != nil {
-		handleServiceError(w, err)
+		handleServiceError(w, err, h.logger)
 		return
 	}
 
@@ -267,7 +272,7 @@ func (h *ItemHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.Delete(r.Context(), id); err != nil {
-		handleServiceError(w, err)
+		handleServiceError(w, err, h.logger)
 		return
 	}
 
@@ -330,11 +335,16 @@ func parseUUIDParam(w http.ResponseWriter, r *http.Request, key string) (uuid.UU
 	return id, true
 }
 
-func handleServiceError(w http.ResponseWriter, err error) {
+func handleServiceError(w http.ResponseWriter, err error, logger *slog.Logger) {
 	if errors.Is(err, items.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "item not found")
 		return
 	}
+	if errors.Is(err, items.ErrValidation) {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	logger.Error("service error", "error", err)
 	writeError(w, http.StatusInternalServerError, "unexpected error")
 }
 
@@ -362,10 +372,11 @@ func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst any) error {
 
 func writeJSONError(w http.ResponseWriter, err error) {
 	if errors.Is(err, errPayloadTooLarge) {
-		writeError(w, http.StatusRequestEntityTooLarge, err.Error())
+		writeError(w, http.StatusRequestEntityTooLarge, "payload too large")
 		return
 	}
-	writeError(w, http.StatusBadRequest, err.Error())
+	// Return generic message to avoid leaking internal JSON parsing details
+	writeError(w, http.StatusBadRequest, "invalid request body")
 }
 
 func decodeInto(raw map[string]json.RawMessage, payload any) error {

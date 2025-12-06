@@ -1,7 +1,6 @@
 package http
 
 import (
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -17,6 +16,22 @@ import (
 type ShelfHandler struct {
 	svc    *shelves.Service
 	logger *slog.Logger
+}
+
+func (h *ShelfHandler) handleShelfError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, shelves.ErrNotFound):
+		writeError(w, http.StatusNotFound, "shelf not found")
+	case errors.Is(err, shelves.ErrSlotNotFound):
+		writeError(w, http.StatusNotFound, "slot not found")
+	case errors.Is(err, items.ErrNotFound):
+		writeError(w, http.StatusNotFound, "item not found")
+	case errors.Is(err, shelves.ErrValidation):
+		writeError(w, http.StatusBadRequest, err.Error())
+	default:
+		h.logger.Error("shelf operation failed", "error", err)
+		writeError(w, http.StatusInternalServerError, "unexpected error")
+	}
 }
 
 // NewShelfHandler constructs a ShelfHandler.
@@ -39,14 +54,14 @@ func (h *ShelfHandler) List(w http.ResponseWriter, r *http.Request) {
 // Create registers a new shelf with a default layout.
 func (h *ShelfHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var input shelves.CreateShelfInput
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid payload")
+	if err := decodeJSONBody(w, r, &input); err != nil {
+		writeJSONError(w, err)
 		return
 	}
 
 	created, err := h.svc.CreateShelf(r.Context(), input)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		h.handleShelfError(w, err)
 		return
 	}
 
@@ -63,11 +78,7 @@ func (h *ShelfHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	shelf, err := h.svc.GetShelf(r.Context(), shelfID)
 	if err != nil {
-		status := http.StatusInternalServerError
-		if err == shelves.ErrNotFound {
-			status = http.StatusNotFound
-		}
-		writeError(w, status, err.Error())
+		h.handleShelfError(w, err)
 		return
 	}
 
@@ -83,18 +94,14 @@ func (h *ShelfHandler) UpdateLayout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input shelves.UpdateLayoutInput
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid payload")
+	if err := decodeJSONBody(w, r, &input); err != nil {
+		writeJSONError(w, err)
 		return
 	}
 
 	updated, displaced, err := h.svc.UpdateLayout(r.Context(), shelfID, input)
 	if err != nil {
-		status := http.StatusBadRequest
-		if err == shelves.ErrNotFound {
-			status = http.StatusNotFound
-		}
-		writeError(w, status, err.Error())
+		h.handleShelfError(w, err)
 		return
 	}
 
@@ -120,7 +127,11 @@ func (h *ShelfHandler) AssignItem(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
 		ItemID string `json:"itemId"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil || payload.ItemID == "" {
+	if err := decodeJSONBody(w, r, &payload); err != nil {
+		writeJSONError(w, err)
+		return
+	}
+	if payload.ItemID == "" {
 		writeError(w, http.StatusBadRequest, "itemId is required")
 		return
 	}
@@ -132,14 +143,7 @@ func (h *ShelfHandler) AssignItem(w http.ResponseWriter, r *http.Request) {
 
 	shelf, err := h.svc.AssignItem(r.Context(), shelfID, slotID, itemID)
 	if err != nil {
-		status := http.StatusBadRequest
-		switch {
-		case errors.Is(err, items.ErrNotFound):
-			status = http.StatusNotFound
-		case errors.Is(err, shelves.ErrNotFound), errors.Is(err, shelves.ErrSlotNotFound):
-			status = http.StatusNotFound
-		}
-		writeError(w, status, err.Error())
+		h.handleShelfError(w, err)
 		return
 	}
 
@@ -166,11 +170,7 @@ func (h *ShelfHandler) RemoveItem(w http.ResponseWriter, r *http.Request) {
 
 	shelf, err := h.svc.RemoveItem(r.Context(), shelfID, slotID, itemID)
 	if err != nil {
-		status := http.StatusBadRequest
-		if err == shelves.ErrNotFound || err == shelves.ErrSlotNotFound {
-			status = http.StatusNotFound
-		}
-		writeError(w, status, err.Error())
+		h.handleShelfError(w, err)
 		return
 	}
 

@@ -102,14 +102,14 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, input UpdateItemInpu
 	if input.Title != nil {
 		title := strings.TrimSpace(*input.Title)
 		if title == "" {
-			return Item{}, fmt.Errorf("title is required")
+			return Item{}, validationErr("title is required")
 		}
 		existing.Title = title
 	}
 
 	if input.ItemType != nil {
 		if *input.ItemType == "" {
-			return Item{}, fmt.Errorf("itemType is required")
+			return Item{}, validationErr("itemType is required")
 		}
 		existing.ItemType = *input.ItemType
 	}
@@ -185,13 +185,17 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
 	return s.repo.Delete(ctx, id)
 }
 
+func validationErr(msg string) error {
+	return &ValidationError{Message: msg}
+}
+
 func validateItemInput(title string, itemType ItemType) error {
 	title = strings.TrimSpace(title)
 	if title == "" {
-		return fmt.Errorf("title is required")
+		return validationErr("title is required")
 	}
 	if itemType == "" {
-		return fmt.Errorf("itemType is required")
+		return validationErr("itemType is required")
 	}
 	return nil
 }
@@ -234,7 +238,7 @@ func normalizeCurrentPage(value *int) (*int, error) {
 	}
 	v := *value
 	if v < 0 {
-		return nil, fmt.Errorf("currentPage must be zero or greater")
+		return nil, validationErr("currentPage must be zero or greater")
 	}
 	return &v, nil
 }
@@ -248,23 +252,23 @@ func sanitizeCoverImage(raw string) (string, error) {
 	if strings.HasPrefix(trimmed, "data:") {
 		parts := strings.SplitN(trimmed, ",", 2)
 		if len(parts) != 2 {
-			return "", fmt.Errorf("coverImage data URI is invalid")
+			return "", validationErr("coverImage data URI is invalid")
 		}
 
 		if _, err := base64.StdEncoding.DecodeString(parts[1]); err != nil {
-			return "", fmt.Errorf("coverImage must contain valid base64 image data")
+			return "", validationErr("coverImage must contain valid base64 image data")
 		}
 
 		estimatedBytes := len(parts[1]) * 3 / 4
 		if estimatedBytes > maxCoverImageBytes {
-			return "", fmt.Errorf("coverImage must be smaller than %dKB", maxCoverImageBytes/1024)
+			return "", validationErr(fmt.Sprintf("coverImage must be smaller than %dKB", maxCoverImageBytes/1024))
 		}
 
 		return trimmed, nil
 	}
 
 	if len(trimmed) > maxCoverImageURLLength {
-		return "", fmt.Errorf("coverImage must be shorter than %d characters", maxCoverImageURLLength)
+		return "", validationErr(fmt.Sprintf("coverImage must be shorter than %d characters", maxCoverImageURLLength))
 	}
 
 	return trimmed, nil
@@ -282,7 +286,7 @@ func normalizeBookFields(itemType ItemType, status BookStatus, readAt *time.Time
 		return BookStatusWantToRead, nil, nil, nil
 	case BookStatusRead:
 		if readAt == nil || readAt.IsZero() {
-			return BookStatusUnknown, nil, nil, fmt.Errorf("readAt is required when readingStatus is read")
+			return BookStatusUnknown, nil, nil, validationErr("readAt is required when readingStatus is read")
 		}
 
 		normalized := readAt.UTC()
@@ -294,7 +298,7 @@ func normalizeBookFields(itemType ItemType, status BookStatus, readAt *time.Time
 		}
 		return status, nil, normalizedPage, nil
 	default:
-		return BookStatusUnknown, nil, nil, fmt.Errorf("readingStatus must be empty or one of read, reading, or want_to_read")
+		return BookStatusUnknown, nil, nil, validationErr("readingStatus must be empty or one of read, reading, or want_to_read")
 	}
 }
 
@@ -303,7 +307,7 @@ func normalizeReadingProgress(currentPage *int, pageCount *int) (*int, error) {
 		return nil, nil
 	}
 	if pageCount != nil && *currentPage > *pageCount {
-		return nil, fmt.Errorf("currentPage cannot exceed pageCount")
+		return nil, validationErr("currentPage cannot exceed pageCount")
 	}
 	return currentPage, nil
 }

@@ -46,11 +46,11 @@ type UpdateLayoutInput struct {
 func (s *Service) CreateShelf(ctx context.Context, input CreateShelfInput) (ShelfWithLayout, error) {
 	name := strings.TrimSpace(input.Name)
 	if name == "" {
-		return ShelfWithLayout{}, fmt.Errorf("name is required")
+		return ShelfWithLayout{}, fmt.Errorf("%w: name is required", ErrValidation)
 	}
 	photoURL := strings.TrimSpace(input.PhotoURL)
 	if photoURL == "" {
-		return ShelfWithLayout{}, fmt.Errorf("photoUrl is required")
+		return ShelfWithLayout{}, fmt.Errorf("%w: photoUrl is required", ErrValidation)
 	}
 
 	now := time.Now().UTC()
@@ -120,7 +120,7 @@ func (s *Service) GetShelf(ctx context.Context, shelfID uuid.UUID) (ShelfWithLay
 // UpdateLayout replaces the layout while keeping stable slot IDs when possible.
 func (s *Service) UpdateLayout(ctx context.Context, shelfID uuid.UUID, input UpdateLayoutInput) (ShelfWithLayout, []PlacementWithItem, error) {
 	if len(input.Slots) == 0 {
-		return ShelfWithLayout{}, nil, fmt.Errorf("at least one slot is required")
+		return ShelfWithLayout{}, nil, fmt.Errorf("%w: at least one slot is required", ErrValidation)
 	}
 
 	existing, err := s.repo.GetShelf(ctx, shelfID)
@@ -269,7 +269,7 @@ func normalizeSlots(
 	existingSlotIDs map[string]uuid.UUID,
 ) ([]ShelfRow, []ShelfColumn, []ShelfSlot, error) {
 	if len(slots) == 0 {
-		return nil, nil, nil, fmt.Errorf("at least one slot is required")
+		return nil, nil, nil, fmt.Errorf("%w: at least one slot is required", ErrValidation)
 	}
 
 	key := func(rowIdx, colIdx int) string {
@@ -281,17 +281,17 @@ func normalizeSlots(
 
 	for _, slot := range slots {
 		if slot.RowIndex < 0 || slot.ColIndex < 0 {
-			return nil, nil, nil, fmt.Errorf("row and column indexes must be non-negative")
+			return nil, nil, nil, fmt.Errorf("%w: row and column indexes must be non-negative", ErrValidation)
 		}
 		if slot.XStartNorm < 0 || slot.XEndNorm > 1 || slot.XEndNorm <= slot.XStartNorm {
-			return nil, nil, nil, fmt.Errorf("slot %d/%d has invalid x boundaries", slot.RowIndex, slot.ColIndex)
+			return nil, nil, nil, fmt.Errorf("%w: slot %d/%d has invalid x boundaries", ErrValidation, slot.RowIndex, slot.ColIndex)
 		}
 		if slot.YStartNorm < 0 || slot.YEndNorm > 1 || slot.YEndNorm <= slot.YStartNorm {
-			return nil, nil, nil, fmt.Errorf("slot %d/%d has invalid y boundaries", slot.RowIndex, slot.ColIndex)
+			return nil, nil, nil, fmt.Errorf("%w: slot %d/%d has invalid y boundaries", ErrValidation, slot.RowIndex, slot.ColIndex)
 		}
 		slotKey := key(slot.RowIndex, slot.ColIndex)
 		if _, exists := seenKeys[slotKey]; exists {
-			return nil, nil, nil, fmt.Errorf("duplicate definition for row %d column %d", slot.RowIndex, slot.ColIndex)
+			return nil, nil, nil, fmt.Errorf("%w: duplicate definition for row %d column %d", ErrValidation, slot.RowIndex, slot.ColIndex)
 		}
 		seenKeys[slotKey] = struct{}{}
 		rowGroups[slot.RowIndex] = append(rowGroups[slot.RowIndex], slot)
