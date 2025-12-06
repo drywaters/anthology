@@ -3,6 +3,7 @@ package http
 import (
 	"crypto/subtle"
 	"log/slog"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -54,11 +55,7 @@ func (h *SessionHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clientIP := r.RemoteAddr
-	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
-		clientIP = strings.Split(forwarded, ",")[0]
-	}
-	clientIP = strings.TrimSpace(clientIP)
+	clientIP := clientIPFromRequest(r)
 
 	if h.isRateLimited(clientIP) {
 		h.logger.Warn("login rate limited", "ip", clientIP, "reason", "too_many_attempts")
@@ -162,4 +159,21 @@ func (h *SessionHandler) clearAttempts(ip string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	delete(h.attempts, ip)
+}
+
+// clientIPFromRequest extracts the originating IP address, normalizing away any port
+// so rate limiting buckets attempts by IP regardless of ephemeral ports.
+func clientIPFromRequest(r *http.Request) string {
+	ip := r.RemoteAddr
+	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+		ip = strings.Split(forwarded, ",")[0]
+	}
+	ip = strings.TrimSpace(ip)
+
+	host, _, err := net.SplitHostPort(ip)
+	if err == nil {
+		return host
+	}
+
+	return ip
 }
