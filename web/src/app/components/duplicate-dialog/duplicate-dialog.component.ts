@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { Router } from '@angular/router';
 
 import { DuplicateMatch } from '../../models/item';
 
@@ -23,6 +24,7 @@ export type DuplicateDialogResult = 'add' | 'cancel';
 })
 export class DuplicateDialogComponent {
     private readonly dialogRef = inject(MatDialogRef<DuplicateDialogComponent, DuplicateDialogResult>);
+    private readonly router = inject(Router);
     readonly data = inject<DuplicateDialogData>(MAT_DIALOG_DATA);
 
     get hasMoreDuplicates(): boolean {
@@ -42,7 +44,8 @@ export class DuplicateDialogComponent {
     }
 
     handleOpenExisting(duplicate: DuplicateMatch): void {
-        window.open(`/items/${duplicate.id}`, '_blank');
+        const editUrl = this.router.serializeUrl(this.router.createUrlTree(['/items', duplicate.id, 'edit']));
+        window.open(editUrl, '_blank');
     }
 
     formatDate(dateString: string): string {
