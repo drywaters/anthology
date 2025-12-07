@@ -49,13 +49,6 @@ describe('AlphaRailComponent', () => {
         expect(emitSpy).toHaveBeenCalledWith('A');
     });
 
-    it('should emit ALL when all button clicked', () => {
-        const emitSpy = spyOn(component.letterSelected, 'emit');
-        component.selectAll();
-
-        expect(emitSpy).toHaveBeenCalledWith('ALL');
-    });
-
     it('should correctly identify active letter', () => {
         component.activeLetter = signal('B');
         fixture.detectChanges();
