@@ -122,9 +122,24 @@ func (r *PostgresRepository) List(ctx context.Context, opts ListOptions) ([]Item
 		args = append(args, *opts.ItemType)
 	}
 
+	// When filtering by status with no type filter (All), only apply to books (BE-2)
 	if opts.ReadingStatus != nil {
-		clauses = append(clauses, fmt.Sprintf("i.reading_status = $%d", len(args)+1))
-		args = append(args, *opts.ReadingStatus)
+		if opts.ItemType == nil {
+			// All items with status filter:
+			// - "none" status: show all items (books with none + all non-books)
+			// - Other statuses: show only books with that status
+			if *opts.ReadingStatus == BookStatusNone {
+				clauses = append(clauses, fmt.Sprintf("(i.item_type != 'book' OR i.reading_status = $%d)", len(args)+1))
+				args = append(args, BookStatusNone)
+			} else {
+				clauses = append(clauses, "i.item_type = 'book'")
+				clauses = append(clauses, fmt.Sprintf("i.reading_status = $%d", len(args)+1))
+				args = append(args, *opts.ReadingStatus)
+			}
+		} else {
+			clauses = append(clauses, fmt.Sprintf("i.reading_status = $%d", len(args)+1))
+			args = append(args, *opts.ReadingStatus)
+		}
 	}
 
 	if opts.Initial != nil {
@@ -234,9 +249,21 @@ FROM items`
 		args = append(args, *opts.ItemType)
 	}
 
+	// When filtering by status with no type filter (All), only apply to books (BE-2)
 	if opts.ReadingStatus != nil {
-		clauses = append(clauses, fmt.Sprintf("reading_status = $%d", len(args)+1))
-		args = append(args, *opts.ReadingStatus)
+		if opts.ItemType == nil {
+			if *opts.ReadingStatus == BookStatusNone {
+				clauses = append(clauses, fmt.Sprintf("(item_type != 'book' OR reading_status = $%d)", len(args)+1))
+				args = append(args, BookStatusNone)
+			} else {
+				clauses = append(clauses, "item_type = 'book'")
+				clauses = append(clauses, fmt.Sprintf("reading_status = $%d", len(args)+1))
+				args = append(args, *opts.ReadingStatus)
+			}
+		} else {
+			clauses = append(clauses, fmt.Sprintf("reading_status = $%d", len(args)+1))
+			args = append(args, *opts.ReadingStatus)
+		}
 	}
 
 	if len(clauses) > 0 {
@@ -309,4 +336,3 @@ func (r *PostgresRepository) FindDuplicates(ctx context.Context, input Duplicate
 
 	return matches, nil
 }
-

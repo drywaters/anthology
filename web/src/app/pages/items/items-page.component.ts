@@ -87,6 +87,10 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     readonly hasFilteredItems = computed(() => this.items().length > 0);
     readonly isUnfiltered = computed(() => this.typeFilter() === 'all' && this.statusFilter() === 'all');
     readonly isGridView = computed(() => this.viewMode() === 'grid');
+    readonly showStatusFilter = computed(() => {
+        const type = this.typeFilter();
+        return type === 'all' || type === 'book';
+    });
 
     readonly groupedItems = computed<LetterGroup[]>(() => {
         const items = this.items();
@@ -289,6 +293,10 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
 
     setTypeFilter(type: ItemTypeFilter): void {
         this.typeFilter.set(type);
+        // Clear status filter when switching to non-book type (UI-3)
+        if (type !== 'all' && type !== 'book') {
+            this.statusFilter.set('all');
+        }
     }
 
     setStatusFilter(status: BookStatusFilter): void {
@@ -327,8 +335,9 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
             filters.itemType = typeFilter;
         }
 
+        // Only include status filter when type is 'all' or 'book' (FE-1, FE-2)
         const statusFilter = this.statusFilter();
-        if (statusFilter !== 'all') {
+        if (statusFilter !== 'all' && (typeFilter === 'all' || typeFilter === 'book')) {
             filters.status = statusFilter;
         }
 
