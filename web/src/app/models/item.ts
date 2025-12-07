@@ -1,6 +1,7 @@
 export type ItemType = 'book' | 'game' | 'movie' | 'music';
 export type BookStatus = 'read' | 'reading' | 'want_to_read' | '';
 export type ActiveBookStatus = Exclude<BookStatus, ''>;
+export type LetterHistogram = Record<string, number>;
 
 export interface Item {
     id: string;

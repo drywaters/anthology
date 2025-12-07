@@ -159,3 +159,45 @@ func (r *InMemoryRepository) UpdateShelfPlacement(_ context.Context, itemID uuid
 	r.data[itemID] = item
 	return nil
 }
+
+// Histogram returns a count of items grouped by first letter of title.
+func (r *InMemoryRepository) Histogram(_ context.Context, opts HistogramOptions) (LetterHistogram, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	histogram := make(LetterHistogram)
+
+	for _, id := range r.order {
+		item, ok := r.data[id]
+		if !ok {
+			continue
+		}
+
+		if opts.ItemType != nil && item.ItemType != *opts.ItemType {
+			continue
+		}
+
+		if opts.ReadingStatus != nil && item.ReadingStatus != *opts.ReadingStatus {
+			continue
+		}
+
+		letter := extractFirstLetter(item.Title)
+		histogram[letter]++
+	}
+
+	return histogram, nil
+}
+
+// extractFirstLetter returns the uppercase first letter of a title, or "#" for non-alphabetic.
+func extractFirstLetter(title string) string {
+	trimmed := strings.TrimSpace(title)
+	if len(trimmed) == 0 {
+		return "#"
+	}
+
+	first := strings.ToUpper(string(trimmed[0]))
+	if first >= "A" && first <= "Z" {
+		return first
+	}
+	return "#"
+}

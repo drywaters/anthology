@@ -213,3 +213,52 @@ func (r *PostgresRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 	return nil
 }
+
+// Histogram returns a count of items grouped by first letter of title.
+func (r *PostgresRepository) Histogram(ctx context.Context, opts HistogramOptions) (LetterHistogram, error) {
+	query := `
+SELECT
+    CASE
+        WHEN upper(substr(trim(title), 1, 1)) BETWEEN 'A' AND 'Z'
+        THEN upper(substr(trim(title), 1, 1))
+        ELSE '#'
+    END AS letter,
+    COUNT(*) AS count
+FROM items`
+
+	clauses := []string{}
+	args := []any{}
+
+	if opts.ItemType != nil {
+		clauses = append(clauses, fmt.Sprintf("item_type = $%d", len(args)+1))
+		args = append(args, *opts.ItemType)
+	}
+
+	if opts.ReadingStatus != nil {
+		clauses = append(clauses, fmt.Sprintf("reading_status = $%d", len(args)+1))
+		args = append(args, *opts.ReadingStatus)
+	}
+
+	if len(clauses) > 0 {
+		query = query + " WHERE " + strings.Join(clauses, " AND ")
+	}
+
+	query = query + " GROUP BY letter"
+
+	type letterCount struct {
+		Letter string `db:"letter"`
+		Count  int    `db:"count"`
+	}
+
+	rows := []letterCount{}
+	if err := r.db.SelectContext(ctx, &rows, query, args...); err != nil {
+		return nil, fmt.Errorf("histogram: %w", err)
+	}
+
+	histogram := make(LetterHistogram)
+	for _, row := range rows {
+		histogram[row.Letter] = row.Count
+	}
+
+	return histogram, nil
+}

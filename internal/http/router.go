@@ -64,6 +64,7 @@ func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Servic
 			r.Use(newTokenAuthMiddleware(cfg.APIToken))
 			r.Route("/items", func(r chi.Router) {
 				r.Get("/", handler.List)
+				r.Get("/histogram", handler.Histogram)
 				r.Post("/", handler.Create)
 				r.Post("/import", handler.ImportCSV)
 				r.Route("/{id}", func(r chi.Router) {

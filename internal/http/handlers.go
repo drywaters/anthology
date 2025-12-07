@@ -281,6 +281,53 @@ func (h *ItemHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 const maxCSVUploadBytes int64 = 5 << 20
 
+// Histogram returns letter counts for the alphabet rail.
+func (h *ItemHandler) Histogram(w http.ResponseWriter, r *http.Request) {
+	opts, err := parseHistogramOptions(r.URL.Query())
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	histogram, total, err := h.service.Histogram(r.Context(), opts)
+	if err != nil {
+		h.logger.Error("histogram", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to compute histogram")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"histogram": histogram,
+		"total":     total,
+	})
+}
+
+func parseHistogramOptions(values url.Values) (items.HistogramOptions, error) {
+	opts := items.HistogramOptions{}
+
+	if rawType := strings.TrimSpace(values.Get("type")); rawType != "" {
+		typeValue := items.ItemType(rawType)
+		switch typeValue {
+		case items.ItemTypeBook, items.ItemTypeGame, items.ItemTypeMovie, items.ItemTypeMusic:
+			opts.ItemType = &typeValue
+		default:
+			return items.HistogramOptions{}, fmt.Errorf("invalid type filter")
+		}
+	}
+
+	if rawStatus := strings.TrimSpace(values.Get("status")); rawStatus != "" {
+		status := items.BookStatus(rawStatus)
+		switch status {
+		case items.BookStatusRead, items.BookStatusReading, items.BookStatusWantToRead:
+			opts.ReadingStatus = &status
+		default:
+			return items.HistogramOptions{}, fmt.Errorf("invalid status filter")
+		}
+	}
+
+	return opts, nil
+}
+
 // ImportCSV ingests a CSV file of catalog items.
 func (h *ItemHandler) ImportCSV(w http.ResponseWriter, r *http.Request) {
 	if h.importer == nil {

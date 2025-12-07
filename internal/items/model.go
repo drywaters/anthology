@@ -121,6 +121,15 @@ type ListOptions struct {
 	Limit         *int
 }
 
+// HistogramOptions describes filters for histogram aggregation.
+type HistogramOptions struct {
+	ItemType      *ItemType
+	ReadingStatus *BookStatus
+}
+
+// LetterHistogram maps first letters (A-Z, #) to item counts.
+type LetterHistogram map[string]int
+
 // Repository defines persistence operations for Items.
 type Repository interface {
 	Create(ctx context.Context, item Item) (Item, error)
@@ -128,4 +137,5 @@ type Repository interface {
 	List(ctx context.Context, opts ListOptions) ([]Item, error)
 	Update(ctx context.Context, item Item) (Item, error)
 	Delete(ctx context.Context, id uuid.UUID) error
+	Histogram(ctx context.Context, opts HistogramOptions) (LetterHistogram, error)
 }
