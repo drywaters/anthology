@@ -397,13 +397,7 @@ mat-progress-bar {
     position: relative;
     width: 100%;
     padding-top: 70%;
-    background: repeating-linear-gradient(
-        45deg,
-        color-mix(in srgb, var(--mat-sys-primary) 6%, #f8fafc),
-        color-mix(in srgb, var(--mat-sys-primary) 6%, #f8fafc) 12px,
-        color-mix(in srgb, var(--mat-sys-primary) 12%, #e2e8f0) 12px,
-        color-mix(in srgb, var(--mat-sys-primary) 12%, #e2e8f0) 24px
-    );
+    background: color-mix(in srgb, var(--mat-sys-primary) 10%, #f8fafc);
 
     img {
         position: absolute;
