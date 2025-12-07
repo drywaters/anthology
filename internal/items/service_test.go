@@ -707,3 +707,146 @@ func TestNormalizeIdentifier(t *testing.T) {
 		})
 	}
 }
+
+func TestServiceListStatusFilterWithAllItemType(t *testing.T) {
+	repo := NewInMemoryRepository(nil)
+	svc := NewService(repo)
+	ctx := context.Background()
+
+	// Create test data: books with various statuses and non-book items
+	finishedDate := time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC)
+	readBook, _ := svc.Create(ctx, CreateItemInput{Title: "Read Book", ItemType: ItemTypeBook, ReadingStatus: BookStatusRead, ReadAt: &finishedDate})
+	readingBook, _ := svc.Create(ctx, CreateItemInput{Title: "Reading Book", ItemType: ItemTypeBook, ReadingStatus: BookStatusReading})
+	noneBook, _ := svc.Create(ctx, CreateItemInput{Title: "No Status Book", ItemType: ItemTypeBook})
+	movie, _ := svc.Create(ctx, CreateItemInput{Title: "A Movie", ItemType: ItemTypeMovie})
+	game, _ := svc.Create(ctx, CreateItemInput{Title: "A Game", ItemType: ItemTypeGame})
+
+	t.Run("All+Read shows only read books", func(t *testing.T) {
+		status := BookStatusRead
+		items, err := svc.List(ctx, ListOptions{ReadingStatus: &status})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(items) != 1 {
+			t.Fatalf("expected 1 item, got %d", len(items))
+		}
+		if items[0].ID != readBook.ID {
+			t.Fatalf("expected read book, got %q", items[0].Title)
+		}
+	})
+
+	t.Run("All+Reading shows only reading books", func(t *testing.T) {
+		status := BookStatusReading
+		items, err := svc.List(ctx, ListOptions{ReadingStatus: &status})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(items) != 1 {
+			t.Fatalf("expected 1 item, got %d", len(items))
+		}
+		if items[0].ID != readingBook.ID {
+			t.Fatalf("expected reading book, got %q", items[0].Title)
+		}
+	})
+
+	t.Run("All+None shows books with none status plus all non-books", func(t *testing.T) {
+		status := BookStatusNone
+		items, err := svc.List(ctx, ListOptions{ReadingStatus: &status})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		// Should include: noneBook, movie, game
+		if len(items) != 3 {
+			t.Fatalf("expected 3 items, got %d: %v", len(items), items)
+		}
+		ids := map[string]bool{}
+		for _, item := range items {
+			ids[item.ID.String()] = true
+		}
+		if !ids[noneBook.ID.String()] {
+			t.Fatalf("expected none book to be included")
+		}
+		if !ids[movie.ID.String()] {
+			t.Fatalf("expected movie to be included")
+		}
+		if !ids[game.ID.String()] {
+			t.Fatalf("expected game to be included")
+		}
+	})
+
+	t.Run("Book+Read shows only read books", func(t *testing.T) {
+		itemType := ItemTypeBook
+		status := BookStatusRead
+		items, err := svc.List(ctx, ListOptions{ItemType: &itemType, ReadingStatus: &status})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(items) != 1 {
+			t.Fatalf("expected 1 item, got %d", len(items))
+		}
+		if items[0].ID != readBook.ID {
+			t.Fatalf("expected read book, got %q", items[0].Title)
+		}
+	})
+
+	t.Run("Movie type ignores status filter", func(t *testing.T) {
+		itemType := ItemTypeMovie
+		status := BookStatusRead
+		items, err := svc.List(ctx, ListOptions{ItemType: &itemType, ReadingStatus: &status})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		// Since movies have BookStatusNone by default, they won't match BookStatusRead
+		if len(items) != 0 {
+			t.Fatalf("expected 0 items, got %d", len(items))
+		}
+	})
+}
+
+func TestServiceHistogramStatusFilterWithAllItemType(t *testing.T) {
+	repo := NewInMemoryRepository(nil)
+	svc := NewService(repo)
+	ctx := context.Background()
+
+	// Create test data
+	finishedDate := time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC)
+	_, _ = svc.Create(ctx, CreateItemInput{Title: "Alpha Read Book", ItemType: ItemTypeBook, ReadingStatus: BookStatusRead, ReadAt: &finishedDate})
+	_, _ = svc.Create(ctx, CreateItemInput{Title: "Beta No Status Book", ItemType: ItemTypeBook})
+	_, _ = svc.Create(ctx, CreateItemInput{Title: "Charlie Movie", ItemType: ItemTypeMovie})
+	_, _ = svc.Create(ctx, CreateItemInput{Title: "Delta Game", ItemType: ItemTypeGame})
+
+	t.Run("All+Read histogram shows only read books", func(t *testing.T) {
+		status := BookStatusRead
+		histogram, total, err := svc.Histogram(ctx, HistogramOptions{ReadingStatus: &status})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if total != 1 {
+			t.Fatalf("expected total 1, got %d", total)
+		}
+		if histogram["A"] != 1 {
+			t.Fatalf("expected A=1, got %d", histogram["A"])
+		}
+	})
+
+	t.Run("All+None histogram shows books with none status plus non-books", func(t *testing.T) {
+		status := BookStatusNone
+		histogram, total, err := svc.Histogram(ctx, HistogramOptions{ReadingStatus: &status})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		// Should include: Beta No Status Book, Charlie Movie, Delta Game
+		if total != 3 {
+			t.Fatalf("expected total 3, got %d", total)
+		}
+		if histogram["B"] != 1 {
+			t.Fatalf("expected B=1, got %d", histogram["B"])
+		}
+		if histogram["C"] != 1 {
+			t.Fatalf("expected C=1, got %d", histogram["C"])
+		}
+		if histogram["D"] != 1 {
+			t.Fatalf("expected D=1, got %d", histogram["D"])
+		}
+	})
+}

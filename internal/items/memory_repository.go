@@ -66,8 +66,30 @@ func (r *InMemoryRepository) List(_ context.Context, opts ListOptions) ([]Item, 
 				continue
 			}
 
-			if opts.ReadingStatus != nil && item.ReadingStatus != *opts.ReadingStatus {
-				continue
+			// When filtering by status with no type filter (All), only apply to books (BE-2)
+			if opts.ReadingStatus != nil {
+				if opts.ItemType == nil {
+					// All items with status filter:
+					// - "none" status: show all items (books with none + all non-books)
+					// - Other statuses: show only books with that status
+					if *opts.ReadingStatus == BookStatusNone {
+						// For "none" status, show books with none status + all non-books
+						if item.ItemType == ItemTypeBook && item.ReadingStatus != BookStatusNone {
+							continue
+						}
+					} else {
+						// For other statuses, only show books with that status
+						if item.ItemType != ItemTypeBook {
+							continue
+						}
+						if item.ReadingStatus != *opts.ReadingStatus {
+							continue
+						}
+					}
+				} else if item.ReadingStatus != *opts.ReadingStatus {
+					// Specific type selected: apply status filter normally
+					continue
+				}
 			}
 
 			if opts.Initial != nil {
@@ -177,8 +199,24 @@ func (r *InMemoryRepository) Histogram(_ context.Context, opts HistogramOptions)
 			continue
 		}
 
-		if opts.ReadingStatus != nil && item.ReadingStatus != *opts.ReadingStatus {
-			continue
+		// When filtering by status with no type filter (All), only apply to books (BE-2)
+		if opts.ReadingStatus != nil {
+			if opts.ItemType == nil {
+				if *opts.ReadingStatus == BookStatusNone {
+					if item.ItemType == ItemTypeBook && item.ReadingStatus != BookStatusNone {
+						continue
+					}
+				} else {
+					if item.ItemType != ItemTypeBook {
+						continue
+					}
+					if item.ReadingStatus != *opts.ReadingStatus {
+						continue
+					}
+				}
+			} else if item.ReadingStatus != *opts.ReadingStatus {
+				continue
+			}
 		}
 
 		letter := extractFirstLetter(item.Title)

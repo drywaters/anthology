@@ -10,7 +10,7 @@
                 </mat-select>
             </mat-form-field>
 
-            <mat-form-field appearance="outline" class="status-select">
+            <mat-form-field *ngIf="showStatusFilter()" appearance="outline" class="status-select">
                 <mat-label>Reading status</mat-label>
                 <mat-select [value]="statusFilter()" (valueChange)="setStatusFilter($event)">
                     <mat-option *ngFor="let option of statusOptions" [value]="option.value">
