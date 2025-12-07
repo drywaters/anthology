@@ -12,13 +12,22 @@ import { Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { EMPTY, catchError, combineLatest, switchMap, tap } from 'rxjs';
 
-import { BOOK_STATUS_LABELS, BookStatus, Item, ItemType, ITEM_TYPE_LABELS, LetterHistogram } from '../../models/item';
+import {
+    BOOK_STATUS_LABELS,
+    BookStatus,
+    BookStatusFilter,
+    BookStatusFilters,
+    Item,
+    ItemType,
+    ItemTypes,
+    ITEM_TYPE_LABELS,
+    LetterHistogram,
+} from '../../models/item';
 import { ItemService } from '../../services/item.service';
 import { AlphaRailComponent } from '../../components/alpha-rail/alpha-rail.component';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 
 type ItemTypeFilter = ItemType | 'all';
-type BookStatusFilter = BookStatus | 'all';
 
 export interface LetterGroup {
     letter: string;
@@ -61,7 +70,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     readonly items = signal<Item[]>([]);
     readonly loading = signal(false);
     readonly typeFilter = signal<ItemTypeFilter>('all');
-    readonly statusFilter = signal<BookStatusFilter>('all');
+    readonly statusFilter = signal<BookStatusFilter>(BookStatusFilters.All);
     readonly viewMode = signal<'table' | 'grid'>('table');
     readonly histogram = signal<LetterHistogram>({});
     readonly activeLetter = signal<string | null>(null);
@@ -71,25 +80,27 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     readonly BookStatus = BookStatus;
     readonly typeOptions: Array<{ value: ItemTypeFilter; label: string }> = [
         { value: 'all', label: 'All items' },
-        { value: 'book', label: ITEM_TYPE_LABELS.book },
-        { value: 'game', label: ITEM_TYPE_LABELS.game },
-        { value: 'movie', label: ITEM_TYPE_LABELS.movie },
-        { value: 'music', label: ITEM_TYPE_LABELS.music },
+        { value: ItemTypes.Book, label: ITEM_TYPE_LABELS[ItemTypes.Book] },
+        { value: ItemTypes.Game, label: ITEM_TYPE_LABELS[ItemTypes.Game] },
+        { value: ItemTypes.Movie, label: ITEM_TYPE_LABELS[ItemTypes.Movie] },
+        { value: ItemTypes.Music, label: ITEM_TYPE_LABELS[ItemTypes.Music] },
     ];
-	readonly statusOptions: Array<{ value: BookStatusFilter; label: string }> = [
-		{ value: 'all', label: 'All' },
-		{ value: BookStatus.None, label: BOOK_STATUS_LABELS[BookStatus.None] },
-		{ value: BookStatus.WantToRead, label: BOOK_STATUS_LABELS[BookStatus.WantToRead] },
-		{ value: BookStatus.Reading, label: BOOK_STATUS_LABELS[BookStatus.Reading] },
-		{ value: BookStatus.Read, label: BOOK_STATUS_LABELS[BookStatus.Read] },
-	];
+    readonly statusOptions: Array<{ value: BookStatusFilter; label: string }> = [
+        { value: BookStatusFilters.All, label: 'All' },
+        { value: BookStatusFilters.None, label: BOOK_STATUS_LABELS[BookStatus.None] },
+        { value: BookStatusFilters.WantToRead, label: BOOK_STATUS_LABELS[BookStatus.WantToRead] },
+        { value: BookStatusFilters.Reading, label: BOOK_STATUS_LABELS[BookStatus.Reading] },
+        { value: BookStatusFilters.Read, label: BOOK_STATUS_LABELS[BookStatus.Read] },
+    ];
 
     readonly hasFilteredItems = computed(() => this.items().length > 0);
-    readonly isUnfiltered = computed(() => this.typeFilter() === 'all' && this.statusFilter() === 'all');
+    readonly isUnfiltered = computed(
+        () => this.typeFilter() === 'all' && this.statusFilter() === BookStatusFilters.All
+    );
     readonly isGridView = computed(() => this.viewMode() === 'grid');
     readonly showStatusFilter = computed(() => {
         const type = this.typeFilter();
-        return type === 'all' || type === 'book';
+        return type === 'all' || type === ItemTypes.Book;
     });
 
     readonly groupedItems = computed<LetterGroup[]>(() => {
@@ -254,7 +265,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     }
 
     readingStatusLabel(item: Item): string | null {
-        if (item.itemType !== 'book' || !item.readingStatus || item.readingStatus === BookStatus.None) {
+        if (item.itemType !== ItemTypes.Book || !item.readingStatus || item.readingStatus === BookStatus.None) {
             return null;
         }
 
@@ -262,7 +273,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     }
 
     readingProgress(item: Item): { current: number; total?: number; percent?: number } | null {
-        if (item.itemType !== 'book' || item.readingStatus !== BookStatus.Reading) {
+        if (item.itemType !== ItemTypes.Book || item.readingStatus !== BookStatus.Reading) {
             return null;
         }
         if (item.currentPage === null || item.currentPage === undefined) {
@@ -294,8 +305,8 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     setTypeFilter(type: ItemTypeFilter): void {
         this.typeFilter.set(type);
         // Clear status filter when switching to non-book type (UI-3)
-        if (type !== 'all' && type !== 'book') {
-            this.statusFilter.set('all');
+        if (type !== 'all' && type !== ItemTypes.Book) {
+            this.statusFilter.set(BookStatusFilters.All);
         }
     }
 
@@ -337,7 +348,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
 
         // Only include status filter when type is 'all' or 'book' (FE-1, FE-2)
         const statusFilter = this.statusFilter();
-        if (statusFilter !== 'all' && (typeFilter === 'all' || typeFilter === 'book')) {
+        if (statusFilter !== BookStatusFilters.All && (typeFilter === 'all' || typeFilter === ItemTypes.Book)) {
             filters.status = statusFilter;
         }
 

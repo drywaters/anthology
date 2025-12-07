@@ -1,4 +1,11 @@
-export type ItemType = 'book' | 'game' | 'movie' | 'music';
+export const ItemTypes = {
+    Book: 'book',
+    Game: 'game',
+    Movie: 'movie',
+    Music: 'music',
+} as const;
+
+export type ItemType = (typeof ItemTypes)[keyof typeof ItemTypes];
 
 export const BookStatus = {
     None: 'none',
@@ -8,6 +15,15 @@ export const BookStatus = {
 } as const;
 
 export type BookStatus = (typeof BookStatus)[keyof typeof BookStatus];
+export const BookStatusFilters = {
+    All: 'all',
+    None: BookStatus.None,
+    WantToRead: BookStatus.WantToRead,
+    Reading: BookStatus.Reading,
+    Read: BookStatus.Read,
+} as const;
+
+export type BookStatusFilter = (typeof BookStatusFilters)[keyof typeof BookStatusFilters];
 export type LetterHistogram = Record<string, number>;
 
 export interface Item {
@@ -47,10 +63,10 @@ export interface ItemForm {
 }
 
 export const ITEM_TYPE_LABELS: Record<ItemType, string> = {
-    book: 'Book',
-    game: 'Game',
-    movie: 'Movie',
-    music: 'Music',
+    [ItemTypes.Book]: 'Book',
+    [ItemTypes.Game]: 'Game',
+    [ItemTypes.Movie]: 'Movie',
+    [ItemTypes.Music]: 'Music',
 };
 
 export const BOOK_STATUS_LABELS: Record<BookStatus, string> = {
