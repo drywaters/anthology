@@ -72,6 +72,18 @@ func parseListOptions(values url.Values) (items.ListOptions, error) {
 		}
 	}
 
+	if rawShelfStatus := strings.TrimSpace(values.Get("shelf_status")); rawShelfStatus != "" {
+		shelfStatus := items.ShelfStatus(rawShelfStatus)
+		switch shelfStatus {
+		case items.ShelfStatusOn, items.ShelfStatusOff:
+			opts.ShelfStatus = &shelfStatus
+		case items.ShelfStatusAll:
+			// "all" means no filter - leave ShelfStatus nil
+		default:
+			return items.ListOptions{}, fmt.Errorf("invalid shelf_status filter")
+		}
+	}
+
 	if rawLetter := strings.TrimSpace(values.Get("letter")); rawLetter != "" {
 		letter := strings.ToUpper(rawLetter)
 		if letter == "#" || (len(letter) == 1 && letter[0] >= 'A' && letter[0] <= 'Z') {

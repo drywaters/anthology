@@ -118,6 +118,19 @@ func (r *InMemoryRepository) List(_ context.Context, opts ListOptions) ([]Item, 
 				}
 			}
 
+			if opts.ShelfStatus != nil {
+				switch *opts.ShelfStatus {
+				case ShelfStatusOn:
+					if item.ShelfPlacement == nil {
+						continue
+					}
+				case ShelfStatusOff:
+					if item.ShelfPlacement != nil {
+						continue
+					}
+				}
+			}
+
 			items = append(items, item)
 		}
 	}

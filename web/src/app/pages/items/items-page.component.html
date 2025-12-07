@@ -19,6 +19,15 @@
                 </mat-select>
             </mat-form-field>
 
+            <mat-form-field appearance="outline" class="shelf-status-select">
+                <mat-label>Shelf status</mat-label>
+                <mat-select [value]="shelfStatusFilter()" (valueChange)="setShelfStatusFilter($event)">
+                    <mat-option *ngFor="let option of shelfStatusOptions" [value]="option.value">
+                        {{ option.label }}
+                    </mat-option>
+                </mat-select>
+            </mat-form-field>
+
             <div class="view-toggle" role="group" aria-label="Change view">
                 <button
                     mat-icon-button

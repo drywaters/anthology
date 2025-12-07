@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 
 import { environment } from '../config/environment';
-import { BookStatus, DuplicateCheckInput, DuplicateMatch, Item, ItemForm, ItemType, LetterHistogram } from '../models/item';
+import { BookStatus, DuplicateCheckInput, DuplicateMatch, Item, ItemForm, ItemType, LetterHistogram, ShelfStatusFilter, ShelfStatusFilters } from '../models/item';
 import { CsvImportSummary } from '../models/import';
 
 @Injectable({ providedIn: 'root' })
@@ -15,6 +15,7 @@ export class ItemService {
         itemType?: ItemType;
         letter?: string;
         status?: BookStatus;
+        shelfStatus?: ShelfStatusFilter;
         query?: string;
         limit?: number;
     }): Observable<Item[]> {
@@ -27,6 +28,9 @@ export class ItemService {
         }
         if (filters?.status) {
             params = params.set('status', filters.status);
+        }
+        if (filters?.shelfStatus && filters.shelfStatus !== ShelfStatusFilters.All) {
+            params = params.set('shelf_status', filters.shelfStatus);
         }
         if (filters?.query) {
             params = params.set('query', filters.query);
