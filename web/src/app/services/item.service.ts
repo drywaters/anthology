@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 
 import { environment } from '../config/environment';
-import { ActiveBookStatus, BookStatus, Item, ItemForm, ItemType } from '../models/item';
+import { ActiveBookStatus, BookStatus, Item, ItemForm, ItemType, LetterHistogram } from '../models/item';
 import { CsvImportSummary } from '../models/import';
 
 @Injectable({ providedIn: 'root' })
@@ -62,6 +62,26 @@ export class ItemService {
         const formData = new FormData();
         formData.append('file', file);
         return this.http.post<CsvImportSummary>(`${this.baseUrl}/import`, formData);
+    }
+
+    getHistogram(filters?: {
+        itemType?: ItemType;
+        status?: ActiveBookStatus;
+    }): Observable<LetterHistogram> {
+        let params = new HttpParams();
+        if (filters?.itemType) {
+            params = params.set('type', filters.itemType);
+        }
+        if (filters?.status) {
+            params = params.set('status', filters.status);
+        }
+
+        return this.http
+            .get<{ histogram: LetterHistogram; total: number }>(
+                `${this.baseUrl}/histogram`,
+                { params: params.keys().length ? params : undefined }
+            )
+            .pipe(map((response) => response.histogram));
     }
 
     private normalizeForm(form: Partial<ItemForm>): Record<string, unknown> {

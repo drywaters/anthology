@@ -195,6 +195,21 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
 	return s.repo.Delete(ctx, id)
 }
 
+// Histogram returns a count of items grouped by first letter of title.
+func (s *Service) Histogram(ctx context.Context, opts HistogramOptions) (LetterHistogram, int, error) {
+	histogram, err := s.repo.Histogram(ctx, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	total := 0
+	for _, count := range histogram {
+		total += count
+	}
+
+	return histogram, total, nil
+}
+
 func validationErr(msg string) error {
 	return &ValidationError{Message: msg}
 }

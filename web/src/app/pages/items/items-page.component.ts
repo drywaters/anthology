@@ -1,5 +1,5 @@
 import { DatePipe, NgClass, NgFor, NgIf, NgTemplateOutlet } from '@angular/common';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, ElementRef, OnDestroy, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -10,43 +10,20 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { EMPTY, catchError, switchMap, tap } from 'rxjs';
+import { EMPTY, catchError, combineLatest, switchMap, tap } from 'rxjs';
 
-import { ActiveBookStatus, BOOK_STATUS_LABELS, Item, ItemType, ITEM_TYPE_LABELS } from '../../models/item';
+import { ActiveBookStatus, BOOK_STATUS_LABELS, Item, ItemType, ITEM_TYPE_LABELS, LetterHistogram } from '../../models/item';
 import { ItemService } from '../../services/item.service';
+import { AlphaRailComponent } from '../../components/alpha-rail/alpha-rail.component';
+import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 
 type ItemTypeFilter = ItemType | 'all';
-type LetterFilter = AlphabetLetter | 'ALL';
 type BookStatusFilter = ActiveBookStatus | 'all';
 
-type AlphabetLetter =
-    | 'A'
-    | 'B'
-    | 'C'
-    | 'D'
-    | 'E'
-    | 'F'
-    | 'G'
-    | 'H'
-    | 'I'
-    | 'J'
-    | 'K'
-    | 'L'
-    | 'M'
-    | 'N'
-    | 'O'
-    | 'P'
-    | 'Q'
-    | 'R'
-    | 'S'
-    | 'T'
-    | 'U'
-    | 'V'
-    | 'W'
-    | 'X'
-    | 'Y'
-    | 'Z'
-    | '#';
+export interface LetterGroup {
+    letter: string;
+    items: Item[];
+}
 
 @Component({
     selector: 'app-items-page',
@@ -66,23 +43,28 @@ type AlphabetLetter =
         MatSnackBarModule,
         MatTableModule,
         RouterModule,
+        AlphaRailComponent,
+        ThumbnailPipe,
     ],
     templateUrl: './items-page.component.html',
     styleUrl: './items-page.component.scss',
 })
-export class ItemsPageComponent {
+export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     private readonly itemService = inject(ItemService);
     private readonly snackBar = inject(MatSnackBar);
     private readonly destroyRef = inject(DestroyRef);
     private readonly router = inject(Router);
 
+    @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLElement>;
+
     readonly displayedColumns = ['title', 'creator', 'itemType', 'releaseYear', 'updatedAt'] as const;
     readonly items = signal<Item[]>([]);
     readonly loading = signal(false);
-    readonly letterFilter = signal<LetterFilter>('ALL');
     readonly typeFilter = signal<ItemTypeFilter>('all');
     readonly statusFilter = signal<BookStatusFilter>('all');
     readonly viewMode = signal<'table' | 'grid'>('table');
+    readonly histogram = signal<LetterHistogram>({});
+    readonly activeLetter = signal<string | null>(null);
 
     readonly typeLabels = ITEM_TYPE_LABELS;
     readonly statusLabels = BOOK_STATUS_LABELS;
@@ -100,44 +82,38 @@ export class ItemsPageComponent {
         { value: 'read', label: BOOK_STATUS_LABELS.read },
     ];
 
-    readonly alphabet: AlphabetLetter[] = [
-        'A',
-        'B',
-        'C',
-        'D',
-        'E',
-        'F',
-        'G',
-        'H',
-        'I',
-        'J',
-        'K',
-        'L',
-        'M',
-        'N',
-        'O',
-        'P',
-        'Q',
-        'R',
-        'S',
-        'T',
-        'U',
-        'V',
-        'W',
-        'X',
-        'Y',
-        'Z',
-        '#',
-    ];
-
     readonly hasFilteredItems = computed(() => this.items().length > 0);
-    readonly isUnfiltered = computed(
-        () => this.typeFilter() === 'all' && this.letterFilter() === 'ALL' && this.statusFilter() === 'all'
-    );
+    readonly isUnfiltered = computed(() => this.typeFilter() === 'all' && this.statusFilter() === 'all');
     readonly isGridView = computed(() => this.viewMode() === 'grid');
 
+    readonly groupedItems = computed<LetterGroup[]>(() => {
+        const items = this.items();
+        const groups = new Map<string, Item[]>();
+
+        for (const item of items) {
+            const letter = this.getFirstLetter(item.title);
+            if (!groups.has(letter)) {
+                groups.set(letter, []);
+            }
+            groups.get(letter)!.push(item);
+        }
+
+        return Array.from(groups.entries())
+            .sort(([a], [b]) => {
+                if (a === '#') return 1;
+                if (b === '#') return -1;
+                return a.localeCompare(b);
+            })
+            .map(([letter, items]) => ({ letter, items }));
+    });
+
+    private observer: IntersectionObserver | null = null;
+
     constructor() {
-        toObservable(computed(() => this.currentFilters()))
+        const filters$ = toObservable(computed(() => this.currentFilters()));
+
+        // Load items when filters change
+        filters$
             .pipe(
                 switchMap((filters) => {
                     this.loading.set(true);
@@ -159,6 +135,85 @@ export class ItemsPageComponent {
                 takeUntilDestroyed(this.destroyRef)
             )
             .subscribe();
+
+        // Load histogram when filters change
+        filters$
+            .pipe(
+                switchMap((filters) => {
+                    return this.itemService.getHistogram(filters).pipe(
+                        tap((histogram) => this.histogram.set(histogram)),
+                        catchError(() => EMPTY)
+                    );
+                }),
+                takeUntilDestroyed(this.destroyRef)
+            )
+            .subscribe();
+    }
+
+    ngAfterViewInit(): void {
+        this.setupScrollObserver();
+
+        effect(
+            () => {
+                // Re-attach the observer after the list renders or changes
+                this.groupedItems();
+                setTimeout(() => this.observeLetterSections(), 0);
+            },
+            { allowSignalWrites: true }
+        );
+    }
+
+    ngOnDestroy(): void {
+        this.observer?.disconnect();
+    }
+
+    private setupScrollObserver(): void {
+        const options: IntersectionObserverInit = {
+            root: this.scrollContainer?.nativeElement,
+            rootMargin: '-10% 0px -85% 0px',
+            threshold: [0, 0.1, 0.5, 1],
+        };
+
+        this.observer = new IntersectionObserver((entries) => {
+            const visible = entries
+                .filter((e) => e.isIntersecting)
+                .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+
+            if (visible.length > 0) {
+                const letter = visible[0].target.getAttribute('data-letter');
+                if (letter) {
+                    this.activeLetter.set(letter);
+                }
+            }
+        }, options);
+
+        // Initial observation after DOM renders
+        setTimeout(() => this.observeLetterSections(), 0);
+    }
+
+    private observeLetterSections(): void {
+        if (!this.observer) return;
+
+        this.observer.disconnect();
+        const sections = document.querySelectorAll('[data-letter]');
+        sections.forEach((el) => this.observer!.observe(el));
+    }
+
+    scrollToLetter(letter: string): void {
+        if (letter === 'ALL') {
+            this.scrollContainer?.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
+            this.activeLetter.set(null);
+            return;
+        }
+
+        const target = document.querySelector(`[data-letter="${letter}"]`);
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    onLetterSelected(letter: string): void {
+        this.scrollToLetter(letter);
     }
 
     startCreate(): void {
@@ -182,6 +237,10 @@ export class ItemsPageComponent {
 
     trackById(_: number, item: Item): string {
         return item.id;
+    }
+
+    trackByLetter(_: number, group: LetterGroup): string {
+        return group.letter;
     }
 
     labelFor(item: Item): string {
@@ -226,10 +285,6 @@ export class ItemsPageComponent {
         this.setTypeFilter(itemType);
     }
 
-    setLetterFilter(letter: LetterFilter): void {
-        this.letterFilter.set(letter);
-    }
-
     setTypeFilter(type: ItemTypeFilter): void {
         this.typeFilter.set(type);
     }
@@ -249,17 +304,25 @@ export class ItemsPageComponent {
         }
     }
 
-    private currentFilters(): { itemType?: ItemType; letter?: string; status?: ActiveBookStatus } | undefined {
-        const filters: { itemType?: ItemType; letter?: string; status?: ActiveBookStatus } = {};
+    private getFirstLetter(title: string): string {
+        const trimmed = title.trim();
+        if (trimmed.length === 0) {
+            return '#';
+        }
+
+        const first = trimmed[0].toUpperCase();
+        if (first >= 'A' && first <= 'Z') {
+            return first;
+        }
+        return '#';
+    }
+
+    private currentFilters(): { itemType?: ItemType; status?: ActiveBookStatus } | undefined {
+        const filters: { itemType?: ItemType; status?: ActiveBookStatus } = {};
 
         const typeFilter = this.typeFilter();
         if (typeFilter !== 'all') {
             filters.itemType = typeFilter;
-        }
-
-        const letterFilter = this.letterFilter();
-        if (letterFilter !== 'ALL') {
-            filters.letter = letterFilter;
         }
 
         const statusFilter = this.statusFilter();
