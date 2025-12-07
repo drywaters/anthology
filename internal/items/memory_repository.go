@@ -201,3 +201,95 @@ func extractFirstLetter(title string) string {
 	}
 	return "#"
 }
+
+// FindDuplicates searches for items matching the given title or identifiers.
+// Title matching is case-insensitive. Identifier matching normalizes by stripping non-digits.
+// Returns up to 5 matches.
+func (r *InMemoryRepository) FindDuplicates(_ context.Context, input DuplicateCheckInput) ([]DuplicateMatch, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	normalizedTitle := NormalizeTitle(input.Title)
+	normalizedISBN13 := NormalizeIdentifier(input.ISBN13)
+	normalizedISBN10 := NormalizeIdentifier(input.ISBN10)
+
+	// Track seen IDs to avoid duplicates in results
+	seen := make(map[uuid.UUID]bool)
+	var matches []DuplicateMatch
+
+	const maxMatches = 5
+
+	for _, id := range r.order {
+		if len(matches) >= maxMatches {
+			break
+		}
+
+		item, ok := r.data[id]
+		if !ok {
+			continue
+		}
+
+		if seen[item.ID] {
+			continue
+		}
+
+		matched := false
+
+		// Check title match (case-insensitive, trimmed)
+		if normalizedTitle != "" {
+			itemTitle := NormalizeTitle(item.Title)
+			if itemTitle == normalizedTitle {
+				matched = true
+			}
+		}
+
+		// Check ISBN13 match
+		if !matched && normalizedISBN13 != "" {
+			itemISBN13 := NormalizeIdentifier(item.ISBN13)
+			if itemISBN13 != "" && itemISBN13 == normalizedISBN13 {
+				matched = true
+			}
+		}
+
+		// Check ISBN10 match
+		if !matched && normalizedISBN10 != "" {
+			itemISBN10 := NormalizeIdentifier(item.ISBN10)
+			if itemISBN10 != "" && itemISBN10 == normalizedISBN10 {
+				matched = true
+			}
+		}
+
+		if matched {
+			seen[item.ID] = true
+			matches = append(matches, itemToDuplicateMatch(item))
+		}
+	}
+
+	return matches, nil
+}
+
+// itemToDuplicateMatch converts an Item to a DuplicateMatch.
+func itemToDuplicateMatch(item Item) DuplicateMatch {
+	match := DuplicateMatch{
+		ID:        item.ID,
+		Title:     item.Title,
+		CoverURL:  item.CoverImage,
+		UpdatedAt: item.UpdatedAt,
+	}
+
+	// Set primary identifier (prefer ISBN13, then ISBN10)
+	if item.ISBN13 != "" {
+		match.PrimaryIdentifier = item.ISBN13
+		match.IdentifierType = "ISBN-13"
+	} else if item.ISBN10 != "" {
+		match.PrimaryIdentifier = item.ISBN10
+		match.IdentifierType = "ISBN-10"
+	}
+
+	// Set location from shelf placement if available
+	if item.ShelfPlacement != nil {
+		match.Location = item.ShelfPlacement.ShelfName
+	}
+
+	return match
+}

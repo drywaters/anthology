@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { provideRouter, withDisabledInitialNavigation } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { of, throwError } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 
 import { AddItemPageComponent } from './add-item-page.component';
 import { ItemService } from '../../services/item.service';
@@ -16,11 +17,14 @@ describe(AddItemPageComponent.name, () => {
     let itemServiceSpy: jasmine.SpyObj<ItemService>;
     let snackBarSpy: jasmine.SpyObj<MatSnackBar>;
     let itemLookupServiceSpy: jasmine.SpyObj<ItemLookupService>;
+    let dialogSpy: jasmine.SpyObj<MatDialog>;
 
     beforeEach(async () => {
-        itemServiceSpy = jasmine.createSpyObj<ItemService>('ItemService', ['create', 'importCsv']);
+        itemServiceSpy = jasmine.createSpyObj<ItemService>('ItemService', ['create', 'importCsv', 'checkDuplicates']);
+        itemServiceSpy.checkDuplicates.and.returnValue(of([])); // Default: no duplicates
         snackBarSpy = jasmine.createSpyObj<MatSnackBar>('MatSnackBar', ['open']);
         itemLookupServiceSpy = jasmine.createSpyObj<ItemLookupService>('ItemLookupService', ['lookup']);
+        dialogSpy = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
 
         await TestBed.configureTestingModule({
             imports: [AddItemPageComponent],
@@ -30,6 +34,7 @@ describe(AddItemPageComponent.name, () => {
                 { provide: ItemLookupService, useValue: itemLookupServiceSpy },
                 provideRouter([], withDisabledInitialNavigation()),
                 { provide: MatSnackBar, useValue: snackBarSpy },
+                { provide: MatDialog, useValue: dialogSpy },
             ],
         })
             .overrideProvider(MatSnackBar, { useValue: snackBarSpy })
@@ -95,6 +100,91 @@ describe(AddItemPageComponent.name, () => {
         flush();
 
         expect(snackBarSpy.open).toHaveBeenCalled();
+        expect(navigateSpy).not.toHaveBeenCalled();
+    }));
+
+    it('prompts for duplicates and only creates when confirmed', fakeAsync(() => {
+        const mockDuplicate = {
+            id: 'dup-1',
+            title: 'Test',
+            primaryIdentifier: '',
+            identifierType: '',
+            updatedAt: new Date().toISOString(),
+        };
+        itemServiceSpy.checkDuplicates.and.returnValue(of([mockDuplicate]));
+
+        const dialogRefSpy = {
+            afterClosed: () => of<'add' | 'cancel'>('add'),
+        } as unknown as jasmine.SpyObj<unknown>;
+        dialogSpy.open.and.returnValue(dialogRefSpy as any);
+
+        const mockItem = {
+            id: 'id-123',
+            title: 'Test',
+            creator: 'Me',
+            itemType: 'book',
+            notes: '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        } satisfies Item;
+        itemServiceSpy.create.and.returnValue(of(mockItem));
+
+        const fixture = createComponent();
+        const router = TestBed.inject(Router);
+        const navigateSpy = spyOn(router, 'navigate').and.resolveTo(true);
+
+        fixture.componentInstance.handleSave({
+            title: 'Test',
+            creator: 'Me',
+            itemType: 'book',
+            releaseYear: null,
+            pageCount: null,
+            isbn13: '',
+            isbn10: '',
+            description: '',
+            notes: '',
+        });
+        flush();
+
+        expect(dialogSpy.open).toHaveBeenCalled();
+        expect(itemServiceSpy.create).toHaveBeenCalled();
+        expect(navigateSpy).toHaveBeenCalledWith(['/']);
+    }));
+
+    it('does not create when duplicate dialog is cancelled', fakeAsync(() => {
+        const mockDuplicate = {
+            id: 'dup-1',
+            title: 'Test',
+            primaryIdentifier: '',
+            identifierType: '',
+            updatedAt: new Date().toISOString(),
+        };
+        itemServiceSpy.checkDuplicates.and.returnValue(of([mockDuplicate]));
+
+        const dialogRefSpy = {
+            afterClosed: () => of<'add' | 'cancel'>('cancel'),
+        } as unknown as jasmine.SpyObj<unknown>;
+        dialogSpy.open.and.returnValue(dialogRefSpy as any);
+
+        const fixture = createComponent();
+        const router = TestBed.inject(Router);
+        const navigateSpy = spyOn(router, 'navigate').and.resolveTo(true);
+
+        fixture.componentInstance.handleSave({
+            title: 'Test',
+            creator: 'Me',
+            itemType: 'book',
+            releaseYear: null,
+            pageCount: null,
+            isbn13: '',
+            isbn10: '',
+            description: '',
+            notes: '',
+        });
+        flush();
+
+        expect(dialogSpy.open).toHaveBeenCalled();
+        expect(itemServiceSpy.create).not.toHaveBeenCalled();
         expect(navigateSpy).not.toHaveBeenCalled();
     }));
 

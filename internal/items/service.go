@@ -210,6 +210,33 @@ func (s *Service) Histogram(ctx context.Context, opts HistogramOptions) (LetterH
 	return histogram, total, nil
 }
 
+// FindDuplicates searches for items matching the given title or identifiers.
+// Title matching is case-insensitive with whitespace trimmed.
+// Identifier matching strips non-digit characters for normalization.
+func (s *Service) FindDuplicates(ctx context.Context, input DuplicateCheckInput) ([]DuplicateMatch, error) {
+	return s.repo.FindDuplicates(ctx, input)
+}
+
+// NormalizeTitle prepares a title for duplicate comparison by lowercasing and trimming whitespace.
+func NormalizeTitle(title string) string {
+	return strings.ToLower(strings.TrimSpace(title))
+}
+
+// NormalizeIdentifier strips all non-digit characters from an identifier (ISBN, UPC, EAN).
+func NormalizeIdentifier(value string) string {
+	cleaned := strings.TrimSpace(value)
+	if cleaned == "" {
+		return ""
+	}
+	var builder strings.Builder
+	for _, r := range cleaned {
+		if r >= '0' && r <= '9' {
+			builder.WriteRune(r)
+		}
+	}
+	return builder.String()
+}
+
 func validationErr(msg string) error {
 	return &ValidationError{Message: msg}
 }

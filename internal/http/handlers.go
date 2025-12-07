@@ -281,6 +281,37 @@ func (h *ItemHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 const maxCSVUploadBytes int64 = 5 << 20
 
+// Duplicates checks for potential duplicate items by title or identifier.
+func (h *ItemHandler) Duplicates(w http.ResponseWriter, r *http.Request) {
+	title := strings.TrimSpace(r.URL.Query().Get("title"))
+	isbn13 := strings.TrimSpace(r.URL.Query().Get("isbn13"))
+	isbn10 := strings.TrimSpace(r.URL.Query().Get("isbn10"))
+
+	if title == "" && isbn13 == "" && isbn10 == "" {
+		writeJSON(w, http.StatusOK, map[string]any{"duplicates": []items.DuplicateMatch{}})
+		return
+	}
+
+	input := items.DuplicateCheckInput{
+		Title:  title,
+		ISBN13: isbn13,
+		ISBN10: isbn10,
+	}
+
+	matches, err := h.service.FindDuplicates(r.Context(), input)
+	if err != nil {
+		h.logger.Error("find duplicates", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to check for duplicates")
+		return
+	}
+
+	if matches == nil {
+		matches = []items.DuplicateMatch{}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{"duplicates": matches})
+}
+
 // Histogram returns letter counts for the alphabet rail.
 func (h *ItemHandler) Histogram(w http.ResponseWriter, r *http.Request) {
 	opts, err := parseHistogramOptions(r.URL.Query())
