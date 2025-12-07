@@ -16,17 +16,28 @@ export class ThumbnailPipe implements PipeTransform {
             return '';
         }
 
-        // Handle Google Books API URLs
-        // These URLs contain zoom=1 for standard size, zoom=0 for smaller thumbnails (~80px width)
-        if (url.includes('books.google.com') || url.includes('googleapis.com/books')) {
-            // Replace zoom=1 with zoom=0 for smaller thumbnails
-            if (url.includes('zoom=1')) {
-                return url.replace('zoom=1', 'zoom=0');
-            }
-            // If no zoom parameter, add zoom=0
-            if (!url.includes('zoom=')) {
-                const separator = url.includes('?') ? '&' : '?';
-                return `${url}${separator}zoom=0`;
+        const isGoogleBooksUrl =
+            url.includes('books.google.com') || url.includes('googleapis.com/books') || url.includes('books.googleusercontent.com');
+
+        // Avoid requesting undersized Google Books thumbnails that often return the "image not available" placeholder.
+        // Clamp zoom to at least 1 and ensure a zoom parameter exists for consistent rendering.
+        if (isGoogleBooksUrl) {
+            try {
+                const parsed = new URL(url);
+                const zoomParam = parsed.searchParams.get('zoom');
+                const zoomValue = zoomParam ? Number.parseInt(zoomParam, 10) : NaN;
+
+                if (!zoomParam || Number.isNaN(zoomValue) || zoomValue < 1) {
+                    parsed.searchParams.set('zoom', '1');
+                    return parsed.toString();
+                }
+            } catch {
+                // Fall back to string manipulation if URL parsing fails (e.g., malformed but still usable URLs)
+                if (!url.includes('zoom=')) {
+                    const separator = url.includes('?') ? '&' : '?';
+                    return `${url}${separator}zoom=1`;
+                }
+                return url.replace('zoom=0', 'zoom=1');
             }
         }
 
