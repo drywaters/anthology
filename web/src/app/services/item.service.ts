@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 
 import { environment } from '../config/environment';
-import { ActiveBookStatus, BookStatus, Item, ItemForm, ItemType, LetterHistogram } from '../models/item';
+import { ActiveBookStatus, BookStatus, DuplicateCheckInput, DuplicateMatch, Item, ItemForm, ItemType, LetterHistogram } from '../models/item';
 import { CsvImportSummary } from '../models/import';
 
 @Injectable({ providedIn: 'root' })
@@ -82,6 +82,26 @@ export class ItemService {
                 { params: params.keys().length ? params : undefined }
             )
             .pipe(map((response) => response.histogram));
+    }
+
+    checkDuplicates(input: DuplicateCheckInput): Observable<DuplicateMatch[]> {
+        let params = new HttpParams();
+        if (input.title) {
+            params = params.set('title', input.title);
+        }
+        if (input.isbn13) {
+            params = params.set('isbn13', input.isbn13);
+        }
+        if (input.isbn10) {
+            params = params.set('isbn10', input.isbn10);
+        }
+
+        return this.http
+            .get<{ duplicates: DuplicateMatch[] }>(
+                `${this.baseUrl}/duplicates`,
+                { params: params.keys().length ? params : undefined }
+            )
+            .pipe(map((response) => response.duplicates));
     }
 
     private normalizeForm(form: Partial<ItemForm>): Record<string, unknown> {

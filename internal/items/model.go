@@ -130,6 +130,24 @@ type HistogramOptions struct {
 // LetterHistogram maps first letters (A-Z, #) to item counts.
 type LetterHistogram map[string]int
 
+// DuplicateCheckInput captures the identifiers to check for duplicates.
+type DuplicateCheckInput struct {
+	Title  string
+	ISBN13 string
+	ISBN10 string
+}
+
+// DuplicateMatch represents a potential duplicate item found in the catalog.
+type DuplicateMatch struct {
+	ID                uuid.UUID `json:"id"`
+	Title             string    `json:"title"`
+	PrimaryIdentifier string    `json:"primaryIdentifier"`
+	IdentifierType    string    `json:"identifierType"`
+	CoverURL          string    `json:"coverUrl,omitempty"`
+	Location          string    `json:"location,omitempty"`
+	UpdatedAt         time.Time `json:"updatedAt"`
+}
+
 // Repository defines persistence operations for Items.
 type Repository interface {
 	Create(ctx context.Context, item Item) (Item, error)
@@ -138,4 +156,5 @@ type Repository interface {
 	Update(ctx context.Context, item Item) (Item, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 	Histogram(ctx context.Context, opts HistogramOptions) (LetterHistogram, error)
+	FindDuplicates(ctx context.Context, input DuplicateCheckInput) ([]DuplicateMatch, error)
 }

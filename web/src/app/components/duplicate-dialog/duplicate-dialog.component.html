@@ -1,0 +1,59 @@
+<h2 mat-dialog-title>Possible Duplicate Found</h2>
+
+<mat-dialog-content>
+    <p class="dialog-description">
+        Items with this title, ISBN, or UPC already exist in your catalog.
+    </p>
+
+    <div class="duplicate-list">
+        @for (duplicate of data.duplicates; track duplicate.id) {
+            <div class="duplicate-item">
+                <div class="duplicate-cover">
+                    @if (duplicate.coverUrl) {
+                        <img [src]="duplicate.coverUrl" [alt]="duplicate.title" />
+                    } @else {
+                        <div class="no-cover">
+                            <mat-icon>menu_book</mat-icon>
+                        </div>
+                    }
+                </div>
+                <div class="duplicate-info">
+                    <div class="duplicate-title">{{ duplicate.title }}</div>
+                    @if (duplicate.primaryIdentifier) {
+                        <div class="duplicate-identifier">
+                            {{ duplicate.identifierType }}: {{ duplicate.primaryIdentifier }}
+                        </div>
+                    }
+                    @if (duplicate.location) {
+                        <div class="duplicate-location">
+                            <mat-icon>location_on</mat-icon>
+                            {{ duplicate.location }}
+                        </div>
+                    }
+                    <div class="duplicate-updated">
+                        Updated {{ formatDate(duplicate.updatedAt) }}
+                    </div>
+                </div>
+                <button
+                    mat-icon-button
+                    class="open-button"
+                    (click)="handleOpenExisting(duplicate)"
+                    title="Open existing item"
+                >
+                    <mat-icon>open_in_new</mat-icon>
+                </button>
+            </div>
+        }
+    </div>
+
+    @if (hasMoreDuplicates) {
+        <p class="more-duplicates">
+            ...and {{ additionalCount }} more matching item{{ additionalCount > 1 ? 's' : '' }}.
+        </p>
+    }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+    <button mat-stroked-button (click)="handleCancel()">Cancel</button>
+    <button mat-flat-button color="primary" (click)="handleAddAnyway()">Add Anyway</button>
+</mat-dialog-actions>

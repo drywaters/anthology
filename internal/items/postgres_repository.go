@@ -262,3 +262,51 @@ FROM items`
 
 	return histogram, nil
 }
+
+// FindDuplicates searches for items matching the given title or identifiers.
+// Title matching is case-insensitive. Identifier matching normalizes by stripping non-digits.
+// Returns up to 5 matches.
+func (r *PostgresRepository) FindDuplicates(ctx context.Context, input DuplicateCheckInput) ([]DuplicateMatch, error) {
+	normalizedTitle := NormalizeTitle(input.Title)
+	normalizedISBN13 := NormalizeIdentifier(input.ISBN13)
+	normalizedISBN10 := NormalizeIdentifier(input.ISBN10)
+
+	// Build OR conditions for matching
+	clauses := []string{}
+	args := []any{}
+
+	if normalizedTitle != "" {
+		clauses = append(clauses, fmt.Sprintf("lower(trim(i.title)) = $%d", len(args)+1))
+		args = append(args, normalizedTitle)
+	}
+
+	if normalizedISBN13 != "" {
+		clauses = append(clauses, fmt.Sprintf("regexp_replace(i.isbn_13, '[^0-9]', '', 'g') = $%d", len(args)+1))
+		args = append(args, normalizedISBN13)
+	}
+
+	if normalizedISBN10 != "" {
+		clauses = append(clauses, fmt.Sprintf("regexp_replace(i.isbn_10, '[^0-9]', '', 'g') = $%d", len(args)+1))
+		args = append(args, normalizedISBN10)
+	}
+
+	if len(clauses) == 0 {
+		return []DuplicateMatch{}, nil
+	}
+
+	query := baseSelect + " WHERE (" + strings.Join(clauses, " OR ") + ") ORDER BY i.updated_at DESC LIMIT 5"
+
+	rows := []itemRow{}
+	if err := r.db.SelectContext(ctx, &rows, query, args...); err != nil {
+		return nil, fmt.Errorf("find duplicates: %w", err)
+	}
+
+	matches := make([]DuplicateMatch, 0, len(rows))
+	for _, row := range rows {
+		item := row.toItem()
+		matches = append(matches, itemToDuplicateMatch(item))
+	}
+
+	return matches, nil
+}
+

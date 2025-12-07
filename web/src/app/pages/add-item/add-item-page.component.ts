@@ -4,6 +4,7 @@ import { Component, DestroyRef, ElementRef, ViewChild, computed, inject, signal 
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterModule } from '@angular/router';
@@ -13,12 +14,13 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { finalize } from 'rxjs/operators';
+import { catchError, finalize, of, switchMap } from 'rxjs';
 import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import { BarcodeFormat, DecodeHintType, Exception, NotFoundException, Result } from '@zxing/library';
 
 import { ItemFormComponent } from '../../components/item-form/item-form.component';
-import { ItemForm } from '../../models/item';
+import { DuplicateDialogComponent, DuplicateDialogData, DuplicateDialogResult } from '../../components/duplicate-dialog/duplicate-dialog.component';
+import { DuplicateMatch, ItemForm } from '../../models/item';
 import { ItemService } from '../../services/item.service';
 import { ItemLookupCategory, ItemLookupService } from '../../services/item-lookup.service';
 import { CsvImportSummary } from '../../models/import';
@@ -75,6 +77,7 @@ const CSV_ALLOWED_EXTENSIONS = ['.csv'];
         CommonModule,
         MatButtonModule,
         MatCardModule,
+        MatDialogModule,
         MatFormFieldModule,
         MatIconModule,
         MatInputModule,
@@ -147,6 +150,7 @@ export class AddItemPageComponent {
     private readonly itemLookupService = inject(ItemLookupService);
     private readonly router = inject(Router);
     private readonly snackBar = inject(MatSnackBar);
+    private readonly dialog = inject(MatDialog);
     private readonly destroyRef = inject(DestroyRef);
     private readonly fb = inject(FormBuilder);
 
@@ -511,14 +515,63 @@ export class AddItemPageComponent {
         }
 
         this.busy.set(true);
+
+        // Check for duplicates before creating
         this.itemService
-            .create(formValue)
-            .pipe(takeUntilDestroyed(this.destroyRef))
+            .checkDuplicates({
+                title: formValue.title,
+                isbn13: formValue.isbn13,
+                isbn10: formValue.isbn10,
+            })
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                catchError((error) => {
+                    // If duplicate check fails, show warning but allow creation to proceed
+                    console.warn('Duplicate check failed', error);
+                    this.snackBar.open('Duplicate check failed; proceeding may create duplicates.', 'Dismiss', {
+                        duration: 4000,
+                    });
+                    return of([] as DuplicateMatch[]);
+                }),
+                switchMap((duplicates) => {
+                    if (duplicates.length === 0) {
+                        // No duplicates found, proceed with creation
+                        return this.itemService.create(formValue);
+                    }
+
+                    // Show duplicate confirmation dialog
+                    const dialogRef = this.dialog.open<DuplicateDialogComponent, DuplicateDialogData, DuplicateDialogResult>(
+                        DuplicateDialogComponent,
+                        {
+                            data: {
+                                duplicates,
+                                totalCount: duplicates.length,
+                            },
+                            width: '480px',
+                            maxHeight: '90vh',
+                        }
+                    );
+
+                    return dialogRef.afterClosed().pipe(
+                        switchMap((result) => {
+                            if (result === 'add') {
+                                // User chose to add anyway
+                                return this.itemService.create(formValue);
+                            }
+                            // User cancelled - return null to indicate no creation
+                            return of(null);
+                        })
+                    );
+                })
+            )
             .subscribe({
                 next: (item) => {
                     this.busy.set(false);
-                    this.snackBar.open(`Saved “${item.title}”`, 'Dismiss', { duration: 4000 });
-                    this.router.navigate(['/']);
+                    if (item) {
+                        this.snackBar.open(`Saved "${item.title}"`, 'Dismiss', { duration: 4000 });
+                        this.router.navigate(['/']);
+                    }
+                    // If item is null, user cancelled - form stays open with data intact
                 },
                 error: () => {
                     this.busy.set(false);
@@ -620,10 +673,11 @@ this.lookupResults.set([]);
 }
 
     handleQuickAdd(preview: ItemForm): void {
-        if (!preview) {
+        if (!preview || this.busy()) {
             return;
         }
 
+        // handleSave already handles duplicate checking
         this.handleSave({ ...preview });
     }
 

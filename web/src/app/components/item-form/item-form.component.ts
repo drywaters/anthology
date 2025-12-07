@@ -88,7 +88,7 @@ export class ItemFormComponent implements OnChanges, OnInit {
         isbn10: ['', [Validators.maxLength(20)]],
         description: ['', [Validators.maxLength(2000)]],
         coverImage: [''],
-        readingStatus: ['want_to_read' as BookStatus],
+        readingStatus: ['' as BookStatus],
         readAt: [null],
         notes: ['', [Validators.maxLength(500)]],
     });
@@ -124,7 +124,7 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 isbn10: '',
                 description: '',
                 coverImage: '',
-                readingStatus: 'want_to_read',
+                readingStatus: '',
                 readAt: null,
                 notes: '',
             };
@@ -189,16 +189,16 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 next.readAt = this.normalizeDateInput(this.item.readAt) ?? next.readAt;
             }
 
-		if (next.readingStatus !== 'read') {
-			next.readAt = null;
-		}
-		if (next.readingStatus !== 'reading') {
-			next.currentPage = null;
-		}
+            if (next.readingStatus !== 'read') {
+                next.readAt = null;
+            }
+            if (next.readingStatus !== 'reading') {
+                next.currentPage = null;
+            }
 
-		this.form.reset(next);
-	}
-}
+            this.form.reset(next);
+        }
+    }
 
     submit(): void {
         if (this.form.invalid) {
@@ -231,7 +231,7 @@ export class ItemFormComponent implements OnChanges, OnInit {
             this.ensureCurrentPageWithinTotal(null, null);
         }
 
-        const readingStatus = value.itemType === 'book' ? value.readingStatus ?? 'want_to_read' : undefined;
+        const readingStatus = value.itemType === 'book' ? value.readingStatus ?? '' : undefined;
         const readAt = value.itemType === 'book' ? this.normalizeDateOutput(value.readAt) : null;
         const currentPage = value.itemType === 'book'
             ? value.readingStatus === 'reading'
@@ -367,7 +367,7 @@ export class ItemFormComponent implements OnChanges, OnInit {
 
     private handleItemTypeChange(type: ItemType): void {
         if (type !== 'book') {
-            this.form.patchValue({ readingStatus: 'want_to_read', readAt: null });
+            this.form.patchValue({ readingStatus: '', readAt: null });
             this.form.get('readAt')?.setErrors(null);
             this.clearCurrentPage();
         }
