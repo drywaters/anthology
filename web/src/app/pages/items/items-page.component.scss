@@ -48,6 +48,8 @@ mat-card {
     box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
     position: relative;
     overflow: hidden;
+    flex: 0 0 auto; // prevent flex shrink so card content can overflow and be scrollable
+    width: 100%;
 }
 
 mat-progress-bar {
