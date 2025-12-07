@@ -348,18 +348,22 @@ func sanitizeCoverImage(raw string) (string, error) {
 }
 
 func normalizeBookFields(itemType ItemType, status BookStatus, readAt *time.Time, pageCount *int, currentPage *int) (BookStatus, *time.Time, *int, error) {
+	if status == "" {
+		status = BookStatusNone
+	}
+
 	if itemType != ItemTypeBook {
-		return BookStatusUnknown, nil, nil, nil
+		return BookStatusNone, nil, nil, nil
 	}
 
 	switch status {
-	case BookStatusUnknown:
-		return BookStatusUnknown, nil, nil, nil
+	case BookStatusNone:
+		return BookStatusNone, nil, nil, nil
 	case BookStatusWantToRead:
 		return BookStatusWantToRead, nil, nil, nil
 	case BookStatusRead:
 		if readAt == nil || readAt.IsZero() {
-			return BookStatusUnknown, nil, nil, validationErr("readAt is required when readingStatus is read")
+			return BookStatusNone, nil, nil, validationErr("readAt is required when readingStatus is read")
 		}
 
 		normalized := readAt.UTC()
@@ -367,11 +371,11 @@ func normalizeBookFields(itemType ItemType, status BookStatus, readAt *time.Time
 	case BookStatusReading:
 		normalizedPage, err := normalizeReadingProgress(currentPage, pageCount)
 		if err != nil {
-			return BookStatusUnknown, nil, nil, err
+			return BookStatusNone, nil, nil, err
 		}
 		return status, nil, normalizedPage, nil
 	default:
-		return BookStatusUnknown, nil, nil, validationErr("readingStatus must be empty or one of read, reading, or want_to_read")
+		return BookStatusNone, nil, nil, validationErr("readingStatus must be one of none, read, reading, or want_to_read")
 	}
 }
 

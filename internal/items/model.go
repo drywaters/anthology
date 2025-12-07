@@ -42,7 +42,8 @@ const (
 type BookStatus string
 
 const (
-	BookStatusUnknown    BookStatus = ""
+	// BookStatusNone represents an explicit "No status" selection.
+	BookStatusNone       BookStatus = "none"
 	BookStatusRead       BookStatus = "read"
 	BookStatusReading    BookStatus = "reading"
 	BookStatusWantToRead BookStatus = "want_to_read"

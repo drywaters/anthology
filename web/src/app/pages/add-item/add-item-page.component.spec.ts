@@ -38,6 +38,7 @@ describe(AddItemPageComponent.name, () => {
             ],
         })
             .overrideProvider(MatSnackBar, { useValue: snackBarSpy })
+            .overrideProvider(MatDialog, { useValue: dialogSpy })
             .compileComponents();
     });
 

@@ -12,13 +12,13 @@ import { Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { EMPTY, catchError, combineLatest, switchMap, tap } from 'rxjs';
 
-import { ActiveBookStatus, BOOK_STATUS_LABELS, Item, ItemType, ITEM_TYPE_LABELS, LetterHistogram } from '../../models/item';
+import { BOOK_STATUS_LABELS, BookStatus, Item, ItemType, ITEM_TYPE_LABELS, LetterHistogram } from '../../models/item';
 import { ItemService } from '../../services/item.service';
 import { AlphaRailComponent } from '../../components/alpha-rail/alpha-rail.component';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 
 type ItemTypeFilter = ItemType | 'all';
-type BookStatusFilter = ActiveBookStatus | 'all';
+type BookStatusFilter = BookStatus | 'all';
 
 export interface LetterGroup {
     letter: string;
@@ -75,12 +75,13 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
         { value: 'movie', label: ITEM_TYPE_LABELS.movie },
         { value: 'music', label: ITEM_TYPE_LABELS.music },
     ];
-    readonly statusOptions: Array<{ value: BookStatusFilter; label: string }> = [
-        { value: 'all', label: 'All' },
-        { value: 'want_to_read', label: BOOK_STATUS_LABELS.want_to_read },
-        { value: 'reading', label: BOOK_STATUS_LABELS.reading },
-        { value: 'read', label: BOOK_STATUS_LABELS.read },
-    ];
+	readonly statusOptions: Array<{ value: BookStatusFilter; label: string }> = [
+		{ value: 'all', label: 'All' },
+		{ value: 'none', label: BOOK_STATUS_LABELS.none },
+		{ value: 'want_to_read', label: BOOK_STATUS_LABELS.want_to_read },
+		{ value: 'reading', label: BOOK_STATUS_LABELS.reading },
+		{ value: 'read', label: BOOK_STATUS_LABELS.read },
+	];
 
     readonly hasFilteredItems = computed(() => this.items().length > 0);
     readonly isUnfiltered = computed(() => this.typeFilter() === 'all' && this.statusFilter() === 'all');
@@ -317,8 +318,8 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
         return '#';
     }
 
-    private currentFilters(): { itemType?: ItemType; status?: ActiveBookStatus } | undefined {
-        const filters: { itemType?: ItemType; status?: ActiveBookStatus } = {};
+	private currentFilters(): { itemType?: ItemType; status?: BookStatus } | undefined {
+		const filters: { itemType?: ItemType; status?: BookStatus } = {};
 
         const typeFilter = this.typeFilter();
         if (typeFilter !== 'all') {

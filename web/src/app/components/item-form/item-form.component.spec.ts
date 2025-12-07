@@ -73,21 +73,21 @@ describe(ItemFormComponent.name, () => {
         const saveSpy = jasmine.createSpy('save');
         component.save.subscribe(saveSpy);
 
-        component.form.setValue({
-            title: 'Arrival',
-            creator: 'Denis Villeneuve',
-            itemType: 'movie',
-            releaseYear: null,
-            pageCount: null,
-            currentPage: null,
-            isbn13: '',
-            isbn10: '',
-            description: '',
-            coverImage: '',
-            readingStatus: '',
-            readAt: null,
-            notes: '',
-        });
+		component.form.setValue({
+			title: 'Arrival',
+			creator: 'Denis Villeneuve',
+			itemType: 'movie',
+			releaseYear: null,
+			pageCount: null,
+			currentPage: null,
+			isbn13: '',
+			isbn10: '',
+			description: '',
+			coverImage: '',
+			readingStatus: 'none',
+			readAt: null,
+			notes: '',
+		});
 
         component.submit();
 

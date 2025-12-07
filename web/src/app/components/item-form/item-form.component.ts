@@ -20,15 +20,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 
-import {
-    ActiveBookStatus,
-    BookStatus,
-    BOOK_STATUS_LABELS,
-    Item,
-    ItemForm,
-    ItemType,
-    ITEM_TYPE_LABELS,
-} from '../../models/item';
+import { BookStatus, BOOK_STATUS_LABELS, Item, ItemForm, ItemType, ITEM_TYPE_LABELS } from '../../models/item';
 
 @Component({
     selector: 'app-item-form',
@@ -60,20 +52,17 @@ export class ItemFormComponent implements OnChanges, OnInit {
     @Input() mode: 'create' | 'edit' = 'create';
     @Input() busy = false;
 
-@Output() readonly save = new EventEmitter<ItemForm>();
-@Output() readonly cancelled = new EventEmitter<void>();
-@Output() readonly deleteRequested = new EventEmitter<void>();
+	@Output() readonly save = new EventEmitter<ItemForm>();
+	@Output() readonly cancelled = new EventEmitter<void>();
+	@Output() readonly deleteRequested = new EventEmitter<void>();
 
-    readonly itemTypeOptions = Object.entries(ITEM_TYPE_LABELS) as [ItemType, string][];
-    readonly bookStatusOptions: Array<{ value: BookStatus; label: string }> = [
-        { value: '', label: 'No status' },
-        ...(
-            Object.entries(BOOK_STATUS_LABELS) as [ActiveBookStatus, string][]
-        ).map(([value, label]) => ({
-            value,
-            label,
-        })),
-    ];
+	readonly itemTypeOptions = Object.entries(ITEM_TYPE_LABELS) as [ItemType, string][];
+	readonly bookStatusOptions: Array<{ value: BookStatus; label: string }> = (
+		Object.entries(BOOK_STATUS_LABELS) as [BookStatus, string][]
+	).map(([value, label]) => ({
+		value,
+		label,
+	}));
 
     coverImageError: string | null = null;
 
@@ -88,7 +77,7 @@ export class ItemFormComponent implements OnChanges, OnInit {
         isbn10: ['', [Validators.maxLength(20)]],
         description: ['', [Validators.maxLength(2000)]],
         coverImage: [''],
-        readingStatus: ['' as BookStatus],
+		readingStatus: ['none' as BookStatus],
         readAt: [null],
         notes: ['', [Validators.maxLength(500)]],
     });
@@ -123,8 +112,8 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 isbn13: '',
                 isbn10: '',
                 description: '',
-                coverImage: '',
-                readingStatus: '',
+				coverImage: '',
+				readingStatus: 'none',
                 readAt: null,
                 notes: '',
             };
@@ -231,7 +220,7 @@ export class ItemFormComponent implements OnChanges, OnInit {
             this.ensureCurrentPageWithinTotal(null, null);
         }
 
-        const readingStatus = value.itemType === 'book' ? value.readingStatus ?? '' : undefined;
+		const readingStatus = value.itemType === 'book' ? value.readingStatus ?? 'none' : undefined;
         const readAt = value.itemType === 'book' ? this.normalizeDateOutput(value.readAt) : null;
         const currentPage = value.itemType === 'book'
             ? value.readingStatus === 'reading'
@@ -365,21 +354,21 @@ export class ItemFormComponent implements OnChanges, OnInit {
         return date;
     }
 
-    private handleItemTypeChange(type: ItemType): void {
-        if (type !== 'book') {
-            this.form.patchValue({ readingStatus: '', readAt: null });
-            this.form.get('readAt')?.setErrors(null);
-            this.clearCurrentPage();
-        }
+	private handleItemTypeChange(type: ItemType): void {
+		if (type !== 'book') {
+			this.form.patchValue({ readingStatus: 'none', readAt: null });
+			this.form.get('readAt')?.setErrors(null);
+			this.clearCurrentPage();
+		}
     }
 
-    private normalizeStatus(value: unknown): BookStatus | null {
-        return this.isValidStatus(value) ? (value as BookStatus) : null;
-    }
+	private normalizeStatus(value: unknown): BookStatus | null {
+		return this.isValidStatus(value) ? (value as BookStatus) : null;
+	}
 
-    private isValidStatus(value: unknown): value is BookStatus {
-        return value === '' || value === 'read' || value === 'reading' || value === 'want_to_read';
-    }
+	private isValidStatus(value: unknown): value is BookStatus {
+		return value === 'none' || value === 'read' || value === 'reading' || value === 'want_to_read';
+	}
 
     private parseInteger(value: unknown): number | null {
         if (value === null || value === undefined || value === '') {
