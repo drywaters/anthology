@@ -70,8 +70,8 @@ func TestServiceCreatePersistsItem(t *testing.T) {
 	if item.CoverImage == "" {
 		t.Fatalf("expected cover image to persist")
 	}
-	if item.ReadingStatus != BookStatusUnknown {
-		t.Fatalf("expected default reading status to be empty, got %q", item.ReadingStatus)
+	if item.ReadingStatus != BookStatusNone {
+		t.Fatalf("expected default reading status to be none, got %q", item.ReadingStatus)
 	}
 	if item.ReadAt != nil {
 		t.Fatalf("expected readAt to be nil for non-read status")
@@ -410,11 +410,11 @@ func TestServiceValidatesBookStatusTransitions(t *testing.T) {
 		t.Fatalf("expected error when current page exceeds total")
 	}
 
-	cleared, err := svc.Update(context.Background(), book.ID, UpdateItemInput{ReadingStatus: ptrBookStatus(BookStatusUnknown)})
+	cleared, err := svc.Update(context.Background(), book.ID, UpdateItemInput{ReadingStatus: ptrBookStatus(BookStatusNone)})
 	if err != nil {
 		t.Fatalf("expected clearing reading status to succeed: %v", err)
 	}
-	if cleared.ReadingStatus != BookStatusUnknown {
+	if cleared.ReadingStatus != BookStatusNone {
 		t.Fatalf("expected reading status to clear, got %q", cleared.ReadingStatus)
 	}
 	if cleared.ReadAt != nil {

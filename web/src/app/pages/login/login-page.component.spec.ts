@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 
 import { LoginPageComponent } from './login-page.component';
 import { AuthService } from '../../services/auth.service';
@@ -54,6 +54,23 @@ describe(LoginPageComponent.name, () => {
 
         expect(authServiceSpy.login).not.toHaveBeenCalled();
         expect(component.tokenControl.hasError('required')).toBeTrue();
+    });
+
+    it('disables the form while submitting and re-enables on completion', () => {
+        const loginSubject = new Subject<void>();
+        authServiceSpy.login.and.returnValue(loginSubject.asObservable());
+        const fixture = createComponent();
+        const component = fixture.componentInstance;
+        component.form.setValue({ token: 'local-dev-token' });
+
+        component.submit();
+
+        expect(component.form.disabled).toBeTrue();
+
+        loginSubject.next();
+        loginSubject.complete();
+
+        expect(component.form.enabled).toBeTrue();
     });
 
     it('shows an error message when login returns 401', () => {

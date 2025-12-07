@@ -1,6 +1,13 @@
 export type ItemType = 'book' | 'game' | 'movie' | 'music';
-export type BookStatus = 'read' | 'reading' | 'want_to_read' | '';
-export type ActiveBookStatus = Exclude<BookStatus, ''>;
+
+export const BookStatus = {
+    None: 'none',
+    Read: 'read',
+    Reading: 'reading',
+    WantToRead: 'want_to_read',
+} as const;
+
+export type BookStatus = (typeof BookStatus)[keyof typeof BookStatus];
 export type LetterHistogram = Record<string, number>;
 
 export interface Item {
@@ -46,10 +53,11 @@ export const ITEM_TYPE_LABELS: Record<ItemType, string> = {
     music: 'Music',
 };
 
-export const BOOK_STATUS_LABELS: Record<ActiveBookStatus, string> = {
-    read: 'Read',
-    reading: 'Reading',
-    want_to_read: 'Up Next',
+export const BOOK_STATUS_LABELS: Record<BookStatus, string> = {
+    [BookStatus.None]: 'No status',
+    [BookStatus.Read]: 'Read',
+    [BookStatus.Reading]: 'Reading',
+    [BookStatus.WantToRead]: 'Up Next',
 };
 
 export interface ShelfPlacementSummary {

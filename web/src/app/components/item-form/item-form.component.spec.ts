@@ -2,7 +2,7 @@ import { SimpleChange } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { ItemFormComponent } from './item-form.component';
-import { Item } from '../../models/item';
+import { Item, BookStatus } from '../../models/item';
 
 describe(ItemFormComponent.name, () => {
     beforeEach(async () => {
@@ -73,21 +73,21 @@ describe(ItemFormComponent.name, () => {
         const saveSpy = jasmine.createSpy('save');
         component.save.subscribe(saveSpy);
 
-        component.form.setValue({
-            title: 'Arrival',
-            creator: 'Denis Villeneuve',
-            itemType: 'movie',
-            releaseYear: null,
-            pageCount: null,
-            currentPage: null,
-            isbn13: '',
-            isbn10: '',
-            description: '',
-            coverImage: '',
-            readingStatus: '',
-            readAt: null,
-            notes: '',
-        });
+	component.form.setValue({
+		title: 'Arrival',
+		creator: 'Denis Villeneuve',
+		itemType: 'movie',
+		releaseYear: null,
+		pageCount: null,
+		currentPage: null,
+		isbn13: '',
+		isbn10: '',
+		description: '',
+		coverImage: '',
+		readingStatus: BookStatus.None,
+		readAt: null,
+		notes: '',
+	});
 
         component.submit();
 
@@ -123,13 +123,13 @@ describe(ItemFormComponent.name, () => {
     it('prevents current page from exceeding the total pages', () => {
         const fixture = createComponent();
         const component = fixture.componentInstance;
-        component.form.patchValue({
-            title: 'Test Book',
-            itemType: 'book',
-            pageCount: 100,
-            readingStatus: 'reading',
-            currentPage: 150,
-        });
+	component.form.patchValue({
+		title: 'Test Book',
+		itemType: 'book',
+		pageCount: 100,
+		readingStatus: BookStatus.Reading,
+		currentPage: 150,
+	});
 
         component.submit();
 

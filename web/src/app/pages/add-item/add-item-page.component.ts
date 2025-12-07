@@ -14,7 +14,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { catchError, finalize, of, switchMap } from 'rxjs';
+import { catchError, finalize, of, switchMap, firstValueFrom } from 'rxjs';
 import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import { BarcodeFormat, DecodeHintType, Exception, NotFoundException, Result } from '@zxing/library';
 
@@ -509,77 +509,66 @@ export class AddItemPageComponent {
         }
     }
 
-    handleSave(formValue: ItemForm): void {
+    async handleSave(formValue: ItemForm): Promise<void> {
         if (this.busy()) {
             return;
         }
 
         this.busy.set(true);
 
-        // Check for duplicates before creating
-        this.itemService
-            .checkDuplicates({
-                title: formValue.title,
-                isbn13: formValue.isbn13,
-                isbn10: formValue.isbn10,
-            })
-            .pipe(
-                takeUntilDestroyed(this.destroyRef),
-                catchError((error) => {
-                    // If duplicate check fails, show warning but allow creation to proceed
-                    console.warn('Duplicate check failed', error);
-                    this.snackBar.open('Duplicate check failed; proceeding may create duplicates.', 'Dismiss', {
-                        duration: 4000,
-                    });
-                    return of([] as DuplicateMatch[]);
-                }),
-                switchMap((duplicates) => {
-                    if (duplicates.length === 0) {
-                        // No duplicates found, proceed with creation
-                        return this.itemService.create(formValue);
-                    }
+        try {
+            const duplicates = await firstValueFrom(
+                this.itemService.checkDuplicates({
+                    title: formValue.title,
+                    isbn13: formValue.isbn13,
+                    isbn10: formValue.isbn10,
+                }).pipe(
+                    takeUntilDestroyed(this.destroyRef),
+                    catchError((error) => {
+                        console.warn('Duplicate check failed', error);
+                        this.snackBar.open('Duplicate check failed; proceeding may create duplicates.', 'Dismiss', {
+                            duration: 4000,
+                        });
+                        return of([] as DuplicateMatch[]);
+                    })
+                )
+            );
 
-                    // Show duplicate confirmation dialog
-                    const dialogRef = this.dialog.open<DuplicateDialogComponent, DuplicateDialogData, DuplicateDialogResult>(
-                        DuplicateDialogComponent,
-                        {
-                            data: {
-                                duplicates,
-                                totalCount: duplicates.length,
-                            },
-                            width: '480px',
-                            maxHeight: '90vh',
-                        }
-                    );
+            if (duplicates.length > 0) {
+                const dialogRef = this.dialog.open<
+                    DuplicateDialogComponent,
+                    DuplicateDialogData,
+                    DuplicateDialogResult
+                >(DuplicateDialogComponent, {
+                    data: {
+                        duplicates,
+                        totalCount: duplicates.length,
+                    },
+                    width: '480px',
+                    maxHeight: '90vh',
+                });
 
-                    return dialogRef.afterClosed().pipe(
-                        switchMap((result) => {
-                            if (result === 'add') {
-                                // User chose to add anyway
-                                return this.itemService.create(formValue);
-                            }
-                            // User cancelled - return null to indicate no creation
-                            return of(null);
-                        })
-                    );
-                })
-            )
-            .subscribe({
-                next: (item) => {
-                    this.busy.set(false);
-                    if (item) {
-                        this.snackBar.open(`Saved "${item.title}"`, 'Dismiss', { duration: 4000 });
-                        this.router.navigate(['/']);
-                    }
-                    // If item is null, user cancelled - form stays open with data intact
-                },
-                error: () => {
-                    this.busy.set(false);
-                    this.snackBar.open('We could not save the item. Double-check required fields.', 'Dismiss', {
-                        duration: 5000,
-                    });
-                },
+                const decision = await firstValueFrom(dialogRef.afterClosed());
+                if (decision !== 'add') {
+                    return;
+                }
+            }
+
+            const item = await firstValueFrom(
+                this.itemService.create(formValue).pipe(takeUntilDestroyed(this.destroyRef))
+            );
+            if (item) {
+                this.snackBar.open(`Saved "${item.title}"`, 'Dismiss', { duration: 4000 });
+                await this.router.navigate(['/']);
+            }
+        } catch (error) {
+            console.error('Failed to save item', error);
+            this.snackBar.open('We could not save the item. Double-check required fields.', 'Dismiss', {
+                duration: 5000,
             });
+        } finally {
+            this.busy.set(false);
+        }
     }
 
     handleCancel(): void {

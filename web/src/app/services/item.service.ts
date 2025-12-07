@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 
 import { environment } from '../config/environment';
-import { ActiveBookStatus, BookStatus, DuplicateCheckInput, DuplicateMatch, Item, ItemForm, ItemType, LetterHistogram } from '../models/item';
+import { BookStatus, DuplicateCheckInput, DuplicateMatch, Item, ItemForm, ItemType, LetterHistogram } from '../models/item';
 import { CsvImportSummary } from '../models/import';
 
 @Injectable({ providedIn: 'root' })
@@ -14,7 +14,7 @@ export class ItemService {
     list(filters?: {
         itemType?: ItemType;
         letter?: string;
-        status?: ActiveBookStatus;
+        status?: BookStatus;
         query?: string;
         limit?: number;
     }): Observable<Item[]> {
@@ -66,7 +66,7 @@ export class ItemService {
 
     getHistogram(filters?: {
         itemType?: ItemType;
-        status?: ActiveBookStatus;
+        status?: BookStatus;
     }): Observable<LetterHistogram> {
         let params = new HttpParams();
         if (filters?.itemType) {

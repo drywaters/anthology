@@ -65,7 +65,7 @@ func parseListOptions(values url.Values) (items.ListOptions, error) {
 	if rawStatus := strings.TrimSpace(values.Get("status")); rawStatus != "" {
 		status := items.BookStatus(rawStatus)
 		switch status {
-		case items.BookStatusRead, items.BookStatusReading, items.BookStatusWantToRead:
+		case items.BookStatusNone, items.BookStatusRead, items.BookStatusReading, items.BookStatusWantToRead:
 			opts.ReadingStatus = &status
 		default:
 			return items.ListOptions{}, fmt.Errorf("invalid status filter")
@@ -349,7 +349,7 @@ func parseHistogramOptions(values url.Values) (items.HistogramOptions, error) {
 	if rawStatus := strings.TrimSpace(values.Get("status")); rawStatus != "" {
 		status := items.BookStatus(rawStatus)
 		switch status {
-		case items.BookStatusRead, items.BookStatusReading, items.BookStatusWantToRead:
+		case items.BookStatusNone, items.BookStatusRead, items.BookStatusReading, items.BookStatusWantToRead:
 			opts.ReadingStatus = &status
 		default:
 			return items.HistogramOptions{}, fmt.Errorf("invalid status filter")
