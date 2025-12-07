@@ -1,5 +1,5 @@
 import { DatePipe, NgClass, NgFor, NgIf, NgTemplateOutlet } from '@angular/common';
-import { AfterViewInit, Component, DestroyRef, ElementRef, OnDestroy, ViewChild, computed, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, ElementRef, OnDestroy, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -152,6 +152,15 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
 
     ngAfterViewInit(): void {
         this.setupScrollObserver();
+
+        effect(
+            () => {
+                // Re-attach the observer after the list renders or changes
+                this.groupedItems();
+                setTimeout(() => this.observeLetterSections(), 0);
+            },
+            { allowSignalWrites: true }
+        );
     }
 
     ngOnDestroy(): void {
