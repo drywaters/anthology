@@ -70,11 +70,15 @@
                         <div
                             *ngFor="let slot of shelfData.slots"
                             class="slot"
-                            [ngClass]="{ 'slot--selected': selectedSlot()?.id === slot.id }"
+                            [ngClass]="{
+                                'slot--selected': selectedSlot()?.id === slot.id
+                            }"
                             [ngStyle]="slotStyle(slot)"
                             (click)="selectSlot(slot)"
                         >
-                            <span class="slot__label">{{ slot.rowIndex + 1 }} / {{ slot.colIndex + 1 }}</span>
+                            <span class="slot__label" *ngIf="selectedSlot()?.id === slot.id">
+                                {{ slot.rowIndex + 1 }}/{{ slot.colIndex + 1 }}
+                            </span>
                         </div>
                     </ng-template>
                 </div>
