@@ -24,6 +24,21 @@ export const BookStatusFilters = {
 } as const;
 
 export type BookStatusFilter = (typeof BookStatusFilters)[keyof typeof BookStatusFilters];
+
+export const ShelfStatusFilters = {
+    All: 'all',
+    On: 'on',
+    Off: 'off',
+} as const;
+
+export type ShelfStatusFilter = (typeof ShelfStatusFilters)[keyof typeof ShelfStatusFilters];
+
+export const SHELF_STATUS_LABELS: Record<ShelfStatusFilter, string> = {
+    [ShelfStatusFilters.All]: 'All',
+    [ShelfStatusFilters.On]: 'On shelf',
+    [ShelfStatusFilters.Off]: 'Not on shelf',
+};
+
 export type LetterHistogram = Record<string, number>;
 
 export interface Item {

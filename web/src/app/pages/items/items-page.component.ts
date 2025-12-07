@@ -22,6 +22,9 @@ import {
     ItemTypes,
     ITEM_TYPE_LABELS,
     LetterHistogram,
+    SHELF_STATUS_LABELS,
+    ShelfStatusFilter,
+    ShelfStatusFilters,
 } from '../../models/item';
 import { ItemService } from '../../services/item.service';
 import { AlphaRailComponent } from '../../components/alpha-rail/alpha-rail.component';
@@ -71,6 +74,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     readonly loading = signal(false);
     readonly typeFilter = signal<ItemTypeFilter>('all');
     readonly statusFilter = signal<BookStatusFilter>(BookStatusFilters.All);
+    readonly shelfStatusFilter = signal<ShelfStatusFilter>(ShelfStatusFilters.All);
     readonly viewMode = signal<'table' | 'grid'>('table');
     readonly histogram = signal<LetterHistogram>({});
     readonly activeLetter = signal<string | null>(null);
@@ -92,10 +96,15 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
         { value: BookStatusFilters.Reading, label: BOOK_STATUS_LABELS[BookStatus.Reading] },
         { value: BookStatusFilters.Read, label: BOOK_STATUS_LABELS[BookStatus.Read] },
     ];
+    readonly shelfStatusOptions: Array<{ value: ShelfStatusFilter; label: string }> = [
+        { value: ShelfStatusFilters.All, label: SHELF_STATUS_LABELS[ShelfStatusFilters.All] },
+        { value: ShelfStatusFilters.On, label: SHELF_STATUS_LABELS[ShelfStatusFilters.On] },
+        { value: ShelfStatusFilters.Off, label: SHELF_STATUS_LABELS[ShelfStatusFilters.Off] },
+    ];
 
     readonly hasFilteredItems = computed(() => this.items().length > 0);
     readonly isUnfiltered = computed(
-        () => this.typeFilter() === 'all' && this.statusFilter() === BookStatusFilters.All
+        () => this.typeFilter() === 'all' && this.statusFilter() === BookStatusFilters.All && this.shelfStatusFilter() === ShelfStatusFilters.All
     );
     readonly isGridView = computed(() => this.viewMode() === 'grid');
     readonly showStatusFilter = computed(() => {
@@ -314,6 +323,10 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
         this.statusFilter.set(status);
     }
 
+    setShelfStatusFilter(shelfStatus: ShelfStatusFilter): void {
+        this.shelfStatusFilter.set(shelfStatus);
+    }
+
     setViewMode(mode: 'table' | 'grid'): void {
         this.viewMode.set(mode);
     }
@@ -338,8 +351,8 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
         return '#';
     }
 
-	private currentFilters(): { itemType?: ItemType; status?: BookStatus } | undefined {
-		const filters: { itemType?: ItemType; status?: BookStatus } = {};
+	private currentFilters(): { itemType?: ItemType; status?: BookStatus; shelfStatus?: ShelfStatusFilter } | undefined {
+		const filters: { itemType?: ItemType; status?: BookStatus; shelfStatus?: ShelfStatusFilter } = {};
 
         const typeFilter = this.typeFilter();
         if (typeFilter !== 'all') {
@@ -350,6 +363,11 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
         const statusFilter = this.statusFilter();
         if (statusFilter !== BookStatusFilters.All && (typeFilter === 'all' || typeFilter === ItemTypes.Book)) {
             filters.status = statusFilter;
+        }
+
+        const shelfStatusFilter = this.shelfStatusFilter();
+        if (shelfStatusFilter !== ShelfStatusFilters.All) {
+            filters.shelfStatus = shelfStatusFilter;
         }
 
         return Object.keys(filters).length > 0 ? filters : undefined;

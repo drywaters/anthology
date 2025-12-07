@@ -113,10 +113,23 @@ type UpdateItemInput struct {
 	Notes         *string
 }
 
+// ShelfStatus describes whether an item has been assigned to a shelf.
+type ShelfStatus string
+
+const (
+	// ShelfStatusAll shows all items regardless of shelf assignment.
+	ShelfStatusAll ShelfStatus = "all"
+	// ShelfStatusOn shows only items with a shelf location.
+	ShelfStatusOn ShelfStatus = "on"
+	// ShelfStatusOff shows only items without a shelf location.
+	ShelfStatusOff ShelfStatus = "off"
+)
+
 // ListOptions describes filters for listing items.
 type ListOptions struct {
 	ItemType      *ItemType
 	ReadingStatus *BookStatus
+	ShelfStatus   *ShelfStatus
 	Initial       *string
 	Query         *string
 	Limit         *int

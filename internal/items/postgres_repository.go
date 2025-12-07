@@ -160,6 +160,15 @@ func (r *PostgresRepository) List(ctx context.Context, opts ListOptions) ([]Item
 		}
 	}
 
+	if opts.ShelfStatus != nil {
+		switch *opts.ShelfStatus {
+		case ShelfStatusOn:
+			clauses = append(clauses, "placement.shelf_id IS NOT NULL")
+		case ShelfStatusOff:
+			clauses = append(clauses, "placement.shelf_id IS NULL")
+		}
+	}
+
 	if len(clauses) > 0 {
 		query = query + " WHERE " + strings.Join(clauses, " AND ")
 	}
