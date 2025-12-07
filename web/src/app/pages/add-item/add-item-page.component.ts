@@ -153,6 +153,7 @@ export class AddItemPageComponent {
     private readonly dialog = inject(MatDialog);
     private readonly destroyRef = inject(DestroyRef);
     private readonly fb = inject(FormBuilder);
+    private readonly destroyCleanup = this.destroyRef.onDestroy(() => this.stopBarcodeScanner());
 
     private readonly preferredBarcodeFormats: SupportedBarcodeFormat[] = [
         'ean_13',
@@ -238,10 +239,6 @@ export class AddItemPageComponent {
         category: [AddItemPageComponent.SEARCH_CATEGORIES[0].value as SearchCategoryValue, Validators.required],
         query: ['', [Validators.required, Validators.minLength(3)]],
     });
-
-    constructor() {
-        this.destroyRef.onDestroy(() => this.stopBarcodeScanner());
-    }
 
     readonly activeCategory = computed(() => {
         const value = this.searchForm.get('category')?.value as SearchCategoryValue | null;

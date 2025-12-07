@@ -14,7 +14,6 @@
                         type="password"
                         formControlName="token"
                         autocomplete="off"
-                        [disabled]="submitting()"
                         required
                     />
                     <mat-error *ngIf="tokenControl.hasError('required')">A token is required.</mat-error>

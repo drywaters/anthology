@@ -105,7 +105,7 @@
                                             </button>
                                             <p class="card-sub" *ngIf="readingStatusLabel(item) as statusLabel">
                                                 <span class="status-chip">{{ statusLabel }}</span>
-                                                <ng-container *ngIf="item.readingStatus === 'read' && item.readAt">
+                                                <ng-container *ngIf="item.readingStatus === BookStatus.Read && item.readAt">
                                                     • Read {{ item.readAt | date: 'mediumDate' }}
                                                 </ng-container>
                                                 <ng-container *ngIf="readingProgress(item) as progress">
@@ -168,8 +168,8 @@
                                                         <mat-icon aria-hidden="true">visibility</mat-icon>
                                                     </button>
                                                 </div>
-                                                <div class="item-subtext" *ngIf="readingProgress(item) as progress">
-                                                    Reading •
+                                            <div class="item-subtext" *ngIf="readingProgress(item) as progress">
+                                                Reading •
                                                     <ng-container *ngIf="progress.percent !== undefined; else tableProgressFallback">
                                                         {{ progress.percent }}% complete ({{ progress.current }}/{{ progress.total }} pages)
                                                     </ng-container>

@@ -42,6 +42,15 @@ export class LoginPageComponent {
         return this.form.controls.token;
     }
 
+    private setSubmitting(isSubmitting: boolean): void {
+        this.submitting.set(isSubmitting);
+        if (isSubmitting) {
+            this.form.disable({ emitEvent: false });
+        } else {
+            this.form.enable({ emitEvent: false });
+        }
+    }
+
     submit(): void {
         if (this.form.invalid) {
             this.form.markAllAsTouched();
@@ -54,7 +63,7 @@ export class LoginPageComponent {
             return;
         }
 
-        this.submitting.set(true);
+        this.setSubmitting(true);
         this.errorMessage.set(null);
 
         this.authService
@@ -62,12 +71,12 @@ export class LoginPageComponent {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => {
-                    this.submitting.set(false);
+                    this.setSubmitting(false);
                     const redirectTo = this.route.snapshot.queryParamMap.get('redirectTo');
                     this.router.navigateByUrl(redirectTo || '/');
                 },
                 error: (error) => {
-                    this.submitting.set(false);
+                    this.setSubmitting(false);
                     if (error.status === 401) {
                         this.errorMessage.set('Invalid token. Please try again.');
                         this.tokenControl.setErrors({ invalid: true });
@@ -79,18 +88,18 @@ export class LoginPageComponent {
     }
 
     clearSession(): void {
-        this.submitting.set(true);
+        this.setSubmitting(true);
         this.errorMessage.set(null);
         this.authService
             .logout()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => {
-                    this.submitting.set(false);
+                    this.setSubmitting(false);
                     this.form.reset({ token: '' });
                 },
                 error: () => {
-                    this.submitting.set(false);
+                    this.setSubmitting(false);
                     this.errorMessage.set('We could not clear your session.');
                 },
             });

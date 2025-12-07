@@ -83,6 +83,7 @@ describe(AddItemPageComponent.name, () => {
 
     it('shows a snack bar message on failure', fakeAsync(() => {
         snackBarSpy.open.calls.reset();
+        const consoleErrorSpy = spyOn(console, 'error');
         itemServiceSpy.create.and.returnValue(throwError(() => new Error('fail')));
         const router = TestBed.inject(Router);
         const navigateSpy = spyOn(router, 'navigate').and.resolveTo(true);
@@ -102,6 +103,7 @@ describe(AddItemPageComponent.name, () => {
 
         expect(snackBarSpy.open).toHaveBeenCalled();
         expect(navigateSpy).not.toHaveBeenCalled();
+        expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to save item', jasmine.any(Error));
     }));
 
     it('prompts for duplicates and only creates when confirmed', fakeAsync(() => {

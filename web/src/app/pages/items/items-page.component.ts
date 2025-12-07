@@ -68,6 +68,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
 
     readonly typeLabels = ITEM_TYPE_LABELS;
     readonly statusLabels = BOOK_STATUS_LABELS;
+    readonly BookStatus = BookStatus;
     readonly typeOptions: Array<{ value: ItemTypeFilter; label: string }> = [
         { value: 'all', label: 'All items' },
         { value: 'book', label: ITEM_TYPE_LABELS.book },
@@ -77,10 +78,10 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     ];
 	readonly statusOptions: Array<{ value: BookStatusFilter; label: string }> = [
 		{ value: 'all', label: 'All' },
-		{ value: 'none', label: BOOK_STATUS_LABELS.none },
-		{ value: 'want_to_read', label: BOOK_STATUS_LABELS.want_to_read },
-		{ value: 'reading', label: BOOK_STATUS_LABELS.reading },
-		{ value: 'read', label: BOOK_STATUS_LABELS.read },
+		{ value: BookStatus.None, label: BOOK_STATUS_LABELS[BookStatus.None] },
+		{ value: BookStatus.WantToRead, label: BOOK_STATUS_LABELS[BookStatus.WantToRead] },
+		{ value: BookStatus.Reading, label: BOOK_STATUS_LABELS[BookStatus.Reading] },
+		{ value: BookStatus.Read, label: BOOK_STATUS_LABELS[BookStatus.Read] },
 	];
 
     readonly hasFilteredItems = computed(() => this.items().length > 0);
@@ -249,7 +250,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     }
 
     readingStatusLabel(item: Item): string | null {
-        if (item.itemType !== 'book' || !item.readingStatus) {
+        if (item.itemType !== 'book' || !item.readingStatus || item.readingStatus === BookStatus.None) {
             return null;
         }
 
@@ -257,7 +258,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     }
 
     readingProgress(item: Item): { current: number; total?: number; percent?: number } | null {
-        if (item.itemType !== 'book' || item.readingStatus !== 'reading') {
+        if (item.itemType !== 'book' || item.readingStatus !== BookStatus.Reading) {
             return null;
         }
         if (item.currentPage === null || item.currentPage === undefined) {

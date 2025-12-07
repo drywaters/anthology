@@ -77,7 +77,7 @@ export class ItemFormComponent implements OnChanges, OnInit {
         isbn10: ['', [Validators.maxLength(20)]],
         description: ['', [Validators.maxLength(2000)]],
         coverImage: [''],
-		readingStatus: ['none' as BookStatus],
+		readingStatus: [BookStatus.None],
         readAt: [null],
         notes: ['', [Validators.maxLength(500)]],
     });
@@ -87,11 +87,11 @@ export class ItemFormComponent implements OnChanges, OnInit {
     }
 
     get isReadStatus(): boolean {
-        return this.form.get('readingStatus')?.value === 'read';
+        return this.form.get('readingStatus')?.value === BookStatus.Read;
     }
 
     get isReadingStatus(): boolean {
-        return this.form.get('readingStatus')?.value === 'reading';
+        return this.form.get('readingStatus')?.value === BookStatus.Reading;
     }
 
     ngOnInit(): void {
@@ -113,7 +113,7 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 isbn10: '',
                 description: '',
 				coverImage: '',
-				readingStatus: 'none',
+				readingStatus: BookStatus.None,
                 readAt: null,
                 notes: '',
             };
@@ -178,10 +178,10 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 next.readAt = this.normalizeDateInput(this.item.readAt) ?? next.readAt;
             }
 
-            if (next.readingStatus !== 'read') {
+            if (next.readingStatus !== BookStatus.Read) {
                 next.readAt = null;
             }
-            if (next.readingStatus !== 'reading') {
+            if (next.readingStatus !== BookStatus.Reading) {
                 next.currentPage = null;
             }
 
@@ -204,13 +204,13 @@ export class ItemFormComponent implements OnChanges, OnInit {
             return;
         }
 
-        if (value.itemType === 'book' && value.readingStatus === 'read' && !value.readAt) {
+        if (value.itemType === 'book' && value.readingStatus === BookStatus.Read && !value.readAt) {
             this.form.get('readAt')?.setErrors({ required: true });
             this.form.get('readAt')?.markAsTouched();
             return;
         }
 
-        if (value.itemType === 'book' && value.readingStatus === 'reading') {
+        if (value.itemType === 'book' && value.readingStatus === BookStatus.Reading) {
             const totalPages = this.parseInteger(value.pageCount);
             const currentPageValue = this.parseInteger(value.currentPage);
             if (!this.ensureCurrentPageWithinTotal(totalPages, currentPageValue)) {
@@ -220,10 +220,10 @@ export class ItemFormComponent implements OnChanges, OnInit {
             this.ensureCurrentPageWithinTotal(null, null);
         }
 
-		const readingStatus = value.itemType === 'book' ? value.readingStatus ?? 'none' : undefined;
+		const readingStatus = value.itemType === 'book' ? value.readingStatus ?? BookStatus.None : undefined;
         const readAt = value.itemType === 'book' ? this.normalizeDateOutput(value.readAt) : null;
         const currentPage = value.itemType === 'book'
-            ? value.readingStatus === 'reading'
+            ? value.readingStatus === BookStatus.Reading
                 ? this.parseInteger(value.currentPage)
                 : null
             : undefined;
@@ -277,11 +277,11 @@ export class ItemFormComponent implements OnChanges, OnInit {
     }
 
     onStatusChange(status: BookStatus): void {
-        if (status !== 'read') {
+        if (status !== BookStatus.Read) {
             this.form.patchValue({ readAt: null });
             this.form.get('readAt')?.setErrors(null);
         }
-        if (status !== 'reading') {
+        if (status !== BookStatus.Reading) {
             this.clearCurrentPage();
         }
     }
@@ -356,18 +356,18 @@ export class ItemFormComponent implements OnChanges, OnInit {
 
 	private handleItemTypeChange(type: ItemType): void {
 		if (type !== 'book') {
-			this.form.patchValue({ readingStatus: 'none', readAt: null });
+			this.form.patchValue({ readingStatus: BookStatus.None, readAt: null });
 			this.form.get('readAt')?.setErrors(null);
 			this.clearCurrentPage();
 		}
     }
 
 	private normalizeStatus(value: unknown): BookStatus | null {
-		return this.isValidStatus(value) ? (value as BookStatus) : null;
+				return this.isValidStatus(value) ? (value as BookStatus) : null;
 	}
 
 	private isValidStatus(value: unknown): value is BookStatus {
-		return value === 'none' || value === 'read' || value === 'reading' || value === 'want_to_read';
+		return Object.values(BookStatus).includes(value as BookStatus);
 	}
 
     private parseInteger(value: unknown): number | null {
