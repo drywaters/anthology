@@ -14,7 +14,18 @@
     gap: 1rem;
 }
 
-.book-details-header {
+.game-details {
+    padding: 1rem 1.25rem 1.5rem;
+    border: 1px solid color-mix(in srgb, var(--mat-sys-tertiary) 15%, white);
+    border-radius: 1.25rem;
+    background: color-mix(in srgb, var(--mat-sys-tertiary) 6%, white);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.book-details-header,
+.game-details-header {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
@@ -33,7 +44,8 @@
     margin: 0;
 }
 
-.book-grid {
+.book-grid,
+.game-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1rem;
@@ -61,6 +73,10 @@
     height: 6px;
     border-radius: 999px;
     background: linear-gradient(90deg, #16a34a, #4ade80);
+
+    &--game {
+        background: linear-gradient(90deg, #7c3aed, #a78bfa);
+    }
 }
 
 .description-field textarea {

@@ -144,6 +144,9 @@ export class AddItemPageComponent {
         'description',
         'coverImage',
         'notes',
+        'platform',
+        'ageGroup',
+        'playerCount',
     ];
 
     private readonly itemService = inject(ItemService);
@@ -837,6 +840,9 @@ this.lookupResults.set([]);
             isbn10: partial.isbn10 ?? '',
             description: partial.description ?? '',
             coverImage: partial.coverImage ?? '',
+            platform: partial.platform ?? '',
+            ageGroup: partial.ageGroup ?? '',
+            playerCount: partial.playerCount ?? '',
             notes: partial.notes ?? '',
         };
     }

@@ -229,6 +229,9 @@ func (i *CSVImporter) buildInput(ctx context.Context, values map[string]string) 
 	description := strings.TrimSpace(values["description"])
 	coverImage := strings.TrimSpace(values["coverimage"])
 	notes := strings.TrimSpace(values["notes"])
+	platform := strings.TrimSpace(values["platform"])
+	ageGroup := strings.TrimSpace(values["agegroup"])
+	playerCount := strings.TrimSpace(values["playercount"])
 
 	if itemType == items.ItemTypeBook && title == "" {
 		identifier := meta.identifier
@@ -278,6 +281,9 @@ func (i *CSVImporter) buildInput(ctx context.Context, values map[string]string) 
 		ISBN10:      isbn10,
 		Description: description,
 		CoverImage:  coverImage,
+		Platform:    platform,
+		AgeGroup:    ageGroup,
+		PlayerCount: playerCount,
 		Notes:       notes,
 	}, meta, nil
 }
