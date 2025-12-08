@@ -53,6 +53,9 @@ export interface Item {
     isbn10?: string;
     description?: string;
     coverImage?: string;
+    platform?: string;
+    ageGroup?: string;
+    playerCount?: string;
     readingStatus?: BookStatus;
     readAt?: string | null;
     notes: string;
@@ -72,6 +75,9 @@ export interface ItemForm {
     isbn10?: string;
     description: string;
     coverImage?: string;
+    platform?: string;
+    ageGroup?: string;
+    playerCount?: string;
     readingStatus?: BookStatus;
     readAt?: string | Date | null;
     notes: string;

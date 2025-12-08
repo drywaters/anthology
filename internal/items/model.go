@@ -62,6 +62,9 @@ type Item struct {
 	ISBN10         string          `db:"isbn_10" json:"isbn10"`
 	Description    string          `db:"description" json:"description"`
 	CoverImage     string          `db:"cover_image" json:"coverImage"`
+	Platform       string          `db:"platform" json:"platform"`
+	AgeGroup       string          `db:"age_group" json:"ageGroup"`
+	PlayerCount    string          `db:"player_count" json:"playerCount"`
 	ReadingStatus  BookStatus      `db:"reading_status" json:"readingStatus"`
 	ReadAt         *time.Time      `db:"read_at" json:"readAt,omitempty"`
 	Notes          string          `db:"notes" json:"notes"`
@@ -91,6 +94,9 @@ type CreateItemInput struct {
 	ISBN10        string
 	Description   string
 	CoverImage    string
+	Platform      string
+	AgeGroup      string
+	PlayerCount   string
 	ReadingStatus BookStatus
 	ReadAt        *time.Time
 	Notes         string
@@ -108,6 +114,9 @@ type UpdateItemInput struct {
 	ISBN10        *string
 	Description   *string
 	CoverImage    *string
+	Platform      *string
+	AgeGroup      *string
+	PlayerCount   *string
 	ReadingStatus *BookStatus
 	ReadAt        **time.Time
 	Notes         *string

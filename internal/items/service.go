@@ -71,6 +71,9 @@ func (s *Service) Create(ctx context.Context, input CreateItemInput) (Item, erro
 		ISBN10:        strings.TrimSpace(input.ISBN10),
 		Description:   strings.TrimSpace(input.Description),
 		CoverImage:    coverImage,
+		Platform:      strings.TrimSpace(input.Platform),
+		AgeGroup:      strings.TrimSpace(input.AgeGroup),
+		PlayerCount:   strings.TrimSpace(input.PlayerCount),
 		ReadingStatus: readingStatus,
 		ReadAt:        readAt,
 		Notes:         strings.TrimSpace(input.Notes),
@@ -166,6 +169,18 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, input UpdateItemInpu
 			return Item{}, err
 		}
 		existing.CoverImage = coverImage
+	}
+
+	if input.Platform != nil {
+		existing.Platform = strings.TrimSpace(*input.Platform)
+	}
+
+	if input.AgeGroup != nil {
+		existing.AgeGroup = strings.TrimSpace(*input.AgeGroup)
+	}
+
+	if input.PlayerCount != nil {
+		existing.PlayerCount = strings.TrimSpace(*input.PlayerCount)
 	}
 
 	readingStatus := existing.ReadingStatus

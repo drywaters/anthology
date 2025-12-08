@@ -77,6 +77,9 @@ export class ItemFormComponent implements OnChanges, OnInit {
         isbn10: ['', [Validators.maxLength(20)]],
         description: ['', [Validators.maxLength(2000)]],
         coverImage: [''],
+        platform: ['', [Validators.maxLength(200)]],
+        ageGroup: ['', [Validators.maxLength(100)]],
+        playerCount: ['', [Validators.maxLength(100)]],
 		readingStatus: [BookStatus.None],
         readAt: [null],
         notes: ['', [Validators.maxLength(500)]],
@@ -84,6 +87,10 @@ export class ItemFormComponent implements OnChanges, OnInit {
 
     get isBook(): boolean {
         return this.form.get('itemType')?.value === 'book';
+    }
+
+    get isGame(): boolean {
+        return this.form.get('itemType')?.value === 'game';
     }
 
     get isReadStatus(): boolean {
@@ -113,6 +120,9 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 isbn10: '',
                 description: '',
 				coverImage: '',
+                platform: '',
+                ageGroup: '',
+                playerCount: '',
 				readingStatus: BookStatus.None,
                 readAt: null,
                 notes: '',
@@ -158,6 +168,9 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 next.isbn10 = this.draft.isbn10 ?? next.isbn10;
                 next.description = this.draft.description ?? next.description;
                 next.coverImage = this.draft.coverImage ?? next.coverImage;
+                next.platform = this.draft.platform ?? next.platform;
+                next.ageGroup = this.draft.ageGroup ?? next.ageGroup;
+                next.playerCount = this.draft.playerCount ?? next.playerCount;
                 next.readingStatus = this.normalizeStatus(this.draft.readingStatus) ?? next.readingStatus;
                 next.readAt = this.normalizeDateInput(this.draft.readAt) ?? next.readAt;
             }
@@ -173,6 +186,9 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 next.isbn10 = this.item.isbn10 ?? '';
                 next.description = this.item.description ?? '';
                 next.coverImage = this.item.coverImage ?? '';
+                next.platform = this.item.platform ?? '';
+                next.ageGroup = this.item.ageGroup ?? '';
+                next.playerCount = this.item.playerCount ?? '';
                 next.notes = this.item.notes;
                 next.readingStatus = this.normalizeStatus(this.item.readingStatus) ?? next.readingStatus;
                 next.readAt = this.normalizeDateInput(this.item.readAt) ?? next.readAt;
@@ -237,6 +253,9 @@ export class ItemFormComponent implements OnChanges, OnInit {
             isbn13: value.isbn13 ?? '',
             isbn10: value.isbn10 ?? '',
             coverImage: value.coverImage ?? '',
+            platform: value.platform ?? '',
+            ageGroup: value.ageGroup ?? '',
+            playerCount: value.playerCount ?? '',
             readingStatus,
             readAt,
         });

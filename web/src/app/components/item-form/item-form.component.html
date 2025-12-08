@@ -115,6 +115,45 @@
 
     </section>
 
+    <section class="game-details" *ngIf="isGame">
+        <div class="game-details-header">
+            <p class="section-eyebrow">Game details</p>
+            <h3>Game specifics</h3>
+        </div>
+
+        <div class="game-grid">
+            <mat-form-field appearance="fill">
+                <mat-label>Platform</mat-label>
+                <input matInput formControlName="platform" maxlength="200" />
+                <mat-hint>Console, system, or format (e.g., Nintendo Switch, PlayStation 5, PC, Board Game)</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill">
+                <mat-label>Age group</mat-label>
+                <input matInput formControlName="ageGroup" maxlength="100" />
+                <mat-hint>Suggested age rating (e.g., Teen, Everyone 10+, Adults)</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill">
+                <mat-label>Number of players</mat-label>
+                <input matInput formControlName="playerCount" maxlength="100" />
+                <mat-hint>Typical player count (e.g., 1–4 players, Solo, Multiplayer)</mat-hint>
+            </mat-form-field>
+        </div>
+
+        <div class="description-section">
+            <div class="description-heading">
+                <h4>Description</h4>
+                <span class="description-highlight description-highlight--game" aria-hidden="true"></span>
+            </div>
+            <mat-form-field appearance="fill" class="description-field">
+                <mat-label>Game description</mat-label>
+                <textarea matInput rows="5" formControlName="description" maxlength="2000"></textarea>
+                <mat-hint align="end">{{ form.get('description')?.value?.length || 0 }}/2000</mat-hint>
+            </mat-form-field>
+        </div>
+    </section>
+
     <div class="cover-section">
         <div class="cover-preview" [class.cover-preview--empty]="!form.get('coverImage')?.value">
             <img *ngIf="form.get('coverImage')?.value" [src]="form.get('coverImage')?.value" alt="Cover preview" />

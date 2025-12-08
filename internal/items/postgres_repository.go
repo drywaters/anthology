@@ -33,6 +33,9 @@ SELECT
     i.isbn_10,
     i.description,
     i.cover_image,
+    i.platform,
+    i.age_group,
+    i.player_count,
     i.reading_status,
     i.read_at,
     i.notes,
@@ -89,8 +92,8 @@ func (row itemRow) toItem() Item {
 
 // Create inserts a new row and returns the stored representation.
 func (r *PostgresRepository) Create(ctx context.Context, item Item) (Item, error) {
-	insert := `INSERT INTO items (id, title, creator, item_type, release_year, page_count, current_page, isbn_13, isbn_10, description, cover_image, reading_status, read_at, notes, created_at, updated_at)
-VALUES (:id, :title, :creator, :item_type, :release_year, :page_count, :current_page, :isbn_13, :isbn_10, :description, :cover_image, :reading_status, :read_at, :notes, :created_at, :updated_at)`
+	insert := `INSERT INTO items (id, title, creator, item_type, release_year, page_count, current_page, isbn_13, isbn_10, description, cover_image, platform, age_group, player_count, reading_status, read_at, notes, created_at, updated_at)
+VALUES (:id, :title, :creator, :item_type, :release_year, :page_count, :current_page, :isbn_13, :isbn_10, :description, :cover_image, :platform, :age_group, :player_count, :reading_status, :read_at, :notes, :created_at, :updated_at)`
 
 	if _, err := r.db.NamedExecContext(ctx, insert, item); err != nil {
 		return Item{}, fmt.Errorf("insert item: %w", err)
@@ -204,6 +207,9 @@ SET title = :title,
     isbn_10 = :isbn_10,
     description = :description,
     cover_image = :cover_image,
+    platform = :platform,
+    age_group = :age_group,
+    player_count = :player_count,
     reading_status = :reading_status,
     read_at = :read_at,
     notes = :notes,
