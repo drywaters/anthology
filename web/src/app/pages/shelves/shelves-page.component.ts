@@ -34,7 +34,7 @@ export class ShelvesPageComponent {
 
     readonly loading = signal(false);
     readonly shelves = signal<ShelfSummary[]>([]);
-    readonly hasShelves = computed(() => this.shelves().length > 0);
+    readonly hasShelves = computed(() => (this.shelves() || []).length > 0);
 
     constructor() {
         this.loadShelves();
