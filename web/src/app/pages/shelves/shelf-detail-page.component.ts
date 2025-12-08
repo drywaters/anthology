@@ -12,6 +12,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, combineLatest, debounceTime, distinctUntilChanged, finalize, map, of, startWith, switchMap } from 'rxjs';
 
@@ -67,6 +68,7 @@ type ItemTypeFilter = ItemType | 'all';
         MatAutocompleteModule,
         MatSelectModule,
         MatSnackBarModule,
+        MatTooltipModule,
     ],
     templateUrl: './shelf-detail-page.component.html',
     styleUrl: './shelf-detail-page.component.scss',
@@ -462,6 +464,12 @@ export class ShelfDetailPageComponent {
 
     assignedItems(slotId: string): PlacementWithItem[] {
         return (this.shelf()?.placements ?? []).filter((p) => p.placement.shelfSlotId === slotId);
+    }
+
+    sortedAssignedItems(slotId: string): PlacementWithItem[] {
+        return this.assignedItems(slotId).sort((a, b) =>
+            a.item.title.localeCompare(b.item.title, undefined, { sensitivity: 'base' })
+        );
     }
 
     handleSearchSelection(itemId: string): void {
