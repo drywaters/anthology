@@ -1,7 +1,7 @@
 <div class="page">
     <mat-progress-bar *ngIf="loading()" mode="indeterminate"></mat-progress-bar>
 
-    <div class="shelf-grid" *ngIf="hasShelves(); else emptyState">
+    <div class="shelf-grid" *ngIf="!loading() && hasShelves()">
         <mat-card class="shelf-card" *ngFor="let shelf of shelves(); trackBy: trackByShelf" [routerLink]="['/shelves', shelf.shelf.id]">
             <img class="shelf-card__thumb" [src]="shelf.shelf.photoUrl" [alt]="shelf.shelf.name" />
             <div class="shelf-card__content">
@@ -15,25 +15,23 @@
         </mat-card>
     </div>
 
-    <ng-template #emptyState>
-        <div class="empty" role="status">
-            <div class="empty__copy">
-                <mat-icon aria-hidden="true">grid_view</mat-icon>
-                <div>
-                    <p class="empty__title">No shelves yet</p>
-                    <p class="empty__subtitle">Create your first shelf to begin placing items.</p>
-                </div>
-            </div>
-            <div class="empty__actions">
-                <button mat-flat-button color="primary" routerLink="/shelves/add">
-                    <mat-icon aria-hidden="true">add_photo_alternate</mat-icon>
-                    Add shelf
-                </button>
-                <button mat-stroked-button type="button" routerLink="/">
-                    <mat-icon aria-hidden="true">menu_book</mat-icon>
-                    Go to library
-                </button>
+    <div class="empty" role="status" *ngIf="!loading() && !hasShelves()">
+        <div class="empty__copy">
+            <mat-icon aria-hidden="true">grid_view</mat-icon>
+            <div>
+                <p class="empty__title">No shelves yet</p>
+                <p class="empty__subtitle">Create your first shelf to begin placing items.</p>
             </div>
         </div>
-    </ng-template>
+        <div class="empty__actions">
+            <button mat-flat-button color="primary" routerLink="/shelves/add">
+                <mat-icon aria-hidden="true">add_photo_alternate</mat-icon>
+                Add shelf
+            </button>
+            <button mat-stroked-button type="button" routerLink="/">
+                <mat-icon aria-hidden="true">menu_book</mat-icon>
+                Go to library
+            </button>
+        </div>
+    </div>
 </div>
