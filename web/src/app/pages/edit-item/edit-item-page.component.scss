@@ -116,24 +116,6 @@ mat-card-actions {
     padding-bottom: clamp(1rem, 2vw, 1.5rem);
 }
 
-.delete-button.mat-mdc-button-base {
-    flex: 0 0 auto;
-    width: auto;
-    font-weight: 600;
-    background: var(--mat-sys-error);
-    color: var(--mat-sys-on-error);
-}
-
-.delete-button.mat-mdc-button-base:hover,
-.delete-button.mat-mdc-button-base:focus-visible {
-    background: color-mix(in srgb, var(--mat-sys-error) 88%, #020617);
-}
-
-.delete-button.mat-mdc-button-base:disabled {
-    background: color-mix(in srgb, var(--mat-sys-error) 60%, white);
-    color: color-mix(in srgb, var(--mat-sys-on-error) 75%, var(--mat-sys-on-surface));
-}
-
 @media (max-width: 600px) {
     .edit-item-page {
         padding-inline: 1.25rem;
