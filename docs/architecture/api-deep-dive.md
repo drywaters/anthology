@@ -61,6 +61,8 @@ Base URL: `http://<host>:<port>`. All `/api/*` endpoints are authenticated unles
 | GET | `/api/session` | Report active session (204) or 401. | `SessionHandler.Status` |
 | DELETE | `/api/session` | Clear session cookie. | `SessionHandler.Logout` |
 | GET | `/api/items` | List items with filters (type/status/letter/query/limit). | `ItemHandler.List` |
+| GET | `/api/items/histogram` | Letter counts for alphabet rail. | `ItemHandler.Histogram` |
+| GET | `/api/items/duplicates` | Check potential duplicates by title/ISBN. | `ItemHandler.Duplicates` |
 | POST | `/api/items` | Create item. | `ItemHandler.Create` |
 | POST | `/api/items/import` | CSV upload (5 MiB limit) for bulk import. | `ItemHandler.ImportCSV` |
 | GET | `/api/items/{id}` | Get item by UUID. | `ItemHandler.Get` |
@@ -98,7 +100,7 @@ Items (`internal/items.Item`):
   "isbn10": "1234567890",
   "description": "string",
   "coverImage": "https://… or data:<mime>;base64,…",
-  "readingStatus": "read|reading|want_to_read|\"\"",
+  "readingStatus": "read|reading|want_to_read|none",
   "readAt": "RFC3339 datetime",
   "notes": "string",
   "createdAt": "RFC3339 datetime",
@@ -138,6 +140,7 @@ Items:
 * Year/page counts must be positive if provided; `currentPage` >= 0 and cannot exceed `pageCount`.
 * Cover image: empty allowed; data URI must be valid base64 and <= 500 KB; URL length <= 4096 chars.
 * Reading status only valid for books. Rules:
+  * Default: `none`.
   * `read` requires `readAt`.
   * `reading` requires `currentPage` and (if present) must not exceed `pageCount`.
   * `want_to_read` clears read/progress.
@@ -175,6 +178,7 @@ Shelves:
 * `0004_add_book_status.sql`: refined statuses.
 * `0005_add_reading_progress.sql`: current_page.
 * `0006_create_shelves.sql`: shelves, rows, columns, slots, item_shelf_locations.
+* `0007_make_no_status_explicit.sql`: defaults reading_status to 'none'.
 
 `internal/platform/migrate` embeds migrations and applies pending files on startup (exclusive lock on `schema_migrations`).
 

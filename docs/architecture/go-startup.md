@@ -5,11 +5,11 @@ flowchart TD
   A["cmd/api/main.go"] --> B["config.Load()"]:::config
   B --> C["logging.New()"]:::infra
   C --> D{"buildRepository()"}:::infra
-  D -->|DATA_STORE=memory| E["items.NewInMemoryRepository(seedLocalItems)"]:::domain
+  D -->|DATA_STORE=memory| E["items & shelves InMemoryRepository"]:::domain
   D -->|DATA_STORE=postgres| F["database.NewPostgres()"]:::infra
   F --> G["migrate.Apply()"]:::infra
-  G --> H["items.NewPostgresRepository"]:::domain
-  E --> I["items.NewService"]:::domain
+  G --> H["items & shelves PostgresRepository"]:::domain
+  E --> I["Services: items, shelves, catalog"]:::domain
   H --> I
   I --> J["http.NewRouter"]:::transport
   J --> K["http.Server setup"]:::transport
@@ -27,7 +27,7 @@ flowchart TD
 
 - `config.Load()` gathers environment-driven settings (ports, datastore selection, tokens, CORS).
 - `logging.New()` builds the global `slog.Logger` instance used across packages.
-- `buildRepository()` either seeds an in-memory repo (local/demo) or initializes Postgres, runs migrations, and wires `items.PostgresRepository`.
-- `items.Service` encapsulates validation plus CRUD orchestration; it is injected into HTTP handlers.
-- `http.NewRouter` composes middleware, auth, session handlers, and item endpoints. Static assets moved to the standalone UI container, so non-API paths return standard 404 responses.
+- `buildRepository()` either seeds in-memory repos (local/demo) or initializes Postgres, runs migrations, and wires `items`/`shelves` repositories.
+- Domain services (`items`, `shelves`, `catalog`) encapsulate validation and business logic; they are injected into HTTP handlers.
+- `http.NewRouter` composes middleware, auth, session handlers, and API endpoints. Static assets moved to the standalone UI container, so non-API paths return standard 404 responses.
 - The HTTP server runs `ListenAndServe` in a goroutine; the main goroutine blocks on the signal-aware context and then calls `srv.Shutdown` with a timeout to drain connections gracefully.

@@ -13,6 +13,7 @@ Anthology is a split-stack application with a stateless Go API and an Angular Ma
 
 * `cmd/api` — chi router setup, middleware, and HTTP handler wiring.
 * `internal/items` — domain logic, validation, repository interfaces.
+* `internal/shelves` — shelf management, layout definition, and item placement logic.
 * `internal/catalog` — Google Books client plus metadata aggregation helpers.
 * `internal/importer` — CSV importer used by both the HTTP endpoint and CLI tests.
 * `internal/http` — request/response helpers, item handler, catalog handler, and router definitions.

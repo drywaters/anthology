@@ -103,7 +103,13 @@ Tabs:
 
 * `ShelvesPageComponent`: lists shelf summaries with counts.
 * `AddShelfPageComponent`: create with name/description/photoUrl; uses Shelves service to POST.
-* `ShelfDetailPageComponent`: renders shelf layout, placements, and allows assigning/removing items (slot selection). Fetches shelf by id; can jump to slot via `?slot=<uuid>` param.
+* `ShelfDetailPageComponent`: renders the photo-backed shelf layout.
+  * **Visual Layout Editor**: In "Edit Layout" mode, users can draw slots on the shelf photo.
+    * **Drag-and-drop**: Pointer events track start/end coordinates to define slot boundaries (normalized 0-1).
+    * **Axis locking**: Dragging significantly along one axis locks movement to X or Y to ensure clean alignment.
+    * **Form integration**: `LayoutRowGroup`/`LayoutColumnGroup` form arrays mirror the visual state, allowing fine-grained numeric adjustments.
+  * **Placement**: In "View" mode, selecting a slot shows assigned items. Users can search the catalogue to assign new items or remove existing ones.
+  * **Drill-in**: Supports `?slot=<uuid>` to highlight a specific location when navigating from an item.
 
 ### Shared components
 
