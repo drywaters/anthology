@@ -179,12 +179,29 @@
     gap: 0.75rem;
 }
 
-.form-actions__delete.mat-mdc-button-base {
+.form-actions__delete {
+    // Force danger colors, overriding default material theme
+    background-color: var(--mat-sys-error) !important;
+    color: var(--mat-sys-on-error) !important;
+
+    // Ensure variables are also set for ripples/internals
     --mdc-filled-button-container-color: var(--mat-sys-error);
     --mdc-filled-button-label-text-color: var(--mat-sys-on-error);
+    --mat-mdc-button-persistent-ripple-color: var(--mat-sys-on-error);
+    --mat-mdc-button-ripple-color: var(--mat-sys-on-error);
+
+    &:hover,
+    &:focus-visible {
+        background-color: color-mix(in srgb, var(--mat-sys-error) 90%, black) !important;
+        --mdc-filled-button-container-color: color-mix(in srgb, var(--mat-sys-error) 90%, black);
+    }
+
+    &:disabled {
+        background-color: color-mix(in srgb, var(--mat-sys-error) 65%, white) !important;
+        color: color-mix(in srgb, var(--mat-sys-on-error) 75%, var(--mat-sys-on-surface)) !important;
+
+        --mdc-filled-button-container-color: color-mix(in srgb, var(--mat-sys-error) 65%, white);
+        --mdc-filled-button-label-text-color: color-mix(in srgb, var(--mat-sys-on-error) 75%, var(--mat-sys-on-surface));
+    }
 }
 
-.form-actions__delete.mat-mdc-button-base:disabled {
-    --mdc-filled-button-container-color: color-mix(in srgb, var(--mat-sys-error) 65%, white);
-    --mdc-filled-button-label-text-color: color-mix(in srgb, var(--mat-sys-on-error) 75%, var(--mat-sys-on-surface));
-}
