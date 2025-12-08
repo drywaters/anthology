@@ -1,4 +1,4 @@
-import { Component, DestroyRef, ElementRef, computed, inject, signal, ViewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, computed, inject, signal, ViewChild, NgZone, ChangeDetectorRef } from '@angular/core';
 import { NgClass, NgFor, NgIf, NgStyle } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -73,7 +73,7 @@ type ItemTypeFilter = ItemType | 'all';
 })
 export class ShelfDetailPageComponent {
     private static readonly MIN_SEGMENT = 0.02;
-    private static readonly AXIS_LOCK_THRESHOLD_PX = 4;
+    private static readonly AXIS_LOCK_THRESHOLD_PX = 16;
     private static readonly MIN_SEARCH_LENGTH = 2;
     private static readonly SEARCH_RESULT_LIMIT = 10;
     private static readonly DEFAULT_SLOT_MARGIN = 0.02;
@@ -84,12 +84,14 @@ export class ShelfDetailPageComponent {
     private readonly snackBar = inject(MatSnackBar);
     private readonly fb = inject(FormBuilder);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly ngZone = inject(NgZone);
+    private readonly cdr = inject(ChangeDetectorRef);
     private activeDrag: DragContext | null = null;
     private overlayRect: DOMRect | null = null;
     private readonly pointerMoveListener = (event: PointerEvent) => this.handlePointerMove(event);
     private readonly pointerUpListener = () => this.endDrag();
-    private dragLockedAxis: 'x' | 'y' | null = null;
     private dragStartPoint: { x: number; y: number } | null = null;
+    private dragLockedAxis: 'x' | 'y' | null = null;
     private pendingSlotId: string | null = null;
 
     @ViewChild('canvasOverlay') canvasOverlay?: ElementRef<HTMLDivElement>;
@@ -532,8 +534,8 @@ export class ShelfDetailPageComponent {
             win.removeEventListener('pointercancel', this.pointerUpListener);
         }
         this.overlayRect = null;
-        this.dragLockedAxis = null;
         this.dragStartPoint = null;
+        this.dragLockedAxis = null;
     }
 
     private handlePointerMove(event: PointerEvent): void {
@@ -553,36 +555,58 @@ export class ShelfDetailPageComponent {
     }
 
     private adjustCorner(clientX: number, clientY: number, rect: DOMRect): void {
-        if (!this.activeDrag || this.activeDrag.kind !== 'corner') {
+        if (!this.activeDrag || this.activeDrag.kind !== 'corner' || !this.dragStartPoint) {
             return;
         }
         const column = this.rows.at(this.activeDrag.rowIndex)?.controls.columns.at(this.activeDrag.columnIndex);
         if (!column) {
             return;
         }
-        this.maybeLockAxis(clientX, clientY);
+
+        const dx = Math.abs(clientX - this.dragStartPoint.x);
+        const dy = Math.abs(clientY - this.dragStartPoint.y);
+
+        // Try to establish a lock if not already locked
+        if (!this.dragLockedAxis && Math.max(dx, dy) >= ShelfDetailPageComponent.AXIS_LOCK_THRESHOLD_PX) {
+            const AXIS_LOCK_DOMINANCE_RATIO = 2; // One axis must be 2x greater than other to lock
+            if (dy > dx * AXIS_LOCK_DOMINANCE_RATIO) {
+                this.dragLockedAxis = 'y';
+            } else if (dx > dy * AXIS_LOCK_DOMINANCE_RATIO) {
+                this.dragLockedAxis = 'x';
+            }
+        }
+
+        // Determine allowed movement based on lock status
+        // If locked to X, we allow X movement (and block Y)
+        // If locked to Y, we allow Y movement (and block X)
+        // If not locked, we allow both
+        const allowX = this.dragLockedAxis === null || this.dragLockedAxis === 'x';
+        const allowY = this.dragLockedAxis === null || this.dragLockedAxis === 'y';
+
         const normalizedX = this.clamp((clientX - rect.left) / rect.width, 0, 1);
         const normalizedY = this.clamp((clientY - rect.top) / rect.height, 0, 1);
+
         const isTop = this.activeDrag.corner === 'top-left' || this.activeDrag.corner === 'top-right';
         const isLeft = this.activeDrag.corner === 'top-left' || this.activeDrag.corner === 'bottom-left';
-        const allowY = this.shouldAdjustAxis('y');
-        const allowX = this.shouldAdjustAxis('x');
 
-        if (allowY && isTop) {
-            const max = column.controls.yEndNorm.value - ShelfDetailPageComponent.MIN_SEGMENT;
-            column.controls.yStartNorm.setValue(this.clamp(normalizedY, 0, max));
-        } else if (allowY && !isTop) {
-            const min = column.controls.yStartNorm.value + ShelfDetailPageComponent.MIN_SEGMENT;
-            column.controls.yEndNorm.setValue(this.clamp(normalizedY, min, 1));
-        }
+        this.ngZone.run(() => {
+            if (allowY && isTop) {
+                const max = column.controls.yEndNorm.value - ShelfDetailPageComponent.MIN_SEGMENT;
+                column.controls.yStartNorm.setValue(this.clamp(normalizedY, 0, max));
+            } else if (allowY && !isTop) {
+                const min = column.controls.yStartNorm.value + ShelfDetailPageComponent.MIN_SEGMENT;
+                column.controls.yEndNorm.setValue(this.clamp(normalizedY, min, 1));
+            }
 
-        if (allowX && isLeft) {
-            const max = column.controls.xEndNorm.value - ShelfDetailPageComponent.MIN_SEGMENT;
-            column.controls.xStartNorm.setValue(this.clamp(normalizedX, 0, max));
-        } else if (allowX && !isLeft) {
-            const min = column.controls.xStartNorm.value + ShelfDetailPageComponent.MIN_SEGMENT;
-            column.controls.xEndNorm.setValue(this.clamp(normalizedX, min, 1));
-        }
+            if (allowX && isLeft) {
+                const max = column.controls.xEndNorm.value - ShelfDetailPageComponent.MIN_SEGMENT;
+                column.controls.xStartNorm.setValue(this.clamp(normalizedX, 0, max));
+            } else if (allowX && !isLeft) {
+                const min = column.controls.xStartNorm.value + ShelfDetailPageComponent.MIN_SEGMENT;
+                column.controls.xEndNorm.setValue(this.clamp(normalizedX, min, 1));
+            }
+            this.cdr.detectChanges();
+        });
 
         if (
             clientX < rect.left ||
@@ -594,24 +618,7 @@ export class ShelfDetailPageComponent {
         }
     }
 
-    private maybeLockAxis(clientX: number, clientY: number): void {
-        if (!this.dragStartPoint || this.dragLockedAxis) {
-            return;
-        }
-        const dx = Math.abs(clientX - this.dragStartPoint.x);
-        const dy = Math.abs(clientY - this.dragStartPoint.y);
-        if (Math.max(dx, dy) < ShelfDetailPageComponent.AXIS_LOCK_THRESHOLD_PX) {
-            return;
-        }
-        this.dragLockedAxis = dy >= dx ? 'y' : 'x';
-    }
 
-    private shouldAdjustAxis(axis: 'x' | 'y'): boolean {
-        if (!this.activeDrag || this.activeDrag.kind !== 'corner') {
-            return false;
-        }
-        return this.dragLockedAxis === null || this.dragLockedAxis === axis;
-    }
 
     private clamp(value: number, min: number, max: number): number {
         if (Number.isNaN(value)) {
