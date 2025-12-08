@@ -103,8 +103,23 @@
 
 .slot--draft {
     border: 2px solid rgba(255, 255, 255, 0.6);
-    background: rgba(225, 245, 254, 0.18);
+    background: rgba(0, 157, 255, 0.6);
     pointer-events: auto;
+}
+
+.slot--draft .slot__label {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+
+    &.slot__label-button--selected {
+        background: rgba(26, 115, 232, 0.8);
+    }
 }
 
 .slot--active {
