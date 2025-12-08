@@ -1,5 +1,5 @@
 import { DatePipe, NgClass, NgFor, NgIf, NgTemplateOutlet } from '@angular/common';
-import { AfterViewInit, Component, DestroyRef, ElementRef, OnDestroy, ViewChild, computed, effect, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, ElementRef, Injector, OnDestroy, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -66,6 +66,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     private readonly snackBar = inject(MatSnackBar);
     private readonly destroyRef = inject(DestroyRef);
     private readonly router = inject(Router);
+    private readonly injector = inject(Injector);
 
     @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLElement>;
 
@@ -185,7 +186,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
                 this.groupedItems();
                 setTimeout(() => this.observeLetterSections(), 0);
             },
-            { allowSignalWrites: true }
+            { injector: this.injector }
         );
     }
 
