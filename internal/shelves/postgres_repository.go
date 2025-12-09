@@ -70,7 +70,7 @@ func (r *postgresRepository) ListShelves(ctx context.Context) ([]ShelfSummary, e
 	}
 	defer rows.Close()
 
-	var summaries []ShelfSummary
+	summaries := make([]ShelfSummary, 0)
 	for rows.Next() {
 		var shelf Shelf
 		var itemCount, placedCount, slotCount int
