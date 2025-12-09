@@ -180,9 +180,9 @@
                             <p>Scan ISBN barcodes to automatically add and place items in this slot.</p>
                         </div>
 
-                        <div class="scanner-preview" *ngIf="scannerActive()">
+                        <div class="scanner-preview">
                             <video #scanVideo autoplay playsinline muted class="scanner-video"></video>
-                            <div class="scanner-overlay">
+                            <div class="scanner-overlay" *ngIf="scannerActive()">
                                 <div class="scanner-frame"></div>
                             </div>
                         </div>

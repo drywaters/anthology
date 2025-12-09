@@ -433,6 +433,10 @@
 // Scanner styles
 .sidebar__tabs {
     margin-top: 16px;
+
+    ::ng-deep .mat-mdc-tab-body-content {
+        padding-top: 4px;
+    }
 }
 
 .scanner-section {
