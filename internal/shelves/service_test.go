@@ -89,7 +89,8 @@ func TestUpdateLayoutReturnsOnlyDisplacedItems(t *testing.T) {
 	}
 
 	itemsRepo := items.NewInMemoryRepository([]items.Item{displacedItem, preexistingUnplaced})
-	svc := NewService(repo, itemsRepo)
+	itemSvc := items.NewService(itemsRepo)
+	svc := NewService(repo, itemsRepo, nil, itemSvc)
 
 	if _, err := repo.AssignItemToSlot(ctx, shelfID, slotRightID, displacedItem.ID); err != nil {
 		t.Fatalf("assign displaced item: %v", err)
@@ -181,7 +182,8 @@ func TestAssignItemUpdatesItemPlacementInMemoryRepo(t *testing.T) {
 
 	item := items.Item{ID: uuid.New(), Title: "Book", ItemType: items.ItemTypeBook, CreatedAt: now, UpdatedAt: now}
 	itemsRepo := items.NewInMemoryRepository([]items.Item{item})
-	svc := NewService(repo, itemsRepo)
+	itemSvc := items.NewService(itemsRepo)
+	svc := NewService(repo, itemsRepo, nil, itemSvc)
 
 	if _, err := svc.AssignItem(ctx, shelfID, slotID, item.ID); err != nil {
 		t.Fatalf("assign item: %v", err)

@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"anthology/internal/catalog"
 	"anthology/internal/items"
 )
 
@@ -33,10 +34,17 @@ var allowedImageMIMETypes = map[string]bool{
 	"image/svg+xml": true,
 }
 
+// CatalogService defines the interface for metadata lookups.
+type CatalogService interface {
+	Lookup(ctx context.Context, query string, category catalog.Category) ([]catalog.Metadata, error)
+}
+
 // Service coordinates layout validation and persistence.
 type Service struct {
-	repo      Repository
-	itemsRepo items.Repository
+	repo        Repository
+	itemsRepo   items.Repository
+	catalogSvc  CatalogService
+	itemService *items.Service
 }
 
 type placementCacheUpdater interface {
@@ -44,8 +52,13 @@ type placementCacheUpdater interface {
 }
 
 // NewService wires a shelf service.
-func NewService(repo Repository, itemsRepo items.Repository) *Service {
-	return &Service{repo: repo, itemsRepo: itemsRepo}
+func NewService(repo Repository, itemsRepo items.Repository, catalogSvc CatalogService, itemService *items.Service) *Service {
+	return &Service{
+		repo:        repo,
+		itemsRepo:   itemsRepo,
+		catalogSvc:  catalogSvc,
+		itemService: itemService,
+	}
 }
 
 // CreateShelfInput captures the fields required to create a shelf.
@@ -538,4 +551,127 @@ func sanitizePhotoURL(raw string) (string, error) {
 	}
 
 	return trimmed, nil
+}
+
+// ScanAndAssign scans an ISBN, creates the item if needed, and assigns it to a slot.
+func (s *Service) ScanAndAssign(ctx context.Context, shelfID, slotID uuid.UUID, isbn string) (ScanAndAssignResult, error) {
+	isbn = strings.TrimSpace(isbn)
+	if isbn == "" {
+		return ScanAndAssignResult{}, fmt.Errorf("%w: isbn is required", ErrValidation)
+	}
+
+	// Verify shelf and slot exist
+	shelf, err := s.repo.GetShelf(ctx, shelfID)
+	if err != nil {
+		return ScanAndAssignResult{}, err
+	}
+
+	slotExists := false
+	for _, slot := range shelf.Slots {
+		if slot.ID == slotID {
+			slotExists = true
+			break
+		}
+	}
+	if !slotExists {
+		return ScanAndAssignResult{}, ErrSlotNotFound
+	}
+
+	// Check if item already exists with this ISBN
+	existingItems, err := s.itemsRepo.List(ctx, items.ListOptions{})
+	if err != nil {
+		return ScanAndAssignResult{}, err
+	}
+
+	var existingItem *items.Item
+	for _, item := range existingItems {
+		if item.ISBN13 == isbn || item.ISBN10 == isbn {
+			existingItem = &item
+			break
+		}
+	}
+
+	var itemID uuid.UUID
+	status := ScanStatusCreated
+
+	if existingItem != nil {
+		// Item exists - check if it's already in this slot
+		itemID = existingItem.ID
+		if existingItem.ShelfPlacement != nil &&
+			existingItem.ShelfPlacement.ShelfID == shelfID &&
+			existingItem.ShelfPlacement.SlotID == slotID {
+			status = ScanStatusPresent
+			return ScanAndAssignResult{
+				Item:   *existingItem,
+				Status: status,
+			}, nil
+		}
+		status = ScanStatusMoved
+	} else {
+		// Item doesn't exist - lookup metadata and create it
+		metadata, err := s.catalogSvc.Lookup(ctx, isbn, catalog.CategoryBook)
+		if err != nil {
+			return ScanAndAssignResult{}, fmt.Errorf("failed to lookup ISBN: %w", err)
+		}
+
+		if len(metadata) == 0 {
+			return ScanAndAssignResult{}, fmt.Errorf("no metadata found for ISBN: %s", isbn)
+		}
+
+		// Use the first result
+		meta := metadata[0]
+
+		// Create the item
+		createInput := items.CreateItemInput{
+			Title:       meta.Title,
+			Creator:     meta.Creator,
+			ItemType:    meta.ItemType,
+			ReleaseYear: meta.ReleaseYear,
+			PageCount:   meta.PageCount,
+			ISBN13:      meta.ISBN13,
+			ISBN10:      meta.ISBN10,
+			Description: meta.Description,
+			CoverImage:  meta.CoverImage,
+			Notes:       meta.Notes,
+		}
+
+		newItem, err := s.itemService.Create(ctx, createInput)
+		if err != nil {
+			return ScanAndAssignResult{}, fmt.Errorf("failed to create item: %w", err)
+		}
+
+		itemID = newItem.ID
+		status = ScanStatusCreated
+	}
+
+	// Assign item to slot
+	if _, err := s.repo.AssignItemToSlot(ctx, shelfID, slotID, itemID); err != nil {
+		return ScanAndAssignResult{}, err
+	}
+
+	// Get the updated shelf
+	updated, err := s.repo.GetShelf(ctx, shelfID)
+	if err != nil {
+		return ScanAndAssignResult{}, err
+	}
+
+	hydrated, err := s.attachItems(ctx, updated)
+	if err != nil {
+		return ScanAndAssignResult{}, err
+	}
+
+	if err := s.updateItemPlacementCache(ctx, hydrated, []uuid.UUID{itemID}); err != nil {
+		return ScanAndAssignResult{}, err
+	}
+
+	// Get the final item to return
+	finalItem, err := s.itemsRepo.Get(ctx, itemID)
+	if err != nil {
+		return ScanAndAssignResult{}, err
+	}
+
+	return ScanAndAssignResult{
+		Item:   finalItem,
+		Status: status,
+	}, nil
 }
