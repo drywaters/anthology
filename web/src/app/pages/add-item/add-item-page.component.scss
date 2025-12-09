@@ -136,13 +136,14 @@ mat-card {
     overflow: hidden;
     border-radius: 16px;
     background: black;
-    min-height: 220px;
 }
 
 .scanner-preview video {
     display: block;
     width: 100%;
-    height: 100%;
+    height: auto;
+    max-height: 400px;
+    min-height: 240px;
     object-fit: cover;
 }
 
