@@ -182,7 +182,7 @@
 
                         <div class="scanner-preview">
                             <video #scanVideo autoplay playsinline muted class="scanner-video"></video>
-                            <div class="scanner-overlay" *ngIf="scannerActive()">
+                            <div class="scanner-overlay" *ngIf="scannerActive() && scannerStatus()?.includes('Align')">
                                 <div class="scanner-frame"></div>
                             </div>
                         </div>
