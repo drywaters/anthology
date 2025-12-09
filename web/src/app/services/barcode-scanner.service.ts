@@ -113,7 +113,7 @@ export class BarcodeScannerService {
       }
 
       this.scannerMode = scannerMode;
-      this.scannerStatus.set('Align a UPC or ISBN barcode within the frame.');
+      this.scannerStatus.set('Align an ISBN barcode within the frame.');
 
       if (scannerMode === 'native') {
         this.scheduleNextScan();

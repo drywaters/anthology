@@ -45,7 +45,7 @@
                                     </button>
                                     <mat-hint>At least three characters; ISBN searches work best with numbers only.</mat-hint>
                                     <mat-error *ngIf="searchForm.get('query')?.hasError('required')">
-                                        Enter an ISBN, UPC, or keyword.
+                                        Enter an ISBN or keyword.
                                     </mat-error>
                                     <mat-error *ngIf="searchForm.get('query')?.hasError('minlength')">
                                         Use at least three characters.
@@ -140,7 +140,7 @@ from the Manual Entry tab.
 <span class="value">{{ preview.isbn13 || '—' }}</span>
 </div>
 <div class="preview-field">
-<span class="label">UPC / ISBN10</span>
+<span class="label">ISBN-10</span>
 <span class="value">{{ preview.isbn10 || '—' }}</span>
 </div>
 </div>
@@ -228,7 +228,7 @@ Use for manual entry
                                 <span class="field" *ngFor="let field of csvFields">{{ field }}</span>
                             </div>
                             <p class="hint">
-                                For books, you can leave the title blank if you include an ISBN or UPC. We’ll fetch the
+                                For books, you can leave the title blank if you include an ISBN. We'll fetch the
                                 metadata automatically. Use the <code>coverImage</code> column for an HTTPS image URL (or
                                 leave it blank to add one later). Duplicate titles or ISBNs are skipped and reported below.
                             </p>
