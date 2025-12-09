@@ -92,11 +92,11 @@
                                     <div class="video-frame">
                                         <video #scanVideo autoplay playsinline muted></video>
                                         <div class="overlay" *ngIf="scannerActive()">
-                                            <span>Point your camera at a UPC or ISBN barcode.</span>
+                                            <div class="scanner-frame"></div>
                                         </div>
                                     </div>
                                     <p class="hint" *ngIf="scannerActive()">
-                                        Once we read a code, we’ll automatically run the lookup for you.
+                                        Once we read a code, we'll automatically run the lookup for you.
                                     </p>
                                 </div>
                             </div>
