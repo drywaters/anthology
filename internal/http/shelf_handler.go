@@ -176,3 +176,37 @@ func (h *ShelfHandler) RemoveItem(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, shelf)
 }
+
+// ScanAndAssign scans an ISBN and assigns the item to a slot.
+func (h *ShelfHandler) ScanAndAssign(w http.ResponseWriter, r *http.Request) {
+	shelfID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid shelf id")
+		return
+	}
+	slotID, err := uuid.Parse(chi.URLParam(r, "slotId"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid slot id")
+		return
+	}
+
+	var payload struct {
+		ISBN string `json:"isbn"`
+	}
+	if err := decodeJSONBody(w, r, &payload); err != nil {
+		writeJSONError(w, err)
+		return
+	}
+	if payload.ISBN == "" {
+		writeError(w, http.StatusBadRequest, "isbn is required")
+		return
+	}
+
+	result, err := h.svc.ScanAndAssign(r.Context(), shelfID, slotID, payload.ISBN)
+	if err != nil {
+		h.handleShelfError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, result)
+}

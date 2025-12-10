@@ -98,6 +98,9 @@
                 <div class="assigned-items__container">
                     <div
                         class="assigned-item"
+                        [ngClass]="{
+                            'assigned-item--recently-scanned': isRecentlyScanned(placement.item.id)
+                        }"
                         *ngFor="let placement of sortedAssignedItems(slot.id)"
                         [matTooltip]="placement.item.title"
                         [matTooltipDisabled]="placement.item.title.length <= 30"
@@ -118,55 +121,94 @@
                 <p class="helper">No items assigned yet.</p>
             </ng-template>
 
-            <div class="sidebar__section">
-                <div class="sidebar__search-controls">
-                    <mat-form-field appearance="outline">
-                        <mat-label>Item type</mat-label>
-                        <mat-select [formControl]="itemSearchType">
-                            <mat-option *ngFor="let option of itemTypeOptions" [value]="option.value">
-                                {{ option.label }}
-                            </mat-option>
-                        </mat-select>
-                    </mat-form-field>
-                    <mat-form-field appearance="outline" class="sidebar__search-field">
-                        <mat-label>Add item</mat-label>
-                        <input
-                            matInput
-                            type="text"
-                            placeholder="Search by title"
-                            [formControl]="itemSearchControl"
-                            [matAutocomplete]="itemSearchAutocomplete"
-                        />
-                        <mat-autocomplete #itemSearchAutocomplete="matAutocomplete" (optionSelected)="handleSearchSelection($event.option.value)">
-                            <mat-option *ngIf="searchingItems()" disabled>Searching...</mat-option>
-                            <mat-option *ngFor="let item of itemSearchResults()" [value]="item.id">
-                                <span class="item-option__title">{{ item.title }}</span>
-                                <span class="item-option__creator" *ngIf="item.creator">{{ item.creator }}</span>
-                            </mat-option>
-                            <mat-option
-                                *ngIf="
-                                    !searchingItems() &&
-                                    !itemSearchResults().length &&
-                                    itemSearchQuery.length >= minSearchLength
-                                "
-                                disabled
-                            >
-                                No matches found
-                            </mat-option>
-                            <mat-option
-                                *ngIf="
-                                    !searchingItems() &&
-                                    !itemSearchResults().length &&
-                                    itemSearchQuery.length < minSearchLength
-                                "
-                                disabled
-                            >
-                                Type at least {{ minSearchLength }} characters
-                            </mat-option>
-                        </mat-autocomplete>
-                    </mat-form-field>
-                </div>
-            </div>
+            <mat-tab-group class="sidebar__tabs" [selectedIndex]="selectedManagerTab()" (selectedIndexChange)="handleManagerTabChange($event)">
+                <mat-tab label="From Library">
+                    <div class="sidebar__section">
+                        <div class="sidebar__search-controls">
+                            <mat-form-field appearance="outline">
+                                <mat-label>Item type</mat-label>
+                                <mat-select [formControl]="itemSearchType">
+                                    <mat-option *ngFor="let option of itemTypeOptions" [value]="option.value">
+                                        {{ option.label }}
+                                    </mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                            <mat-form-field appearance="outline" class="sidebar__search-field">
+                                <mat-label>Add item</mat-label>
+                                <input
+                                    matInput
+                                    type="text"
+                                    placeholder="Search by title"
+                                    [formControl]="itemSearchControl"
+                                    [matAutocomplete]="itemSearchAutocomplete"
+                                />
+                                <mat-autocomplete #itemSearchAutocomplete="matAutocomplete" (optionSelected)="handleSearchSelection($event.option.value)">
+                                    <mat-option *ngIf="searchingItems()" disabled>Searching...</mat-option>
+                                    <mat-option *ngFor="let item of itemSearchResults()" [value]="item.id">
+                                        <span class="item-option__title">{{ item.title }}</span>
+                                        <span class="item-option__creator" *ngIf="item.creator">{{ item.creator }}</span>
+                                    </mat-option>
+                                    <mat-option
+                                        *ngIf="
+                                            !searchingItems() &&
+                                            !itemSearchResults().length &&
+                                            itemSearchQuery.length >= minSearchLength
+                                        "
+                                        disabled
+                                    >
+                                        No matches found
+                                    </mat-option>
+                                    <mat-option
+                                        *ngIf="
+                                            !searchingItems() &&
+                                            !itemSearchResults().length &&
+                                            itemSearchQuery.length < minSearchLength
+                                        "
+                                        disabled
+                                    >
+                                        Type at least {{ minSearchLength }} characters
+                                    </mat-option>
+                                </mat-autocomplete>
+                            </mat-form-field>
+                        </div>
+                    </div>
+                </mat-tab>
+
+                <mat-tab label="Scan New">
+                    <div class="sidebar__section scanner-section">
+                        <div class="scanner-instructions">
+                            <p>Scan ISBN barcodes to automatically add and place items in this slot.</p>
+                        </div>
+
+                        <div class="scanner-preview">
+                            <video #scanVideo autoplay playsinline muted class="scanner-video"></video>
+                            <div class="scanner-overlay" *ngIf="scannerActive() && scannerStatus()?.includes('Align')">
+                                <div class="scanner-frame"></div>
+                            </div>
+                        </div>
+
+                        <div class="scanner-status" *ngIf="scannerStatus() || scannerError()">
+                            <p class="status-message" *ngIf="scannerStatus()">
+                                <mat-icon>info</mat-icon>
+                                {{ scannerStatus() }}
+                            </p>
+                            <p class="error-message" *ngIf="scannerError()">
+                                <mat-icon>error</mat-icon>
+                                {{ scannerError() }}
+                            </p>
+                        </div>
+
+                        <div class="scanner-actions" *ngIf="!scannerActive() && scannerSupported() === false">
+                            <p class="helper">Camera scanning is not supported on this device.</p>
+                        </div>
+
+                        <div class="scanner-busy" *ngIf="scannerBusy()">
+                            <mat-icon class="spinner">autorenew</mat-icon>
+                            <span>Processing scan...</span>
+                        </div>
+                    </div>
+                </mat-tab>
+            </mat-tab-group>
 
             <div class="sidebar__section" *ngIf="unplacedItems().length">
                 <div class="sidebar__section-title">Unplaced on this shelf</div>

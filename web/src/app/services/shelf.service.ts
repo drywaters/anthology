@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 
 import { environment } from '../config/environment';
-import { LayoutSlotInput, LayoutUpdateResponse, ShelfSummary, ShelfWithLayout } from '../models/shelf';
+import { LayoutSlotInput, LayoutUpdateResponse, ScanAndAssignResult, ShelfSummary, ShelfWithLayout } from '../models/shelf';
 
 @Injectable({ providedIn: 'root' })
 export class ShelfService {
@@ -32,5 +32,9 @@ export class ShelfService {
 
     removeItem(shelfId: string, slotId: string, itemId: string): Observable<ShelfWithLayout> {
         return this.http.delete<ShelfWithLayout>(`${this.baseUrl}/${shelfId}/slots/${slotId}/items/${itemId}`);
+    }
+
+    scanAndAssign(shelfId: string, slotId: string, isbn: string): Observable<ScanAndAssignResult> {
+        return this.http.post<ScanAndAssignResult>(`${this.baseUrl}/${shelfId}/slots/${slotId}/scan`, { isbn });
     }
 }

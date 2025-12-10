@@ -81,3 +81,10 @@ export interface LayoutUpdateResponse {
     shelf: ShelfWithLayout;
     displaced: PlacementWithItem[] | null;
 }
+
+export type ScanStatus = 'created' | 'moved' | 'present';
+
+export interface ScanAndAssignResult {
+    item: Item;
+    status: ScanStatus;
+}

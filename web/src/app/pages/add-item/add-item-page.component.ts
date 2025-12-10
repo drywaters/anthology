@@ -44,7 +44,7 @@ interface BarcodeDetector {
 }
 
 interface BarcodeDetectorConstructor {
-    new (options?: BarcodeDetectorOptions): BarcodeDetector;
+    new(options?: BarcodeDetectorOptions): BarcodeDetector;
     getSupportedFormats(): Promise<SupportedBarcodeFormat[]>;
 }
 
@@ -99,7 +99,7 @@ export class AddItemPageComponent {
             label: 'Book',
             description: 'Search by ISBN or keyword to auto-fill book details.',
             inputLabel: 'Search for books',
-            placeholder: 'ISBN, UPC, or title keyword',
+            placeholder: 'ISBN or title keyword',
             itemType: 'book',
         },
         {
@@ -320,7 +320,7 @@ export class AddItemPageComponent {
             }
 
             this.scannerMode = scannerMode;
-            this.scannerStatus.set('Align a UPC or ISBN barcode within the frame.');
+            this.scannerStatus.set('Align an ISBN barcode within the frame.');
 
             if (scannerMode === 'native') {
                 this.scheduleNextScan();
@@ -639,13 +639,13 @@ export class AddItemPageComponent {
                     this.manualDraftSource.set(null);
                     this.lookupResults.set([]);
 
-                    let message = 'We couldn’t find a match. Try another ISBN or UPC.';
+                    let message = 'We couldn\'t find a match. Try another ISBN.';
                     if (error instanceof HttpErrorResponse) {
                         const serverMessage = typeof error.error?.error === 'string' ? error.error.error.trim() : '';
                         if (serverMessage) {
                             message = serverMessage;
                         } else if (error.status === 404) {
-                            message = 'We couldn’t find a match. Try another ISBN or UPC.';
+                            message = 'We couldn\'t find a match. Try another ISBN.';
                         }
                     }
 
@@ -661,8 +661,8 @@ export class AddItemPageComponent {
     clearManualDraft(): void {
         this.manualDraft.set(null);
         this.manualDraftSource.set(null);
-this.lookupResults.set([]);
-}
+        this.lookupResults.set([]);
+    }
 
     handleQuickAdd(preview: ItemForm): void {
         if (!preview || this.busy()) {

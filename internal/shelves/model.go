@@ -19,6 +19,24 @@ var ErrSlotNotFound = errors.New("shelf slot not found")
 // ErrValidation wraps user-correctable validation errors safe to expose to clients.
 var ErrValidation = errors.New("validation error")
 
+// ScanStatus indicates the result of a scan operation.
+type ScanStatus string
+
+const (
+	// ScanStatusCreated indicates a new item was created and assigned.
+	ScanStatusCreated ScanStatus = "created"
+	// ScanStatusMoved indicates an existing item was moved from another slot.
+	ScanStatusMoved ScanStatus = "moved"
+	// ScanStatusPresent indicates the item was already in this slot.
+	ScanStatusPresent ScanStatus = "present"
+)
+
+// ScanAndAssignResult wraps the result of scanning and assigning an item.
+type ScanAndAssignResult struct {
+	Item   items.Item `json:"item"`
+	Status ScanStatus `json:"status"`
+}
+
 // Shelf represents a physical shelf image and metadata.
 type Shelf struct {
 	ID          uuid.UUID `db:"id" json:"id"`

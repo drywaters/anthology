@@ -12,14 +12,16 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { catchError, combineLatest, debounceTime, distinctUntilChanged, finalize, map, of, startWith, switchMap } from 'rxjs';
+import { catchError, combineLatest, debounceTime, distinctUntilChanged, finalize, map, of, startWith, switchMap, tap } from 'rxjs';
 
 import { Item, ItemType, ITEM_TYPE_LABELS } from '../../models/item';
-import { LayoutSlotInput, PlacementWithItem, ShelfSlot, ShelfWithLayout } from '../../models/shelf';
+import { LayoutSlotInput, PlacementWithItem, ScanStatus, ShelfSlot, ShelfWithLayout } from '../../models/shelf';
 import { ShelfService } from '../../services/shelf.service';
 import { ItemService } from '../../services/item.service';
+import { BarcodeScannerService } from '../../services/barcode-scanner.service';
 
 interface LayoutRowGroup {
     rowId: FormControl<string | null>;
@@ -68,6 +70,7 @@ type ItemTypeFilter = ItemType | 'all';
         MatAutocompleteModule,
         MatSelectModule,
         MatSnackBarModule,
+        MatTabsModule,
         MatTooltipModule,
     ],
     templateUrl: './shelf-detail-page.component.html',
@@ -79,6 +82,7 @@ export class ShelfDetailPageComponent {
     private static readonly MIN_SEARCH_LENGTH = 2;
     private static readonly SEARCH_RESULT_LIMIT = 10;
     private static readonly DEFAULT_SLOT_MARGIN = 0.02;
+    private static readonly SCAN_DEBOUNCE_MS = 3000;
 
     private readonly route = inject(ActivatedRoute);
     private readonly shelfService = inject(ShelfService);
@@ -88,6 +92,7 @@ export class ShelfDetailPageComponent {
     private readonly destroyRef = inject(DestroyRef);
     private readonly ngZone = inject(NgZone);
     private readonly cdr = inject(ChangeDetectorRef);
+    private readonly barcodeScanner = inject(BarcodeScannerService);
     private activeDrag: DragContext | null = null;
     private overlayRect: DOMRect | null = null;
     private readonly pointerMoveListener = (event: PointerEvent) => this.handlePointerMove(event);
@@ -95,8 +100,12 @@ export class ShelfDetailPageComponent {
     private dragStartPoint: { x: number; y: number } | null = null;
     private dragLockedAxis: 'x' | 'y' | null = null;
     private pendingSlotId: string | null = null;
+    private lastScannedISBN: string | null = null;
+    private lastScanTime: number = 0;
+    private recentlyScannedItems = new Set<string>();
 
     @ViewChild('canvasOverlay') canvasOverlay?: ElementRef<HTMLDivElement>;
+    @ViewChild('scanVideo') scanVideo?: ElementRef<HTMLVideoElement>;
 
     readonly loading = signal(false);
     readonly savingLayout = signal(false);
@@ -123,6 +132,14 @@ export class ShelfDetailPageComponent {
     readonly layoutForm = this.fb.array<FormGroup<LayoutRowGroup>>([]);
     readonly unplacedItems = computed(() => this.shelf()?.unplaced ?? []);
 
+    // Scanner-related signals
+    readonly selectedManagerTab = signal(0);
+    readonly scannerBusy = signal(false);
+    readonly scannerSupported = computed(() => this.barcodeScanner.scannerSupported());
+    readonly scannerActive = computed(() => this.barcodeScanner.scannerActive());
+    readonly scannerStatus = computed(() => this.barcodeScanner.scannerStatus());
+    readonly scannerError = computed(() => this.barcodeScanner.scannerError());
+
     constructor() {
         this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
             const id = params.get('id');
@@ -142,7 +159,10 @@ export class ShelfDetailPageComponent {
         });
 
         this.initializeItemSearch();
-        this.destroyRef.onDestroy(() => this.endDrag());
+        this.destroyRef.onDestroy(() => {
+            this.endDrag();
+            this.stopScanner();
+        });
     }
 
     get rows(): FormArray<FormGroup<LayoutRowGroup>> {
@@ -651,5 +671,103 @@ export class ShelfDetailPageComponent {
 
     private get windowRef(): Window | null {
         return typeof window === 'undefined' ? null : window;
+    }
+
+    // Scanner methods
+    async startScanner(): Promise<void> {
+        const video = this.scanVideo?.nativeElement;
+        if (!video) {
+            this.snackBar.open('Scanner not available', 'Dismiss', { duration: 3000 });
+            return;
+        }
+
+        await this.barcodeScanner.startScanner(video, (result) => {
+            this.ngZone.run(() => {
+                this.handleScan(result.rawValue);
+            });
+        });
+    }
+
+    stopScanner(): void {
+        this.barcodeScanner.stopScanner();
+        this.recentlyScannedItems.clear();
+    }
+
+    handleManagerTabChange(index: number): void {
+        this.selectedManagerTab.set(index);
+        if (index === 1) {
+            // Tab B: "Scan New" activated
+            setTimeout(() => this.startScanner(), 100);
+        } else {
+            // Tab A: "From Library" activated
+            this.stopScanner();
+        }
+    }
+
+    private handleScan(isbn: string): void {
+        const now = Date.now();
+
+        // Debounce: prevent scanning the same ISBN within 3 seconds
+        if (isbn === this.lastScannedISBN && now - this.lastScanTime < ShelfDetailPageComponent.SCAN_DEBOUNCE_MS) {
+            this.snackBar.open('Item already scanned. Wait a moment before scanning again.', 'Dismiss', { duration: 2000 });
+            return;
+        }
+
+        this.lastScannedISBN = isbn;
+        this.lastScanTime = now;
+
+        const shelf = this.shelf();
+        const slot = this.selectedSlot();
+
+        if (!shelf || !slot) {
+            this.snackBar.open('No slot selected', 'Dismiss', { duration: 3000 });
+            return;
+        }
+
+        this.scannerBusy.set(true);
+
+        this.shelfService
+            .scanAndAssign(shelf.shelf.id, slot.id, isbn)
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                finalize(() => this.scannerBusy.set(false))
+            )
+            .subscribe({
+                next: (result) => {
+                    this.handleScanSuccess(result.item.id, result.status);
+                    this.loadShelf(shelf.shelf.id);
+                },
+                error: (err) => {
+                    console.error('Scan failed', err);
+                    const message = err.error?.error || 'Could not scan item. Please try again.';
+                    this.snackBar.open(message, 'Dismiss', { duration: 5000 });
+                },
+            });
+    }
+
+    private handleScanSuccess(itemId: string, status: ScanStatus): void {
+        this.recentlyScannedItems.add(itemId);
+
+        // Remove from recently scanned after 5 seconds
+        setTimeout(() => {
+            this.recentlyScannedItems.delete(itemId);
+        }, 5000);
+
+        const slot = this.selectedSlot();
+        if (!slot) {
+            return;
+        }
+
+        if (status === 'created') {
+            this.snackBar.open('New item added and placed in slot', 'Dismiss', { duration: 3000 });
+        } else if (status === 'moved') {
+            this.snackBar.open(`Item moved to Slot ${slot.rowIndex + 1}·${slot.colIndex + 1}`, 'Dismiss', { duration: 3000 });
+        } else if (status === 'present') {
+            this.snackBar.open('Item already in this slot', 'Dismiss', { duration: 2000 });
+        }
+    }
+
+    isRecentlyScanned(itemId: string): boolean {
+        return this.recentlyScannedItems.has(itemId);
     }
 }

@@ -137,6 +137,12 @@ func (m *inMemoryRepository) AssignItemToSlot(ctx context.Context, shelfID uuid.
 		return ItemPlacement{}, ErrSlotNotFound
 	}
 
+	// Delete any existing placements for this item across ALL shelves (not just this shelf)
+	// to ensure an item can only be on one shelf at a time
+	for sid := range m.placements {
+		delete(m.placements[sid], itemID)
+	}
+
 	placement := ItemPlacement{
 		ID:          uuid.New(),
 		ItemID:      itemID,

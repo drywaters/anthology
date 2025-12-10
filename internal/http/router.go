@@ -80,9 +80,12 @@ func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Servic
 				r.Route("/{id}", func(r chi.Router) {
 					r.Get("/", shelfHandler.Get)
 					r.Put("/layout", shelfHandler.UpdateLayout)
-					r.Route("/slots/{slotId}/items", func(r chi.Router) {
-						r.Post("/", shelfHandler.AssignItem)
-						r.Delete("/{itemId}", shelfHandler.RemoveItem)
+					r.Route("/slots/{slotId}", func(r chi.Router) {
+						r.Post("/scan", shelfHandler.ScanAndAssign)
+						r.Route("/items", func(r chi.Router) {
+							r.Post("/", shelfHandler.AssignItem)
+							r.Delete("/{itemId}", shelfHandler.RemoveItem)
+						})
 					})
 				})
 			})

@@ -429,3 +429,140 @@
         align-items: flex-start;
     }
 }
+
+// Scanner styles
+.sidebar__tabs {
+    margin-top: 16px;
+
+    ::ng-deep .mat-mdc-tab-body-content {
+        padding-top: 16px;
+    }
+}
+
+.scanner-section {
+    min-height: 300px;
+}
+
+.scanner-instructions {
+    margin-bottom: 16px;
+
+    p {
+        color: #5f6368;
+        margin: 0;
+    }
+}
+
+.scanner-preview {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #000;
+    margin-bottom: 16px;
+}
+
+.scanner-video {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 400px;
+    object-fit: cover;
+}
+
+.scanner-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.scanner-frame {
+    width: 80%;
+    max-width: 300px;
+    height: 150px;
+    border: 3px dashed rgba(0, 157, 255, 0.8);
+    border-radius: 8px;
+    background: rgba(0, 157, 255, 0.1);
+}
+
+.scanner-status {
+    margin-bottom: 16px;
+
+    .status-message,
+    .error-message {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 8px 0;
+
+        mat-icon {
+            font-size: 20px;
+            width: 20px;
+            height: 20px;
+        }
+    }
+
+    .status-message {
+        color: #1a73e8;
+    }
+
+    .error-message {
+        color: #d93025;
+    }
+}
+
+.scanner-busy {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px;
+    background: #e3f2fd;
+    border-radius: 8px;
+    margin-top: 16px;
+
+    mat-icon.spinner {
+        animation: spin 1s linear infinite;
+        color: #1a73e8;
+    }
+
+    span {
+        color: #0d47a1;
+        font-weight: 500;
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+// Green highlight for newly scanned items (PRD requirement)
+.assigned-item--recently-scanned {
+    background-color: #d1f4d1;
+    border-color: #4caf50;
+    animation: highlight-pulse 2s ease-in-out;
+
+    .assigned-item__title {
+        color: #1b5e20;
+        font-weight: 600;
+    }
+}
+
+@keyframes highlight-pulse {
+    0%, 100% {
+        background-color: #d1f4d1;
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
+    }
+    50% {
+        background-color: #a5d6a7;
+        box-shadow: 0 0 0 6px rgba(76, 175, 80, 0);
+    }
+}
