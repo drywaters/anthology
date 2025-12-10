@@ -641,7 +641,6 @@ func (s *Service) ScanAndAssign(ctx context.Context, shelfID, slotID uuid.UUID, 
 		}
 
 		itemID = newItem.ID
-		status = ScanStatusCreated
 	}
 
 	// Assign item to slot
