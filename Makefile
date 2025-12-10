@@ -10,6 +10,9 @@ API_TOKEN ?= local-dev-token
 GOOGLE_BOOKS_API_KEY ?= local-google-books-api-key
 DATABASE_URL ?= postgres://anthology:anthology@localhost:5432/anthology?sslmode=disable
 
+# Include local overrides if present (e.g., local.mk with real API keys)
+-include local.mk
+
 REGISTRY ?= registry.bitofbytes.io
 IMAGE_REPO ?= anthology
 API_IMAGE_REPO ?= anthology-api

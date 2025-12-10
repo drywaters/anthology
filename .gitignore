@@ -19,3 +19,6 @@ web/.DS_Store
 
 # Gemini
 .gemini-clipboard
+
+# Local development overrides
+local.mk
