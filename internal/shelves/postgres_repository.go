@@ -217,7 +217,9 @@ func (r *postgresRepository) AssignItemToSlot(ctx context.Context, shelfID uuid.
 		return ItemPlacement{}, ErrSlotNotFound
 	}
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM item_shelf_locations WHERE shelf_id=$1 AND item_id=$2`, shelfID, itemID); err != nil {
+	// Delete any existing placements for this item across ALL shelves (not just this shelf)
+	// to ensure an item can only be on one shelf at a time
+	if _, err := tx.ExecContext(ctx, `DELETE FROM item_shelf_locations WHERE item_id=$1`, itemID); err != nil {
 		return ItemPlacement{}, err
 	}
 

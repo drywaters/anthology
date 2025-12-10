@@ -44,7 +44,7 @@ interface BarcodeDetector {
 }
 
 interface BarcodeDetectorConstructor {
-    new (options?: BarcodeDetectorOptions): BarcodeDetector;
+    new(options?: BarcodeDetectorOptions): BarcodeDetector;
     getSupportedFormats(): Promise<SupportedBarcodeFormat[]>;
 }
 
@@ -639,13 +639,13 @@ export class AddItemPageComponent {
                     this.manualDraftSource.set(null);
                     this.lookupResults.set([]);
 
-                    let message = 'We couldn't find a match. Try another ISBN.';
+                    let message = 'We couldn\'t find a match. Try another ISBN.';
                     if (error instanceof HttpErrorResponse) {
                         const serverMessage = typeof error.error?.error === 'string' ? error.error.error.trim() : '';
                         if (serverMessage) {
                             message = serverMessage;
                         } else if (error.status === 404) {
-                            message = 'We couldn't find a match. Try another ISBN.';
+                            message = 'We couldn\'t find a match. Try another ISBN.';
                         }
                     }
 
@@ -661,8 +661,8 @@ export class AddItemPageComponent {
     clearManualDraft(): void {
         this.manualDraft.set(null);
         this.manualDraftSource.set(null);
-this.lookupResults.set([]);
-}
+        this.lookupResults.set([]);
+    }
 
     handleQuickAdd(preview: ItemForm): void {
         if (!preview || this.busy()) {
