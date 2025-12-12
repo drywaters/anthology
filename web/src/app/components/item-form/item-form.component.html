@@ -289,7 +289,7 @@
             (click)="requestResync()"
             [disabled]="busy || resyncing"
         >
-            {{ resyncing ? 'Syncing...' : 'Re-sync from Google Books' }}
+            {{ resyncing ? 'Syncing...' : 'Re-sync' }}
         </button>
         <button mat-stroked-button type="button" (click)="cancelled.emit()" [disabled]="busy || resyncing">
            Cancel
