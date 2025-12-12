@@ -148,19 +148,24 @@ export class BarcodeScannerService {
       console.error('Unable to start barcode scanner', error);
       this.scannerError.set('Camera access failed. Confirm permissions and try again.');
       this.scannerStatus.set(null);
-      this.stopScanner();
+      this.stopScanner({ preserveError: true });
     }
   }
 
-  stopScanner(): void {
+  stopScanner(options: { preserveError?: boolean; preserveHint?: boolean; preserveStatus?: boolean } = {}): void {
+    const preservedError = options.preserveError ? this.scannerError() : null;
+    const preservedHint = options.preserveHint ? this.scannerHint() : null;
+    const preservedStatus = options.preserveStatus ? this.scannerStatus() : null;
+
     this.scannerActive.set(false);
-    this.scannerStatus.set(null);
-    this.scannerError.set(null);
-    this.scannerHint.set(null);
     this.processingDetection = false;
     this.scannerProcessing.set(false);
     this.scannerReady.set(false);
-    this.clearTransientMessages();
+    this.clearStatusTimer();
+    this.clearFlashTimer();
+    this.scannerStatus.set(null);
+    this.scannerError.set(null);
+    this.scannerHint.set(null);
     this.clearScannerAnimation();
     this.stopZxingControls();
     this.stopScannerStream();
@@ -171,6 +176,16 @@ export class BarcodeScannerService {
       this.videoElement.pause();
       this.videoElement.srcObject = null;
       this.videoElement = null;
+    }
+
+    if (preservedStatus) {
+      this.scannerStatus.set(preservedStatus);
+    }
+    if (preservedHint) {
+      this.scannerHint.set(preservedHint);
+    }
+    if (preservedError) {
+      this.scannerError.set(preservedError);
     }
   }
 
@@ -205,7 +220,7 @@ export class BarcodeScannerService {
     } catch (error) {
       console.error('Barcode detection failed', error);
       this.scannerError.set('Unable to read the barcode. Try adjusting lighting or typing the code.');
-      this.stopScanner();
+      this.stopScanner({ preserveError: true });
       return;
     }
 
@@ -215,7 +230,7 @@ export class BarcodeScannerService {
   private startZxingDetection(): void {
     if (!this.zxingReader || !this.videoElement) {
       this.scannerError.set('Barcode scanning is not available on this device.');
-      this.stopScanner();
+      this.stopScanner({ preserveError: true });
       return;
     }
 
@@ -236,14 +251,14 @@ export class BarcodeScannerService {
           if (error && !(error instanceof NotFoundException)) {
             console.error('Barcode detection failed', error);
             this.scannerError.set('Unable to read the barcode. Try adjusting lighting or typing the code.');
-            this.stopScanner();
+            this.stopScanner({ preserveError: true });
           }
         }
       )
       .catch((error: unknown) => {
         console.error('Barcode detection failed', error);
         this.scannerError.set('Unable to read the barcode. Try adjusting lighting or typing the code.');
-        this.stopScanner();
+        this.stopScanner({ preserveError: true });
       });
   }
 
@@ -276,6 +291,7 @@ export class BarcodeScannerService {
     this.processingDetection = false;
     this.scannerProcessing.set(false);
     this.scannerError.set(null);
+    this.scannerStatus.set(null);
     this.clearStatusTimer();
   }
 
