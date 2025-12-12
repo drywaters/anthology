@@ -125,6 +125,42 @@ func TestLookupBookLeavesGenreEmptyWhenCategoriesMissing(t *testing.T) {
 	}
 }
 
+func TestLookupBookLeavesGenreEmptyWhenCategoriesUnmatched(t *testing.T) {
+	t.Parallel()
+	client := newTestClient(t, func(r *http.Request) (*http.Response, error) {
+		resp := googleBooksResponse{
+			Items: []googleVolume{
+				{
+					ID: "unmatched-categories",
+					VolumeInfo: googleVolumeInfo{
+						Title:         "Example Title",
+						Authors:       []string{"Author One"},
+						PublishedDate: "2001-09-17",
+						IndustryIdentifiers: []googleIndustryIdentifier{
+							{Type: "ISBN_13", Identifier: "9781234567897"},
+						},
+						Categories: []string{"Totally Unrelated Category"},
+					},
+				},
+			},
+		}
+
+		return jsonResponse(t, http.StatusOK, resp), nil
+	})
+	svc := NewService(client, WithGoogleBooksBaseURL("http://example.test"), WithGoogleBooksAPIKey("test-key"))
+	results, err := svc.Lookup(context.Background(), "example keywords", CategoryBook)
+	if err != nil {
+		t.Fatalf("lookup failed: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(results))
+	}
+
+	if results[0].Genre != "" {
+		t.Fatalf("expected empty genre when categories are unmatched, got %q", results[0].Genre)
+	}
+}
+
 func TestLookupBookByISBNFillsMissingIdentifiers(t *testing.T) {
 	t.Parallel()
 	client := newTestClient(t, func(r *http.Request) (*http.Response, error) {

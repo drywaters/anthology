@@ -93,6 +93,7 @@ func MapCategoriesToGenre(categories []string) string {
 		}
 	}
 
-	// Fallback when categories exist but don't match any keyword
-	return genreReferenceOther
+	// No match found.
+	// Return empty string so callers can preserve existing genres during resync.
+	return ""
 }
