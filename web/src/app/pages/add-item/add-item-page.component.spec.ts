@@ -200,7 +200,7 @@ describe(AddItemPageComponent.name, () => {
         flush();
 
         expect(fixture.componentInstance.searchForm.get('query')?.value).toBe('9781234567890');
-        expect(submitSpy).toHaveBeenCalled();
+        expect(submitSpy).toHaveBeenCalledWith('scanner');
         expect(itemLookupServiceSpy.lookup).toHaveBeenCalledWith('9781234567890', 'book');
     }));
 

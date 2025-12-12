@@ -102,10 +102,13 @@ button[mat-icon-button] {
 
 .nav-link mat-icon {
     font-size: 22px;
+    color: inherit;
 }
 
 .nav-link:hover {
     background: color-mix(in srgb, var(--mat-sys-primary-container) 28%, transparent);
+    color: var(--mat-sys-primary);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mat-sys-primary) 45%, transparent);
 }
 
 .nav-link.active {
@@ -130,8 +133,10 @@ button[mat-icon-button] {
     border-left: 0 solid transparent;
     border-radius: 0;
     background: transparent;
-    color: #000;
-    --mdc-theme-primary: #000;
+    color: var(--mat-sys-on-surface);
+    --mdc-outlined-button-label-text-color: currentColor;
+    --mdc-outlined-button-icon-color: currentColor;
+    --mdc-outlined-button-outline-color: transparent;
     padding-left: 1rem;
     padding-right: 0.65rem;
     transition:
@@ -153,7 +158,8 @@ button[mat-icon-button] {
 .action-button:focus-visible,
 .action-button--active {
     color: var(--mat-sys-primary);
-    --mdc-theme-primary: var(--mat-sys-primary);
+    --mdc-outlined-button-label-text-color: currentColor;
+    --mdc-outlined-button-icon-color: currentColor;
     border-left-color: var(--mat-sys-primary);
     border-left-width: 3px;
     background: transparent;
