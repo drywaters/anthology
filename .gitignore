@@ -3,6 +3,7 @@ bin/
 *.log
 coverage.out
 .cache/
+.gocache/
 
 # Node / Angular
 web/node_modules/
