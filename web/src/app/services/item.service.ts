@@ -62,6 +62,10 @@ export class ItemService {
         return this.http.delete<void>(`${this.baseUrl}/${id}`);
     }
 
+    resync(id: string): Observable<Item> {
+        return this.http.post<Item>(`${this.baseUrl}/${id}/resync`, {});
+    }
+
     importCsv(file: File): Observable<CsvImportSummary> {
         const formData = new FormData();
         formData.append('file', file);
@@ -110,6 +114,8 @@ export class ItemService {
 
     private normalizeForm(form: Partial<ItemForm>): Record<string, unknown> {
         const payload: Record<string, unknown> = { ...form };
+        const itemType = payload['itemType'] as ItemType | undefined;
+
         if ('releaseYear' in payload) {
             const releaseYear = payload['releaseYear'];
             if (releaseYear === '' || releaseYear === null) {
@@ -151,6 +157,46 @@ export class ItemService {
 
         if ('readingStatus' in payload && payload['readingStatus'] === undefined) {
             delete payload['readingStatus'];
+        }
+
+        if ('rating' in payload) {
+            const rating = payload['rating'];
+            if (rating === '' || rating === null) {
+                payload['rating'] = null;
+            } else if (typeof rating === 'string') {
+                payload['rating'] = Number.parseInt(rating, 10);
+            }
+        }
+
+        if ('retailPriceUsd' in payload) {
+            const price = payload['retailPriceUsd'];
+            if (price === '' || price === null) {
+                payload['retailPriceUsd'] = null;
+            } else if (typeof price === 'string') {
+                payload['retailPriceUsd'] = Number.parseFloat(price);
+            }
+        }
+
+        // Strip book-specific fields for non-books
+        if (itemType && itemType !== 'book') {
+            delete payload['pageCount'];
+            delete payload['currentPage'];
+            delete payload['isbn13'];
+            delete payload['isbn10'];
+            delete payload['format'];
+            delete payload['genre'];
+            delete payload['rating'];
+            delete payload['retailPriceUsd'];
+            delete payload['googleVolumeId'];
+            delete payload['readingStatus'];
+            delete payload['readAt'];
+        }
+
+        // Strip game-specific fields for non-games
+        if (itemType && itemType !== 'game') {
+            delete payload['platform'];
+            delete payload['ageGroup'];
+            delete payload['playerCount'];
         }
 
         return payload;

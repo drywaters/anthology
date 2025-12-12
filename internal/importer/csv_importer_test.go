@@ -70,7 +70,7 @@ func TestCSVImporter_PopulatesBookFromLookup(t *testing.T) {
 	catalog := &stubCatalog{metadata: []catalog.Metadata{{
 		Title:    "Lookup Title",
 		Creator:  "Lookup Author",
-		ItemType: items.ItemTypeBook,
+		ItemType: string(items.ItemTypeBook),
 		ISBN13:   "9780000000000",
 	}}}
 	importer := NewCSVImporter(store, catalog)

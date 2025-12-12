@@ -233,6 +233,10 @@ func (i *CSVImporter) buildInput(ctx context.Context, values map[string]string) 
 	ageGroup := strings.TrimSpace(values["agegroup"])
 	playerCount := strings.TrimSpace(values["playercount"])
 
+	var genre items.Genre
+	var retailPriceUsd *float64
+	var googleVolumeId string
+
 	if itemType == items.ItemTypeBook && title == "" {
 		identifier := meta.identifier
 		if identifier == "" {
@@ -265,6 +269,9 @@ func (i *CSVImporter) buildInput(ctx context.Context, values map[string]string) 
 		if coverImage == "" {
 			coverImage = metadata.CoverImage
 		}
+		genre = items.Genre(metadata.Genre)
+		retailPriceUsd = metadata.RetailPriceUsd
+		googleVolumeId = metadata.GoogleVolumeId
 	}
 
 	if title == "" {
@@ -272,19 +279,22 @@ func (i *CSVImporter) buildInput(ctx context.Context, values map[string]string) 
 	}
 
 	return items.CreateItemInput{
-		Title:       title,
-		Creator:     creator,
-		ItemType:    itemType,
-		ReleaseYear: releaseYear,
-		PageCount:   pageCount,
-		ISBN13:      isbn13,
-		ISBN10:      isbn10,
-		Description: description,
-		CoverImage:  coverImage,
-		Platform:    platform,
-		AgeGroup:    ageGroup,
-		PlayerCount: playerCount,
-		Notes:       notes,
+		Title:          title,
+		Creator:        creator,
+		ItemType:       itemType,
+		ReleaseYear:    releaseYear,
+		PageCount:      pageCount,
+		ISBN13:         isbn13,
+		ISBN10:         isbn10,
+		Description:    description,
+		CoverImage:     coverImage,
+		Genre:          genre,
+		RetailPriceUsd: retailPriceUsd,
+		GoogleVolumeId: googleVolumeId,
+		Platform:       platform,
+		AgeGroup:       ageGroup,
+		PlayerCount:    playerCount,
+		Notes:          notes,
 	}, meta, nil
 }
 

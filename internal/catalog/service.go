@@ -12,8 +12,6 @@ import (
 	"strings"
 	"time"
 	"unicode"
-
-	"anthology/internal/items"
 )
 
 // Category represents supported lookup categories.
@@ -41,16 +39,19 @@ var (
 
 // Metadata captures the subset of item fields populated by lookups.
 type Metadata struct {
-	Title       string         `json:"title"`
-	Creator     string         `json:"creator"`
-	ItemType    items.ItemType `json:"itemType"`
-	ReleaseYear *int           `json:"releaseYear,omitempty"`
-	PageCount   *int           `json:"pageCount,omitempty"`
-	ISBN13      string         `json:"isbn13"`
-	ISBN10      string         `json:"isbn10"`
-	Description string         `json:"description"`
-	CoverImage  string         `json:"coverImage"`
-	Notes       string         `json:"notes"`
+	Title          string   `json:"title"`
+	Creator        string   `json:"creator"`
+	ItemType       string   `json:"itemType"`
+	ReleaseYear    *int     `json:"releaseYear,omitempty"`
+	PageCount      *int     `json:"pageCount,omitempty"`
+	ISBN13         string   `json:"isbn13"`
+	ISBN10         string   `json:"isbn10"`
+	Description    string   `json:"description"`
+	CoverImage     string   `json:"coverImage"`
+	Notes          string   `json:"notes"`
+	Genre          string   `json:"genre,omitempty"`
+	RetailPriceUsd *float64 `json:"retailPriceUsd,omitempty"`
+	GoogleVolumeId string   `json:"googleVolumeId,omitempty"`
 }
 
 // Service performs metadata lookups against third-party catalog APIs.
@@ -121,6 +122,7 @@ type googleBooksResponse struct {
 type googleVolume struct {
 	ID         string           `json:"id"`
 	VolumeInfo googleVolumeInfo `json:"volumeInfo"`
+	SaleInfo   googleSaleInfo   `json:"saleInfo"`
 }
 
 type googleVolumeInfo struct {
@@ -130,8 +132,19 @@ type googleVolumeInfo struct {
 	Description         string                     `json:"description"`
 	PublishedDate       string                     `json:"publishedDate"`
 	PageCount           int                        `json:"pageCount"`
+	Categories          []string                   `json:"categories"`
 	IndustryIdentifiers []googleIndustryIdentifier `json:"industryIdentifiers"`
 	ImageLinks          googleImageLinks           `json:"imageLinks"`
+}
+
+type googleSaleInfo struct {
+	IsEbook     bool             `json:"isEbook"`
+	RetailPrice *googlePriceInfo `json:"retailPrice"`
+}
+
+type googlePriceInfo struct {
+	Amount       float64 `json:"amount"`
+	CurrencyCode string  `json:"currencyCode"`
 }
 
 type googleIndustryIdentifier struct {
@@ -211,6 +224,52 @@ func (s *Service) lookupBookByQuery(ctx context.Context, query string) ([]Metada
 	return results, nil
 }
 
+// LookupByVolumeID fetches metadata for a specific Google Books volume ID.
+// This is used for re-syncing existing items with updated metadata.
+func (s *Service) LookupByVolumeID(ctx context.Context, volumeID string) (Metadata, error) {
+	if strings.TrimSpace(volumeID) == "" {
+		return Metadata{}, ErrInvalidQuery
+	}
+
+	endpoint, err := url.Parse(s.baseURL + "/volumes/" + url.PathEscape(volumeID))
+	if err != nil {
+		return Metadata{}, fmt.Errorf("build google books url: %w", err)
+	}
+
+	values := url.Values{}
+	if s.apiKey != "" {
+		values.Set("key", s.apiKey)
+	}
+	if len(values) > 0 {
+		endpoint.RawQuery = values.Encode()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
+	if err != nil {
+		return Metadata{}, fmt.Errorf("create google books request: %w", err)
+	}
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return Metadata{}, fmt.Errorf("call google books: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return Metadata{}, ErrNotFound
+	}
+	if resp.StatusCode != http.StatusOK {
+		return Metadata{}, fmt.Errorf("google books returned status %d", resp.StatusCode)
+	}
+
+	var volume googleVolume
+	if err := json.NewDecoder(resp.Body).Decode(&volume); err != nil {
+		return Metadata{}, fmt.Errorf("decode google books response: %w", err)
+	}
+
+	return s.metadataFromVolume(volume)
+}
+
 func (s *Service) searchGoogleBooks(ctx context.Context, q string, maxResults int) ([]googleVolume, error) {
 	endpoint, err := url.Parse(s.baseURL + "/volumes")
 	if err != nil {
@@ -265,15 +324,17 @@ func (s *Service) metadataFromVolume(volume googleVolume) (Metadata, error) {
 	description := strings.TrimSpace(firstNonEmpty(info.Description, info.Subtitle))
 
 	metadata := Metadata{
-		Title:       title,
-		Creator:     creator,
-		ItemType:    items.ItemTypeBook,
-		PageCount:   nil,
-		ISBN13:      isbn13,
-		ISBN10:      isbn10,
-		Description: description,
-		CoverImage:  normalizeCoverURL(info.ImageLinks),
-		Notes:       "",
+		Title:          title,
+		Creator:        creator,
+		ItemType:       "book",
+		PageCount:      nil,
+		ISBN13:         isbn13,
+		ISBN10:         isbn10,
+		Description:    description,
+		CoverImage:     normalizeCoverURL(info.ImageLinks),
+		Notes:          "",
+		GoogleVolumeId: volume.ID,
+		Genre:          MapCategoriesToGenre(info.Categories),
 	}
 
 	if info.PageCount > 0 {
@@ -283,6 +344,12 @@ func (s *Service) metadataFromVolume(volume googleVolume) (Metadata, error) {
 
 	if year := parsePublishYear(info.PublishedDate); year != nil {
 		metadata.ReleaseYear = year
+	}
+
+	// Extract retail price (USD only)
+	if volume.SaleInfo.RetailPrice != nil && volume.SaleInfo.RetailPrice.CurrencyCode == "USD" {
+		price := volume.SaleInfo.RetailPrice.Amount
+		metadata.RetailPriceUsd = &price
 	}
 
 	return metadata, nil

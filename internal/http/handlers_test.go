@@ -59,7 +59,7 @@ func TestItemHandlerImportCSVSuccess(t *testing.T) {
 	store := &csvStoreStub{}
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	importerSvc := importer.NewCSVImporter(store, nil)
-	handler := NewItemHandler(nil, importerSvc, logger)
+	handler := NewItemHandler(nil, nil, importerSvc, logger)
 	req := newMultipartCSVRequest(t, strings.Join([]string{
 		"title,creator,itemType,releaseYear,pageCount,isbn13,isbn10,description,coverImage,notes",
 		"Title A,Creator,book,2020,300,9780000000001,0000000001,Desc,,Notes",
@@ -91,7 +91,7 @@ func TestItemHandlerImportCSVValidationError(t *testing.T) {
 	store := &csvStoreStub{}
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	importerSvc := importer.NewCSVImporter(store, nil)
-	handler := NewItemHandler(nil, importerSvc, logger)
+	handler := NewItemHandler(nil, nil, importerSvc, logger)
 	req := newMultipartCSVRequest(t, "title,itemType\nbad,csv\n")
 	rec := httptest.NewRecorder()
 
@@ -103,7 +103,7 @@ func TestItemHandlerImportCSVValidationError(t *testing.T) {
 }
 
 func TestItemHandlerImportCSVUnavailable(t *testing.T) {
-	handler := NewItemHandler(nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	handler := NewItemHandler(nil, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	req := newMultipartCSVRequest(t, "title\nA\n")
 	rec := httptest.NewRecorder()
 

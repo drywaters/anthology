@@ -623,16 +623,19 @@ func (s *Service) ScanAndAssign(ctx context.Context, shelfID, slotID uuid.UUID, 
 
 		// Create the item
 		createInput := items.CreateItemInput{
-			Title:       meta.Title,
-			Creator:     meta.Creator,
-			ItemType:    meta.ItemType,
-			ReleaseYear: meta.ReleaseYear,
-			PageCount:   meta.PageCount,
-			ISBN13:      meta.ISBN13,
-			ISBN10:      meta.ISBN10,
-			Description: meta.Description,
-			CoverImage:  meta.CoverImage,
-			Notes:       meta.Notes,
+			Title:          meta.Title,
+			Creator:        meta.Creator,
+			ItemType:       items.ItemType(meta.ItemType),
+			ReleaseYear:    meta.ReleaseYear,
+			PageCount:      meta.PageCount,
+			ISBN13:         meta.ISBN13,
+			ISBN10:         meta.ISBN10,
+			Description:    meta.Description,
+			CoverImage:     meta.CoverImage,
+			Notes:          meta.Notes,
+			Genre:          items.Genre(meta.Genre),
+			RetailPriceUsd: meta.RetailPriceUsd,
+			GoogleVolumeId: meta.GoogleVolumeId,
 		}
 
 		newItem, err := s.itemService.Create(ctx, createInput)

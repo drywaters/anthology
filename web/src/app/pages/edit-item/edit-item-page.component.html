@@ -52,9 +52,11 @@
                 [item]="item()"
                 mode="edit"
                 [busy]="busy()"
+                [resyncing]="resyncing()"
                 (save)="handleSave($event)"
                 (cancelled)="handleCancel()"
                 (deleteRequested)="handleDelete()"
+                (resyncRequested)="handleResync()"
             ></app-item-form>
         </mat-card-content>
     </mat-card>

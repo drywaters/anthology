@@ -15,20 +15,22 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
+	"anthology/internal/catalog"
 	"anthology/internal/importer"
 	"anthology/internal/items"
 )
 
 // ItemHandler exposes item CRUD endpoints.
 type ItemHandler struct {
-	service  *items.Service
-	importer *importer.CSVImporter
-	logger   *slog.Logger
+	service    *items.Service
+	catalogSvc *catalog.Service
+	importer   *importer.CSVImporter
+	logger     *slog.Logger
 }
 
 // NewItemHandler creates a handler.
-func NewItemHandler(service *items.Service, importer *importer.CSVImporter, logger *slog.Logger) *ItemHandler {
-	return &ItemHandler{service: service, importer: importer, logger: logger}
+func NewItemHandler(service *items.Service, catalogSvc *catalog.Service, importer *importer.CSVImporter, logger *slog.Logger) *ItemHandler {
+	return &ItemHandler{service: service, catalogSvc: catalogSvc, importer: importer, logger: logger}
 }
 
 // List returns all items.
@@ -112,19 +114,27 @@ func parseListOptions(values url.Values) (items.ListOptions, error) {
 // Create stores a new item.
 func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
-		Title         string     `json:"title"`
-		Creator       string     `json:"creator"`
-		ItemType      string     `json:"itemType"`
-		ReleaseYear   *int       `json:"releaseYear"`
-		PageCount     *int       `json:"pageCount"`
-		CurrentPage   *int       `json:"currentPage"`
-		ISBN13        string     `json:"isbn13"`
-		ISBN10        string     `json:"isbn10"`
-		Description   string     `json:"description"`
-		CoverImage    string     `json:"coverImage"`
-		ReadingStatus string     `json:"readingStatus"`
-		ReadAt        *time.Time `json:"readAt"`
-		Notes         string     `json:"notes"`
+		Title          string     `json:"title"`
+		Creator        string     `json:"creator"`
+		ItemType       string     `json:"itemType"`
+		ReleaseYear    *int       `json:"releaseYear"`
+		PageCount      *int       `json:"pageCount"`
+		CurrentPage    *int       `json:"currentPage"`
+		ISBN13         string     `json:"isbn13"`
+		ISBN10         string     `json:"isbn10"`
+		Description    string     `json:"description"`
+		CoverImage     string     `json:"coverImage"`
+		Format         string     `json:"format"`
+		Genre          string     `json:"genre"`
+		Rating         *int       `json:"rating"`
+		RetailPriceUsd *float64   `json:"retailPriceUsd"`
+		GoogleVolumeId string     `json:"googleVolumeId"`
+		Platform       string     `json:"platform"`
+		AgeGroup       string     `json:"ageGroup"`
+		PlayerCount    string     `json:"playerCount"`
+		ReadingStatus  string     `json:"readingStatus"`
+		ReadAt         *time.Time `json:"readAt"`
+		Notes          string     `json:"notes"`
 	}
 
 	if err := decodeJSONBody(w, r, &payload); err != nil {
@@ -133,19 +143,27 @@ func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item, err := h.service.Create(r.Context(), items.CreateItemInput{
-		Title:         payload.Title,
-		Creator:       payload.Creator,
-		ItemType:      items.ItemType(payload.ItemType),
-		ReleaseYear:   payload.ReleaseYear,
-		PageCount:     payload.PageCount,
-		CurrentPage:   payload.CurrentPage,
-		ISBN13:        payload.ISBN13,
-		ISBN10:        payload.ISBN10,
-		Description:   payload.Description,
-		CoverImage:    payload.CoverImage,
-		ReadingStatus: items.BookStatus(payload.ReadingStatus),
-		ReadAt:        payload.ReadAt,
-		Notes:         payload.Notes,
+		Title:          payload.Title,
+		Creator:        payload.Creator,
+		ItemType:       items.ItemType(payload.ItemType),
+		ReleaseYear:    payload.ReleaseYear,
+		PageCount:      payload.PageCount,
+		CurrentPage:    payload.CurrentPage,
+		ISBN13:         payload.ISBN13,
+		ISBN10:         payload.ISBN10,
+		Description:    payload.Description,
+		CoverImage:     payload.CoverImage,
+		Format:         items.Format(payload.Format),
+		Genre:          items.Genre(payload.Genre),
+		Rating:         payload.Rating,
+		RetailPriceUsd: payload.RetailPriceUsd,
+		GoogleVolumeId: payload.GoogleVolumeId,
+		Platform:       payload.Platform,
+		AgeGroup:       payload.AgeGroup,
+		PlayerCount:    payload.PlayerCount,
+		ReadingStatus:  items.BookStatus(payload.ReadingStatus),
+		ReadAt:         payload.ReadAt,
+		Notes:          payload.Notes,
 	})
 	if err != nil {
 		if errors.Is(err, items.ErrValidation) {
@@ -190,19 +208,27 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var payload struct {
-		Title         *string    `json:"title"`
-		Creator       *string    `json:"creator"`
-		ItemType      *string    `json:"itemType"`
-		ReleaseYear   *int       `json:"releaseYear"`
-		PageCount     *int       `json:"pageCount"`
-		CurrentPage   *int       `json:"currentPage"`
-		ISBN13        *string    `json:"isbn13"`
-		ISBN10        *string    `json:"isbn10"`
-		Description   *string    `json:"description"`
-		CoverImage    *string    `json:"coverImage"`
-		ReadingStatus *string    `json:"readingStatus"`
-		ReadAt        *time.Time `json:"readAt"`
-		Notes         *string    `json:"notes"`
+		Title          *string    `json:"title"`
+		Creator        *string    `json:"creator"`
+		ItemType       *string    `json:"itemType"`
+		ReleaseYear    *int       `json:"releaseYear"`
+		PageCount      *int       `json:"pageCount"`
+		CurrentPage    *int       `json:"currentPage"`
+		ISBN13         *string    `json:"isbn13"`
+		ISBN10         *string    `json:"isbn10"`
+		Description    *string    `json:"description"`
+		CoverImage     *string    `json:"coverImage"`
+		Format         *string    `json:"format"`
+		Genre          *string    `json:"genre"`
+		Rating         *int       `json:"rating"`
+		RetailPriceUsd *float64   `json:"retailPriceUsd"`
+		GoogleVolumeId *string    `json:"googleVolumeId"`
+		Platform       *string    `json:"platform"`
+		AgeGroup       *string    `json:"ageGroup"`
+		PlayerCount    *string    `json:"playerCount"`
+		ReadingStatus  *string    `json:"readingStatus"`
+		ReadAt         *time.Time `json:"readAt"`
+		Notes          *string    `json:"notes"`
 	}
 
 	if err := decodeInto(raw, &payload); err != nil {
@@ -252,6 +278,42 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if _, ok := raw["coverImage"]; ok {
 		input.CoverImage = payload.CoverImage
 	}
+	if _, ok := raw["format"]; ok {
+		if payload.Format != nil {
+			formatValue := items.Format(*payload.Format)
+			input.Format = &formatValue
+		} else {
+			input.Format = new(items.Format)
+		}
+	}
+	if _, ok := raw["genre"]; ok {
+		if payload.Genre != nil {
+			genreValue := items.Genre(*payload.Genre)
+			input.Genre = &genreValue
+		} else {
+			input.Genre = new(items.Genre)
+		}
+	}
+	if _, ok := raw["rating"]; ok {
+		value := payload.Rating
+		input.Rating = &value
+	}
+	if _, ok := raw["retailPriceUsd"]; ok {
+		value := payload.RetailPriceUsd
+		input.RetailPriceUsd = &value
+	}
+	if _, ok := raw["googleVolumeId"]; ok {
+		input.GoogleVolumeId = payload.GoogleVolumeId
+	}
+	if _, ok := raw["platform"]; ok {
+		input.Platform = payload.Platform
+	}
+	if _, ok := raw["ageGroup"]; ok {
+		input.AgeGroup = payload.AgeGroup
+	}
+	if _, ok := raw["playerCount"]; ok {
+		input.PlayerCount = payload.PlayerCount
+	}
 
 	if _, ok := raw["readingStatus"]; ok {
 		if payload.ReadingStatus != nil {
@@ -289,6 +351,27 @@ func (h *ItemHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// Resync refreshes metadata from Google Books for an existing item.
+func (h *ItemHandler) Resync(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseUUIDParam(w, r, "id")
+	if !ok {
+		return
+	}
+
+	if h.catalogSvc == nil {
+		writeError(w, http.StatusNotImplemented, "metadata re-sync is not available")
+		return
+	}
+
+	item, err := h.service.ResyncMetadata(r.Context(), id, h.catalogSvc)
+	if err != nil {
+		handleServiceError(w, err, h.logger)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, item)
 }
 
 const maxCSVUploadBytes int64 = 5 << 20

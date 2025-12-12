@@ -49,6 +49,32 @@ const (
 	BookStatusWantToRead BookStatus = "want_to_read"
 )
 
+// Format describes the physical or digital format of an item.
+// This is a generic type that can be extended for different item types.
+type Format string
+
+const (
+	FormatUnknown   Format = "UNKNOWN"
+	FormatHardcover Format = "HARDCOVER"
+	FormatPaperback Format = "PAPERBACK"
+	FormatEbook     Format = "EBOOK"
+	FormatMagazine  Format = "MAGAZINE"
+)
+
+// Genre represents a normalized top-level genre category.
+type Genre string
+
+const (
+	GenreFiction           Genre = "FICTION"
+	GenreNonFiction        Genre = "NON_FICTION"
+	GenreScienceTech       Genre = "SCIENCE_TECH"
+	GenreHistory           Genre = "HISTORY"
+	GenreBiography         Genre = "BIOGRAPHY"
+	GenreChildrens         Genre = "CHILDRENS"
+	GenreArtsEntertainment Genre = "ARTS_ENTERTAINMENT"
+	GenreReferenceOther    Genre = "REFERENCE_OTHER"
+)
+
 // Item represents a catalog entry in Anthology.
 type Item struct {
 	ID             uuid.UUID       `db:"id" json:"id"`
@@ -62,6 +88,11 @@ type Item struct {
 	ISBN10         string          `db:"isbn_10" json:"isbn10"`
 	Description    string          `db:"description" json:"description"`
 	CoverImage     string          `db:"cover_image" json:"coverImage"`
+	Format         Format          `db:"format" json:"format"`
+	Genre          Genre           `db:"genre" json:"genre"`
+	Rating         *int            `db:"rating" json:"rating,omitempty"`
+	RetailPriceUsd *float64        `db:"retail_price_usd" json:"retailPriceUsd,omitempty"`
+	GoogleVolumeId string          `db:"google_volume_id" json:"googleVolumeId"`
 	Platform       string          `db:"platform" json:"platform"`
 	AgeGroup       string          `db:"age_group" json:"ageGroup"`
 	PlayerCount    string          `db:"player_count" json:"playerCount"`
@@ -84,42 +115,52 @@ type ShelfPlacement struct {
 
 // CreateItemInput captures the data needed to create a new Item.
 type CreateItemInput struct {
-	Title         string
-	Creator       string
-	ItemType      ItemType
-	ReleaseYear   *int
-	PageCount     *int
-	CurrentPage   *int
-	ISBN13        string
-	ISBN10        string
-	Description   string
-	CoverImage    string
-	Platform      string
-	AgeGroup      string
-	PlayerCount   string
-	ReadingStatus BookStatus
-	ReadAt        *time.Time
-	Notes         string
+	Title          string
+	Creator        string
+	ItemType       ItemType
+	ReleaseYear    *int
+	PageCount      *int
+	CurrentPage    *int
+	ISBN13         string
+	ISBN10         string
+	Description    string
+	CoverImage     string
+	Format         Format
+	Genre          Genre
+	Rating         *int
+	RetailPriceUsd *float64
+	GoogleVolumeId string
+	Platform       string
+	AgeGroup       string
+	PlayerCount    string
+	ReadingStatus  BookStatus
+	ReadAt         *time.Time
+	Notes          string
 }
 
 // UpdateItemInput captures the editable fields for an existing item.
 type UpdateItemInput struct {
-	Title         *string
-	Creator       *string
-	ItemType      *ItemType
-	ReleaseYear   **int
-	PageCount     **int
-	CurrentPage   **int
-	ISBN13        *string
-	ISBN10        *string
-	Description   *string
-	CoverImage    *string
-	Platform      *string
-	AgeGroup      *string
-	PlayerCount   *string
-	ReadingStatus *BookStatus
-	ReadAt        **time.Time
-	Notes         *string
+	Title          *string
+	Creator        *string
+	ItemType       *ItemType
+	ReleaseYear    **int
+	PageCount      **int
+	CurrentPage    **int
+	ISBN13         *string
+	ISBN10         *string
+	Description    *string
+	CoverImage     *string
+	Format         *Format
+	Genre          *Genre
+	Rating         **int
+	RetailPriceUsd **float64
+	GoogleVolumeId *string
+	Platform       *string
+	AgeGroup       *string
+	PlayerCount    *string
+	ReadingStatus  *BookStatus
+	ReadAt         **time.Time
+	Notes          *string
 }
 
 // ShelfStatus describes whether an item has been assigned to a shelf.
