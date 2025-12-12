@@ -434,8 +434,15 @@
 .sidebar__tabs {
     margin-top: 16px;
 
+    ::ng-deep .mat-mdc-tab-body,
+    ::ng-deep .mat-mdc-tab-body-content {
+        height: auto;
+        overflow: visible;
+    }
+
     ::ng-deep .mat-mdc-tab-body-content {
         padding-top: 16px;
+        box-sizing: border-box;
     }
 }
 
@@ -456,6 +463,7 @@
     position: relative;
     width: 100%;
     max-width: 100%;
+    height: clamp(240px, 55vw, 420px);
     border-radius: 8px;
     overflow: hidden;
     background: #000;
@@ -465,8 +473,7 @@
 .scanner-video {
     display: block;
     width: 100%;
-    height: auto;
-    max-height: 400px;
+    height: 100%;
     object-fit: cover;
 }
 
@@ -479,6 +486,34 @@
     pointer-events: none;
 }
 
+.scanner-overlay--busy {
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 2;
+}
+
+.scanner-overlay--flash {
+    background: rgba(0, 157, 255, 0.42);
+    z-index: 3;
+    animation: scanner-flash 640ms ease-out;
+}
+
+.busy-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.35);
+    text-align: center;
+    max-width: min(90%, 360px);
+}
+
+.busy-text {
+    color: rgba(255, 255, 255, 0.92);
+    font-weight: 500;
+}
+
 .scanner-frame {
     width: 80%;
     max-width: 300px;
@@ -488,59 +523,24 @@
     background: rgba(0, 157, 255, 0.1);
 }
 
-.scanner-status {
-    margin-bottom: 16px;
-
-    .status-message,
-    .error-message {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin: 8px 0;
-
-        mat-icon {
-            font-size: 20px;
-            width: 20px;
-            height: 20px;
-        }
-    }
-
-    .status-message {
-        color: #1a73e8;
-    }
-
-    .error-message {
-        color: #d93025;
-    }
-}
-
-.scanner-busy {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 24px;
-    background: #e3f2fd;
-    border-radius: 8px;
-    margin-top: 16px;
-
-    mat-icon.spinner {
-        animation: spin 1s linear infinite;
-        color: #1a73e8;
-    }
-
-    span {
-        color: #0d47a1;
-        font-weight: 500;
-    }
-}
-
 @keyframes spin {
     from {
         transform: rotate(0deg);
     }
     to {
         transform: rotate(360deg);
+    }
+}
+
+@keyframes scanner-flash {
+    0% {
+        opacity: 0;
+    }
+    30% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
     }
 }
 

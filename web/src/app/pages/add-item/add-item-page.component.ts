@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, NgZone, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -15,8 +15,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { catchError, finalize, of, switchMap, firstValueFrom } from 'rxjs';
-import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
-import { BarcodeFormat, DecodeHintType, Exception, NotFoundException, Result } from '@zxing/library';
 
 import { ItemFormComponent } from '../../components/item-form/item-form.component';
 import { DuplicateDialogComponent, DuplicateDialogData, DuplicateDialogResult } from '../../components/duplicate-dialog/duplicate-dialog.component';
@@ -24,31 +22,11 @@ import { DuplicateMatch, ItemForm } from '../../models/item';
 import { ItemService } from '../../services/item.service';
 import { ItemLookupCategory, ItemLookupService } from '../../services/item-lookup.service';
 import { CsvImportSummary } from '../../models/import';
+import { BarcodeScannerService } from '../../services/barcode-scanner.service';
 
 type SearchCategoryValue = ItemLookupCategory;
 
 type CsvImportStatusLevel = 'info' | 'success' | 'warning' | 'error';
-
-type SupportedBarcodeFormat = 'ean_13' | 'ean_8' | 'code_128' | 'upc_a' | 'upc_e';
-
-interface BarcodeDetectionResult {
-    rawValue?: string;
-}
-
-interface BarcodeDetectorOptions {
-    formats?: SupportedBarcodeFormat[];
-}
-
-interface BarcodeDetector {
-    detect(source: ImageBitmapSource): Promise<BarcodeDetectionResult[]>;
-}
-
-interface BarcodeDetectorConstructor {
-    new(options?: BarcodeDetectorOptions): BarcodeDetector;
-    getSupportedFormats(): Promise<SupportedBarcodeFormat[]>;
-}
-
-declare const BarcodeDetector: BarcodeDetectorConstructor;
 
 interface CsvImportStatus {
     level: CsvImportStatusLevel;
@@ -156,20 +134,8 @@ export class AddItemPageComponent {
     private readonly dialog = inject(MatDialog);
     private readonly destroyRef = inject(DestroyRef);
     private readonly fb = inject(FormBuilder);
-
-    private readonly preferredBarcodeFormats: SupportedBarcodeFormat[] = [
-        'ean_13',
-        'ean_8',
-        'code_128',
-        'upc_a',
-        'upc_e',
-    ];
-    private barcodeDetector: BarcodeDetector | null = null;
-    private scanStream: MediaStream | null = null;
-    private scanFrameId: number | null = null;
-    private scannerMode: 'native' | 'zxing' | null = null;
-    private zxingReader: BrowserMultiFormatReader | null = null;
-    private zxingControls: IScannerControls | null = null;
+    private readonly barcodeScanner = inject(BarcodeScannerService);
+    private readonly ngZone = inject(NgZone);
 
     @ViewChild('scanVideo') scanVideo?: ElementRef<HTMLVideoElement>;
     @ViewChild('csvInput') csvInput?: ElementRef<HTMLInputElement>;
@@ -186,10 +152,14 @@ export class AddItemPageComponent {
     readonly importError = signal<string | null>(null);
     readonly importSummary = signal<CsvImportSummary | null>(null);
     readonly selectedCsvFile = signal<File | null>(null);
-    readonly scannerActive = signal(false);
-    readonly scannerStatus = signal<string | null>(null);
-    readonly scannerError = signal<string | null>(null);
-    readonly scannerSupported = signal<boolean | null>(null);
+    readonly scannerActive = computed(() => this.barcodeScanner.scannerActive());
+    readonly scannerStatus = computed(() => this.barcodeScanner.scannerStatus());
+    readonly scannerError = computed(() => this.barcodeScanner.scannerError());
+    readonly scannerSupported = computed(() => this.barcodeScanner.scannerSupported());
+    readonly scannerHint = computed(() => this.barcodeScanner.scannerHint());
+    readonly scannerProcessing = computed(() => this.barcodeScanner.scannerProcessing());
+    readonly scannerFlash = computed(() => this.barcodeScanner.scannerFlash());
+    readonly scannerReady = computed(() => this.barcodeScanner.scannerReady());
     readonly csvImportStatus = computed<CsvImportStatus | null>(() => {
         if (this.importBusy()) {
             return {
@@ -259,152 +229,17 @@ export class AddItemPageComponent {
             return;
         }
 
-        if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-            this.scannerSupported.set(false);
-            this.scannerError.set('Camera access is not available in this browser.');
-            return;
-        }
-
-        this.scannerError.set(null);
-        this.scannerStatus.set('Checking camera support...');
-
-        this.scannerActive.set(true);
-
         const video = await this.waitForScanVideoElement();
-        if (!this.scannerActive()) {
-            return;
-        }
-
         if (!video) {
-            this.scannerError.set('Camera preview is not available.');
-            this.scannerStatus.set(null);
-            this.scannerActive.set(false);
+            this.barcodeScanner.scannerError.set('Camera preview is not available.');
             return;
         }
 
-        const scannerMode = await this.resolveBarcodeScanner();
-        if (!this.scannerActive()) {
-            return;
-        }
-
-        if (!scannerMode) {
-            this.scannerActive.set(false);
-            this.scannerStatus.set(null);
-            return;
-        }
-
-        try {
-            if (!this.scannerActive()) {
-                return;
-            }
-
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment' },
-                audio: false,
+        await this.barcodeScanner.startScanner(video, (result) => {
+            this.ngZone.run(() => {
+                this.handleDetectedBarcode(result.rawValue);
             });
-
-            if (!this.scannerActive()) {
-                stream.getTracks().forEach((track) => track.stop());
-                return;
-            }
-
-            this.scanStream = stream;
-            video.srcObject = this.scanStream;
-            await video.play();
-
-            if (!this.scannerActive()) {
-                this.stopScannerStream();
-                video.pause();
-                video.srcObject = null;
-                return;
-            }
-
-            this.scannerMode = scannerMode;
-            this.scannerStatus.set('Align an ISBN barcode within the frame.');
-
-            if (scannerMode === 'native') {
-                this.scheduleNextScan();
-            } else {
-                this.startZxingDetection(video);
-            }
-        } catch (error) {
-            console.error('Unable to start barcode scanner', error);
-            this.scannerError.set('Camera access failed. Confirm permissions and try again.');
-            this.scannerStatus.set(null);
-            this.stopBarcodeScanner();
-        }
-    }
-
-    private scheduleNextScan(): void {
-        this.scanFrameId = requestAnimationFrame(() => {
-            void this.detectBarcodeFrame();
         });
-    }
-
-    private async detectBarcodeFrame(): Promise<void> {
-        if (!this.scannerActive() || !this.barcodeDetector) {
-            return;
-        }
-
-        const video = this.scanVideo?.nativeElement;
-        if (!video) {
-            this.stopBarcodeScanner();
-            return;
-        }
-
-        if (video.readyState < HTMLMediaElement.HAVE_ENOUGH_DATA) {
-            this.scheduleNextScan();
-            return;
-        }
-
-        try {
-            const codes = await this.barcodeDetector.detect(video);
-            const found = codes.find((code: BarcodeDetectionResult) => (code.rawValue ?? '').trim());
-
-            if (found?.rawValue) {
-                this.scannerStatus.set(`Found ${found.rawValue}. Searching...`);
-                this.handleDetectedBarcode(found.rawValue);
-                return;
-            }
-        } catch (error) {
-            console.error('Barcode detection failed', error);
-            this.scannerError.set('Unable to read the barcode. Try adjusting lighting or typing the code.');
-            this.stopBarcodeScanner();
-            return;
-        }
-
-        this.scheduleNextScan();
-    }
-
-    private startZxingDetection(video: HTMLVideoElement): void {
-        if (!this.zxingReader) {
-            this.scannerError.set('Barcode scanning is not available on this device.');
-            this.stopBarcodeScanner();
-            return;
-        }
-
-        this.zxingReader
-            .decodeFromVideoElement(video, (result: Result | null | undefined, error: Exception | null | undefined, controls) => {
-                this.zxingControls = controls;
-
-                if (result?.getText()) {
-                    this.scannerStatus.set(`Found ${result.getText()}. Searching...`);
-                    this.handleDetectedBarcode(result.getText());
-                    controls.stop();
-                    return;
-                }
-
-                if (error && !(error instanceof NotFoundException)) {
-                    console.error('Barcode detection failed', error);
-                    this.scannerError.set('Unable to read the barcode. Try adjusting lighting or typing the code.');
-                    this.stopBarcodeScanner();
-                }
-            })
-            .catch((error: unknown) => {
-                console.error('Barcode detection failed', error);
-                this.scannerError.set('Unable to read the barcode. Try adjusting lighting or typing the code.');
-                this.stopBarcodeScanner();
-            });
     }
 
     handleDetectedBarcode(rawValue: string): void {
@@ -414,46 +249,11 @@ export class AddItemPageComponent {
         }
 
         this.searchForm.get('query')?.setValue(value);
-        this.stopBarcodeScanner();
-        this.handleLookupSubmit();
+        this.handleLookupSubmit('scanner');
     }
 
     stopBarcodeScanner(): void {
-        this.scannerActive.set(false);
-        this.scannerStatus.set(null);
-        this.clearScannerAnimation();
-        this.stopZxingControls();
-        this.stopScannerStream();
-        this.scannerMode = null;
-
-        const video = this.scanVideo?.nativeElement;
-        if (video) {
-            video.pause();
-            video.srcObject = null;
-        }
-    }
-
-    private stopScannerStream(): void {
-        if (this.scanStream) {
-            this.scanStream.getTracks().forEach((track) => track.stop());
-            this.scanStream = null;
-        }
-    }
-
-    private stopZxingControls(): void {
-        if (this.zxingControls) {
-            this.zxingControls.stop();
-            this.zxingControls = null;
-        }
-
-        this.zxingReader = null;
-    }
-
-    private clearScannerAnimation(): void {
-        if (this.scanFrameId !== null) {
-            cancelAnimationFrame(this.scanFrameId);
-            this.scanFrameId = null;
-        }
+        this.barcodeScanner.stopScanner();
     }
 
     private async waitForScanVideoElement(): Promise<HTMLVideoElement | null> {
@@ -463,53 +263,6 @@ export class AddItemPageComponent {
 
         await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
         return this.scanVideo?.nativeElement ?? null;
-    }
-
-    private async resolveBarcodeScanner(): Promise<'native' | 'zxing' | null> {
-        if (typeof window === 'undefined') {
-            this.scannerSupported.set(false);
-            this.scannerError.set('Barcode scanning is not supported in this browser.');
-            this.scannerStatus.set(null);
-            return null;
-        }
-
-        if (typeof BarcodeDetector !== 'undefined') {
-            try {
-                const supportedFormats = await BarcodeDetector.getSupportedFormats();
-                const availableFormats = this.preferredBarcodeFormats.filter((format) =>
-                    supportedFormats.includes(format)
-                );
-
-                if (availableFormats.length) {
-                    this.barcodeDetector = new BarcodeDetector({ formats: availableFormats });
-                    this.scannerSupported.set(true);
-                    return 'native';
-                }
-            } catch (error) {
-                console.warn('Native barcode detector unavailable, falling back to library.', error);
-            }
-        }
-
-        try {
-            const hints = new Map();
-            hints.set(DecodeHintType.POSSIBLE_FORMATS, [
-                BarcodeFormat.EAN_13,
-                BarcodeFormat.EAN_8,
-                BarcodeFormat.CODE_128,
-                BarcodeFormat.UPC_A,
-                BarcodeFormat.UPC_E,
-            ]);
-
-            this.zxingReader = new BrowserMultiFormatReader(hints);
-            this.scannerSupported.set(true);
-            return 'zxing';
-        } catch (error) {
-            console.error('Barcode scanner unavailable', error);
-            this.scannerSupported.set(false);
-            this.scannerError.set('Barcode scanning is not available on this device.');
-            this.scannerStatus.set(null);
-            return null;
-        }
     }
 
     async handleSave(formValue: ItemForm): Promise<void> {
@@ -580,15 +333,20 @@ export class AddItemPageComponent {
         }
     }
 
-    handleLookupSubmit(): void {
+    handleLookupSubmit(source: 'manual' | 'scanner' = 'manual'): void {
         if (this.lookupBusy()) {
             return;
         }
 
-        this.stopBarcodeScanner();
+        if (source === 'manual') {
+            this.stopBarcodeScanner();
+        }
 
         if (this.searchForm.invalid) {
             this.searchForm.markAllAsTouched();
+            if (source === 'scanner') {
+                this.barcodeScanner.reportScanFailure('That barcode was not valid. Try again or type the ISBN.');
+            }
             return;
         }
 
@@ -598,6 +356,9 @@ export class AddItemPageComponent {
 
         if (!rawCategory || !query) {
             this.searchForm.get('query')?.setErrors({ required: true });
+            if (source === 'scanner') {
+                this.barcodeScanner.reportScanFailure('That barcode was not valid. Try again or type the ISBN.');
+            }
             return;
         }
 
@@ -610,23 +371,36 @@ export class AddItemPageComponent {
 
         this.itemLookupService
             .lookup(query, rawCategory)
-            .pipe(takeUntilDestroyed(this.destroyRef))
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                finalize(() => {
+                    this.lookupBusy.set(false);
+                    if (source === 'scanner') {
+                        this.stopBarcodeScanner();
+                    }
+                })
+            )
             .subscribe({
                 next: (results) => {
-                    this.lookupBusy.set(false);
                     const drafts = results.map((partial) => this.composeDraft(partial, category));
                     this.lookupResults.set(drafts);
                     if (drafts.length > 0) {
+                        if (source === 'scanner') {
+                            const title = drafts[0].title?.trim() ? drafts[0].title.trim() : query;
+                            this.barcodeScanner.reportScanSuccess(title);
+                        }
                         this.manualDraft.set({ ...drafts[0] });
                         this.manualDraftSource.set({
                             query,
                             label: category.label,
                         });
-                        const summary =
-                            drafts.length > 1
-                                ? `Loaded ${drafts.length} matches for “${query}”. Choose one below.`
-                                : `Metadata loaded for “${query}”.`;
-                        this.lastLookupSummary.set(summary);
+                        if (source !== 'scanner') {
+                            const summary =
+                                drafts.length > 1
+                                    ? `Loaded ${drafts.length} matches for “${query}”. Choose one below.`
+                                    : `Metadata loaded for “${query}”.`;
+                            this.lastLookupSummary.set(summary);
+                        }
                     } else {
                         this.manualDraft.set(null);
                         this.manualDraftSource.set(null);
@@ -634,7 +408,6 @@ export class AddItemPageComponent {
                     }
                 },
                 error: (error) => {
-                    this.lookupBusy.set(false);
                     this.manualDraft.set(null);
                     this.manualDraftSource.set(null);
                     this.lookupResults.set([]);

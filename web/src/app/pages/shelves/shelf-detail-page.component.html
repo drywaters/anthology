@@ -175,37 +175,19 @@
                 </mat-tab>
 
                 <mat-tab label="Scan New">
-                    <div class="sidebar__section scanner-section">
+                    <div class="sidebar__section scanner-section" #scannerSection>
                         <div class="scanner-instructions">
                             <p>Scan ISBN barcodes to automatically add and place items in this slot.</p>
                         </div>
 
                         <div class="scanner-preview">
                             <video #scanVideo autoplay playsinline muted class="scanner-video"></video>
-                            <div class="scanner-overlay" *ngIf="scannerActive() && scannerStatus()?.includes('Align')">
+                            <div class="scanner-overlay" *ngIf="scannerActive()">
                                 <div class="scanner-frame"></div>
                             </div>
+                            <div class="scanner-overlay scanner-overlay--flash" *ngIf="scannerFlash()"></div>
                         </div>
 
-                        <div class="scanner-status" *ngIf="scannerStatus() || scannerError()">
-                            <p class="status-message" *ngIf="scannerStatus()">
-                                <mat-icon>info</mat-icon>
-                                {{ scannerStatus() }}
-                            </p>
-                            <p class="error-message" *ngIf="scannerError()">
-                                <mat-icon>error</mat-icon>
-                                {{ scannerError() }}
-                            </p>
-                        </div>
-
-                        <div class="scanner-actions" *ngIf="!scannerActive() && scannerSupported() === false">
-                            <p class="helper">Camera scanning is not supported on this device.</p>
-                        </div>
-
-                        <div class="scanner-busy" *ngIf="scannerBusy()">
-                            <mat-icon class="spinner">autorenew</mat-icon>
-                            <span>Processing scan...</span>
-                        </div>
                     </div>
                 </mat-tab>
             </mat-tab-group>

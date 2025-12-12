@@ -1,6 +1,7 @@
-import { Injectable, signal, DestroyRef, inject, ElementRef } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import { BarcodeFormat, DecodeHintType, Exception, NotFoundException, Result } from '@zxing/library';
+import { ScanFeedbackService } from './scan-feedback.service';
 
 type SupportedBarcodeFormat = 'ean_13' | 'ean_8' | 'code_128' | 'upc_a' | 'upc_e';
 
@@ -33,6 +34,10 @@ export type ScannerMode = 'native' | 'zxing';
   providedIn: 'root',
 })
 export class BarcodeScannerService {
+  private static readonly DETECTION_DEBOUNCE_MS = 3000;
+  private static readonly FLASH_DURATION_MS = 640;
+  private static readonly VIDEO_READY_TIMEOUT_MS = 3000;
+
   private readonly preferredBarcodeFormats: SupportedBarcodeFormat[] = [
     'ean_13',
     'ean_8',
@@ -49,11 +54,22 @@ export class BarcodeScannerService {
   private zxingControls: IScannerControls | null = null;
   private videoElement: HTMLVideoElement | null = null;
   private onScanCallback: ((result: BarcodeScanResult) => void) | null = null;
+  private processingDetection = false;
+  private lastDetectedValue: string | null = null;
+  private lastDetectedAt = 0;
+  private statusClearTimer: number | null = null;
+  private flashTimer: number | null = null;
+
+  private readonly scanFeedback = inject(ScanFeedbackService);
 
   readonly scannerActive = signal(false);
   readonly scannerStatus = signal<string | null>(null);
   readonly scannerError = signal<string | null>(null);
   readonly scannerSupported = signal<boolean | null>(null);
+  readonly scannerHint = signal<string | null>(null);
+  readonly scannerProcessing = signal(false);
+  readonly scannerFlash = signal(false);
+  readonly scannerReady = signal(false);
 
   async startScanner(
     videoElement: HTMLVideoElement,
@@ -71,6 +87,10 @@ export class BarcodeScannerService {
 
     this.videoElement = videoElement;
     this.onScanCallback = onScan;
+    this.processingDetection = false;
+    this.scannerProcessing.set(false);
+    this.scannerReady.set(false);
+    this.clearTransientMessages();
     this.scannerError.set(null);
     this.scannerStatus.set('Checking camera support...');
     this.scannerActive.set(true);
@@ -91,6 +111,7 @@ export class BarcodeScannerService {
         return;
       }
 
+      this.scannerStatus.set('Starting camera...');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' },
         audio: false,
@@ -104,6 +125,7 @@ export class BarcodeScannerService {
       this.scanStream = stream;
       this.videoElement.srcObject = this.scanStream;
       await this.videoElement.play();
+      await this.waitForVideoReady(this.videoElement);
 
       if (!this.scannerActive()) {
         this.stopScannerStream();
@@ -113,7 +135,9 @@ export class BarcodeScannerService {
       }
 
       this.scannerMode = scannerMode;
-      this.scannerStatus.set('Align an ISBN barcode within the frame.');
+      this.scannerReady.set(true);
+      this.scannerHint.set('Align an ISBN barcode within the frame.');
+      this.scannerStatus.set(null);
 
       if (scannerMode === 'native') {
         this.scheduleNextScan();
@@ -124,13 +148,24 @@ export class BarcodeScannerService {
       console.error('Unable to start barcode scanner', error);
       this.scannerError.set('Camera access failed. Confirm permissions and try again.');
       this.scannerStatus.set(null);
-      this.stopScanner();
+      this.stopScanner({ preserveError: true });
     }
   }
 
-  stopScanner(): void {
+  stopScanner(options: { preserveError?: boolean; preserveHint?: boolean; preserveStatus?: boolean } = {}): void {
+    const preservedError = options.preserveError ? this.scannerError() : null;
+    const preservedHint = options.preserveHint ? this.scannerHint() : null;
+    const preservedStatus = options.preserveStatus ? this.scannerStatus() : null;
+
     this.scannerActive.set(false);
+    this.processingDetection = false;
+    this.scannerProcessing.set(false);
+    this.scannerReady.set(false);
+    this.clearStatusTimer();
+    this.clearFlashTimer();
     this.scannerStatus.set(null);
+    this.scannerError.set(null);
+    this.scannerHint.set(null);
     this.clearScannerAnimation();
     this.stopZxingControls();
     this.stopScannerStream();
@@ -141,6 +176,16 @@ export class BarcodeScannerService {
       this.videoElement.pause();
       this.videoElement.srcObject = null;
       this.videoElement = null;
+    }
+
+    if (preservedStatus) {
+      this.scannerStatus.set(preservedStatus);
+    }
+    if (preservedHint) {
+      this.scannerHint.set(preservedHint);
+    }
+    if (preservedError) {
+      this.scannerError.set(preservedError);
     }
   }
 
@@ -165,14 +210,17 @@ export class BarcodeScannerService {
       const found = codes.find((code: BarcodeDetectionResult) => (code.rawValue ?? '').trim());
 
       if (found?.rawValue) {
-        this.scannerStatus.set(`Found ${found.rawValue}. Processing...`);
-        this.handleDetectedBarcode(found.rawValue);
+        const value = found.rawValue.trim();
+        if (this.beginProcessing(value)) {
+          this.handleDetectedBarcode(value);
+        }
+        this.scheduleNextScan();
         return;
       }
     } catch (error) {
       console.error('Barcode detection failed', error);
       this.scannerError.set('Unable to read the barcode. Try adjusting lighting or typing the code.');
-      this.stopScanner();
+      this.stopScanner({ preserveError: true });
       return;
     }
 
@@ -182,7 +230,7 @@ export class BarcodeScannerService {
   private startZxingDetection(): void {
     if (!this.zxingReader || !this.videoElement) {
       this.scannerError.set('Barcode scanning is not available on this device.');
-      this.stopScanner();
+      this.stopScanner({ preserveError: true });
       return;
     }
 
@@ -193,22 +241,24 @@ export class BarcodeScannerService {
           this.zxingControls = controls;
 
           if (result?.getText()) {
-            this.scannerStatus.set(`Found ${result.getText()}. Processing...`);
-            this.handleDetectedBarcode(result.getText());
+            const value = result.getText().trim();
+            if (this.beginProcessing(value)) {
+              this.handleDetectedBarcode(value);
+            }
             return;
           }
 
           if (error && !(error instanceof NotFoundException)) {
             console.error('Barcode detection failed', error);
             this.scannerError.set('Unable to read the barcode. Try adjusting lighting or typing the code.');
-            this.stopScanner();
+            this.stopScanner({ preserveError: true });
           }
         }
       )
       .catch((error: unknown) => {
         console.error('Barcode detection failed', error);
         this.scannerError.set('Unable to read the barcode. Try adjusting lighting or typing the code.');
-        this.stopScanner();
+        this.stopScanner({ preserveError: true });
       });
   }
 
@@ -219,6 +269,188 @@ export class BarcodeScannerService {
     }
 
     this.onScanCallback({ rawValue: value });
+  }
+
+  reportScanSuccess(title: string, clearAfterMs = 2500): void {
+    const safeTitle = title.trim();
+    this.processingDetection = false;
+    this.scannerProcessing.set(false);
+    this.scannerError.set(null);
+    this.scannerStatus.set(safeTitle ? `Found: ${safeTitle}` : 'Found item.');
+    this.scheduleStatusClear(clearAfterMs, { clearError: true });
+  }
+
+  reportScanFailure(message: string, clearAfterMs = 4000): void {
+    this.processingDetection = false;
+    this.scannerProcessing.set(false);
+    this.scannerError.set(message);
+    this.scheduleStatusClear(clearAfterMs, { clearStatus: true, clearError: true });
+  }
+
+  reportScanComplete(): void {
+    this.processingDetection = false;
+    this.scannerProcessing.set(false);
+    this.scannerError.set(null);
+    this.scannerStatus.set(null);
+    this.clearStatusTimer();
+  }
+
+  clearScanMessage(): void {
+    this.clearTransientMessages();
+  }
+
+  private beginProcessing(value: string): boolean {
+    if (!value) {
+      return false;
+    }
+
+    const now = Date.now();
+    if (
+      this.lastDetectedValue === value &&
+      now - this.lastDetectedAt < BarcodeScannerService.DETECTION_DEBOUNCE_MS
+    ) {
+      return false;
+    }
+
+    if (this.processingDetection) {
+      return false;
+    }
+
+    this.lastDetectedValue = value;
+    this.lastDetectedAt = now;
+    this.processingDetection = true;
+    this.scannerProcessing.set(true);
+    this.triggerFlash();
+    this.scannerError.set(null);
+    this.scannerStatus.set(`Found ${value}. Processing...`);
+    this.clearStatusTimer();
+    this.scanFeedback.playScanSuccess();
+    return true;
+  }
+
+  private scheduleStatusClear(
+    ms: number,
+    options: { clearStatus?: boolean; clearError?: boolean } = { clearStatus: true, clearError: false }
+  ): void {
+    this.clearStatusTimer();
+
+    const clearStatus = options.clearStatus ?? true;
+    const clearError = options.clearError ?? false;
+
+    if (ms <= 0) {
+      if (clearStatus) {
+        this.scannerStatus.set(null);
+      }
+      if (clearError) {
+        this.scannerError.set(null);
+      }
+      return;
+    }
+
+    if (typeof window === 'undefined') {
+      if (clearStatus) {
+        this.scannerStatus.set(null);
+      }
+      if (clearError) {
+        this.scannerError.set(null);
+      }
+      return;
+    }
+
+    this.statusClearTimer = window.setTimeout(() => {
+      this.statusClearTimer = null;
+      if (clearStatus) {
+        this.scannerStatus.set(null);
+      }
+      if (clearError) {
+        this.scannerError.set(null);
+      }
+    }, ms);
+  }
+
+  private clearStatusTimer(): void {
+    if (this.statusClearTimer !== null) {
+      window.clearTimeout(this.statusClearTimer);
+      this.statusClearTimer = null;
+    }
+  }
+
+  private triggerFlash(): void {
+    this.clearFlashTimer();
+    this.scannerFlash.set(true);
+
+    if (typeof window === 'undefined') {
+      this.scannerFlash.set(false);
+      return;
+    }
+
+    this.flashTimer = window.setTimeout(() => {
+      this.flashTimer = null;
+      this.scannerFlash.set(false);
+    }, BarcodeScannerService.FLASH_DURATION_MS);
+  }
+
+  private clearFlashTimer(): void {
+    if (this.flashTimer !== null) {
+      if (typeof window !== 'undefined') {
+        window.clearTimeout(this.flashTimer);
+      }
+      this.flashTimer = null;
+    }
+    this.scannerFlash.set(false);
+  }
+
+  private clearTransientMessages(): void {
+    this.clearStatusTimer();
+    this.clearFlashTimer();
+    this.scannerStatus.set(null);
+    this.scannerError.set(null);
+    this.scannerHint.set(null);
+  }
+
+  private async waitForVideoReady(video: HTMLVideoElement): Promise<void> {
+    if (this.isVideoReady(video)) {
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      if (typeof window === 'undefined') {
+        resolve();
+        return;
+      }
+
+      const onReady = () => {
+        if (!this.isVideoReady(video)) {
+          return;
+        }
+        cleanup();
+        resolve();
+      };
+
+      const timeout = window.setTimeout(() => {
+        cleanup();
+        resolve();
+      }, BarcodeScannerService.VIDEO_READY_TIMEOUT_MS);
+
+      const cleanup = () => {
+        window.clearTimeout(timeout);
+        video.removeEventListener('loadedmetadata', onReady);
+        video.removeEventListener('loadeddata', onReady);
+        video.removeEventListener('playing', onReady);
+        video.removeEventListener('resize', onReady);
+      };
+
+      video.addEventListener('loadedmetadata', onReady, { passive: true });
+      video.addEventListener('loadeddata', onReady, { passive: true });
+      video.addEventListener('playing', onReady, { passive: true });
+      video.addEventListener('resize', onReady, { passive: true });
+
+      void Promise.resolve().then(onReady);
+    });
+  }
+
+  private isVideoReady(video: HTMLVideoElement): boolean {
+    return video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && video.videoWidth > 0 && video.videoHeight > 0;
   }
 
   private stopScannerStream(): void {
