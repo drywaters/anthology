@@ -99,6 +99,67 @@
                 <input matInput formControlName="isbn10" maxlength="20" />
                 <mat-hint>10-digit identifier code.</mat-hint>
             </mat-form-field>
+
+            <mat-form-field appearance="fill">
+                <mat-label>Format</mat-label>
+                <mat-select formControlName="format">
+                    <mat-option *ngFor="let option of formatOptions" [value]="option.value">
+                        {{ option.label }}
+                    </mat-option>
+                </mat-select>
+                <mat-hint>Physical format of this edition.</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill">
+                <mat-label>Genre</mat-label>
+                <mat-select formControlName="genre">
+                    <mat-option *ngFor="let option of genreOptions" [value]="option.value">
+                        {{ option.label }}
+                    </mat-option>
+                </mat-select>
+                <mat-hint>Primary category for this book.</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill">
+                <mat-label>Your rating</mat-label>
+                <input matInput formControlName="rating" type="number" min="1" max="10" />
+                <button
+                    mat-icon-button
+                    matSuffix
+                    type="button"
+                    (click)="clearRating()"
+                    aria-label="Clear rating"
+                    *ngIf="form.get('rating')?.value"
+                >
+                    <mat-icon>close</mat-icon>
+                </button>
+                <mat-hint>Personal enjoyment rating (1–10).</mat-hint>
+                <mat-error *ngIf="form.get('rating')?.hasError('min')">Rating must be at least 1.</mat-error>
+                <mat-error *ngIf="form.get('rating')?.hasError('max')">Rating cannot exceed 10.</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill">
+                <mat-label>Retail price (USD)</mat-label>
+                <input matInput formControlName="retailPriceUsd" type="number" min="0" step="0.01" />
+                <button
+                    mat-icon-button
+                    matSuffix
+                    type="button"
+                    (click)="clearRetailPrice()"
+                    aria-label="Clear retail price"
+                    *ngIf="form.get('retailPriceUsd')?.value"
+                >
+                    <mat-icon>close</mat-icon>
+                </button>
+                <mat-hint>List price in US dollars.</mat-hint>
+                <mat-error *ngIf="form.get('retailPriceUsd')?.hasError('min')">Price cannot be negative.</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill">
+                <mat-label>Google Volume ID</mat-label>
+                <input matInput formControlName="googleVolumeId" />
+                <mat-hint>Used to refresh metadata from Google Books.</mat-hint>
+            </mat-form-field>
         </div>
 
         <div class="description-section">
@@ -217,14 +278,23 @@
             *ngIf="mode === 'edit'"
             class="form-actions__delete"
             (click)="deleteRequested.emit()"
-            [disabled]="busy"
+            [disabled]="busy || resyncing"
         >
             Delete item
         </button>
-        <button mat-stroked-button type="button" (click)="cancelled.emit()" [disabled]="busy">
+        <button
+            mat-stroked-button
+            type="button"
+            *ngIf="mode === 'edit' && isBook"
+            (click)="requestResync()"
+            [disabled]="busy || resyncing"
+        >
+            {{ resyncing ? 'Syncing...' : 'Re-sync from Google Books' }}
+        </button>
+        <button mat-stroked-button type="button" (click)="cancelled.emit()" [disabled]="busy || resyncing">
            Cancel
         </button>
-        <button mat-flat-button color="primary" type="submit" [disabled]="busy">
+        <button mat-flat-button color="primary" type="submit" [disabled]="busy || resyncing">
             {{ mode === 'create' ? 'Add to collection' : 'Save changes' }}
         </button>
     </div>

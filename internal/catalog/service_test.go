@@ -1,18 +1,18 @@
 package catalog
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
-	"net"
+	"io"
 	"net/http"
 	"testing"
-	"time"
 )
 
 func TestLookupBookByQueryReturnsMetadata(t *testing.T) {
 	t.Parallel()
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	client := newTestClient(t, func(r *http.Request) (*http.Response, error) {
 		if r.URL.Path != "/volumes" {
 			t.Fatalf("unexpected path %s", r.URL.Path)
 		}
@@ -49,13 +49,9 @@ func TestLookupBookByQueryReturnsMetadata(t *testing.T) {
 			},
 		}
 
-		_ = json.NewEncoder(w).Encode(resp)
+		return jsonResponse(t, http.StatusOK, resp), nil
 	})
-
-	server := newHTTPServer(t, handler)
-	defer server.Close()
-
-	svc := NewService(server.Client(), WithGoogleBooksBaseURL(server.URL), WithGoogleBooksAPIKey("test-key"))
+	svc := NewService(client, WithGoogleBooksBaseURL("http://example.test"), WithGoogleBooksAPIKey("test-key"))
 
 	results, err := svc.Lookup(context.Background(), "example keywords", CategoryBook)
 	if err != nil {
@@ -87,9 +83,51 @@ func TestLookupBookByQueryReturnsMetadata(t *testing.T) {
 	}
 }
 
+func TestLookupBookLeavesGenreEmptyWhenCategoriesMissing(t *testing.T) {
+	t.Parallel()
+	client := newTestClient(t, func(r *http.Request) (*http.Response, error) {
+		resp := googleBooksResponse{
+			Items: []googleVolume{
+				{
+					ID: "no-categories",
+					VolumeInfo: googleVolumeInfo{
+						Title:         "Example Title",
+						Authors:       []string{"Author One"},
+						Description:   "Full description",
+						PublishedDate: "2001-09-17",
+						PageCount:     352,
+						IndustryIdentifiers: []googleIndustryIdentifier{
+							{Type: "ISBN_13", Identifier: "9781234567897"},
+						},
+						ImageLinks: googleImageLinks{
+							Thumbnail: "https://books.google.com/thumbnail.jpg",
+						},
+						// Categories intentionally omitted (nil) to simulate Google Books volumes
+						// that provide no category information.
+					},
+				},
+			},
+		}
+
+		return jsonResponse(t, http.StatusOK, resp), nil
+	})
+	svc := NewService(client, WithGoogleBooksBaseURL("http://example.test"), WithGoogleBooksAPIKey("test-key"))
+	results, err := svc.Lookup(context.Background(), "example keywords", CategoryBook)
+	if err != nil {
+		t.Fatalf("lookup failed: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(results))
+	}
+
+	if results[0].Genre != "" {
+		t.Fatalf("expected empty genre when categories are missing, got %q", results[0].Genre)
+	}
+}
+
 func TestLookupBookByISBNFillsMissingIdentifiers(t *testing.T) {
 	t.Parallel()
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	client := newTestClient(t, func(r *http.Request) (*http.Response, error) {
 		values := r.URL.Query()
 		if got := values.Get("q"); got != "isbn:1234567890" {
 			t.Fatalf("expected ISBN query, got %s", got)
@@ -118,13 +156,9 @@ func TestLookupBookByISBNFillsMissingIdentifiers(t *testing.T) {
 				},
 			},
 		}
-		_ = json.NewEncoder(w).Encode(resp)
+		return jsonResponse(t, http.StatusOK, resp), nil
 	})
-
-	server := newHTTPServer(t, handler)
-	defer server.Close()
-
-	svc := NewService(server.Client(), WithGoogleBooksBaseURL(server.URL), WithGoogleBooksAPIKey("test-key"))
+	svc := NewService(client, WithGoogleBooksBaseURL("http://example.test"), WithGoogleBooksAPIKey("test-key"))
 	results, err := svc.Lookup(context.Background(), "1234567890", CategoryBook)
 	if err != nil {
 		t.Fatalf("lookup failed: %v", err)
@@ -151,14 +185,10 @@ func TestLookupBookByISBNFillsMissingIdentifiers(t *testing.T) {
 
 func TestLookupBookByQueryReturnsNotFoundWhenEmpty(t *testing.T) {
 	t.Parallel()
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(googleBooksResponse{})
+	client := newTestClient(t, func(r *http.Request) (*http.Response, error) {
+		return jsonResponse(t, http.StatusOK, googleBooksResponse{}), nil
 	})
-
-	server := newHTTPServer(t, handler)
-	defer server.Close()
-
-	svc := NewService(server.Client(), WithGoogleBooksBaseURL(server.URL), WithGoogleBooksAPIKey("test-key"))
+	svc := NewService(client, WithGoogleBooksBaseURL("http://example.test"), WithGoogleBooksAPIKey("test-key"))
 	_, err := svc.Lookup(context.Background(), "unknown", CategoryBook)
 	if !errors.Is(err, ErrNotFound) {
 		t.Fatalf("expected ErrNotFound, got %v", err)
@@ -172,43 +202,31 @@ func TestLookupRejectsShortQueries(t *testing.T) {
 	}
 }
 
-type testServer struct {
-	URL    string
-	client *http.Client
-	stop   func()
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (fn roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return fn(r)
 }
 
-func (s *testServer) Close() {
-	if s.stop != nil {
-		s.stop()
-	}
-}
-
-func (s *testServer) Client() *http.Client {
-	return s.client
-}
-
-func newHTTPServer(t *testing.T, handler http.Handler) *testServer {
+func newTestClient(t *testing.T, handler func(*http.Request) (*http.Response, error)) *http.Client {
 	t.Helper()
-	ln, err := net.Listen("tcp4", "127.0.0.1:0")
+	return &http.Client{
+		Transport: roundTripperFunc(handler),
+	}
+}
+
+func jsonResponse(t *testing.T, status int, payload any) *http.Response {
+	t.Helper()
+	raw, err := json.Marshal(payload)
 	if err != nil {
-		t.Fatalf("listen tcp4: %v", err)
+		t.Fatalf("marshal response: %v", err)
 	}
 
-	srv := &http.Server{Handler: handler}
-	go func() {
-		_ = srv.Serve(ln)
-	}()
-
-	stop := func() {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		_ = srv.Shutdown(ctx)
-	}
-
-	return &testServer{
-		URL:    "http://" + ln.Addr().String(),
-		client: &http.Client{},
-		stop:   stop,
+	return &http.Response{
+		StatusCode: status,
+		Header: http.Header{
+			"Content-Type": []string{"application/json"},
+		},
+		Body: io.NopCloser(bytes.NewReader(raw)),
 	}
 }

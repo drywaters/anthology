@@ -815,6 +815,8 @@ export class AddItemPageComponent {
         let normalizedReleaseYear: number | null = null;
         const pageCount = partial.pageCount;
         let normalizedPageCount: number | null = null;
+        const retailPriceUsd = partial.retailPriceUsd;
+        let normalizedRetailPriceUsd: number | null = null;
 
         if (typeof releaseYear === 'number') {
             normalizedReleaseYear = releaseYear;
@@ -830,6 +832,13 @@ export class AddItemPageComponent {
             normalizedPageCount = Number.isNaN(parsed) ? null : parsed;
         }
 
+        if (typeof retailPriceUsd === 'number') {
+            normalizedRetailPriceUsd = retailPriceUsd;
+        } else if (typeof retailPriceUsd === 'string') {
+            const parsed = Number.parseFloat(retailPriceUsd);
+            normalizedRetailPriceUsd = Number.isNaN(parsed) ? null : parsed;
+        }
+
         return {
             title: partial.title ?? '',
             creator: partial.creator ?? '',
@@ -840,6 +849,9 @@ export class AddItemPageComponent {
             isbn10: partial.isbn10 ?? '',
             description: partial.description ?? '',
             coverImage: partial.coverImage ?? '',
+            genre: partial.genre,
+            retailPriceUsd: normalizedRetailPriceUsd,
+            googleVolumeId: partial.googleVolumeId ?? '',
             platform: partial.platform ?? '',
             ageGroup: partial.ageGroup ?? '',
             playerCount: partial.playerCount ?? '',

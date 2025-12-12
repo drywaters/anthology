@@ -45,7 +45,7 @@ func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Servic
 
 	sessionHandler := NewSessionHandler(cfg.APIToken, cfg.Environment, logger)
 	bulkImporter := importer.NewCSVImporter(svc, catalogSvc)
-	handler := NewItemHandler(svc, bulkImporter, logger)
+	handler := NewItemHandler(svc, catalogSvc, bulkImporter, logger)
 	catalogHandler := NewCatalogHandler(catalogSvc, logger)
 	shelfHandler := NewShelfHandler(shelfSvc, logger)
 
@@ -72,6 +72,7 @@ func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Servic
 					r.Get("/", handler.Get)
 					r.Put("/", handler.Update)
 					r.Delete("/", handler.Delete)
+					r.Post("/resync", handler.Resync)
 				})
 			})
 			r.Route("/shelves", func(r chi.Router) {

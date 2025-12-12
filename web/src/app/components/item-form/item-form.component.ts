@@ -20,7 +20,20 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 
-import { BookStatus, BOOK_STATUS_LABELS, Item, ItemForm, ItemType, ITEM_TYPE_LABELS } from '../../models/item';
+import {
+    BookStatus,
+    BOOK_STATUS_LABELS,
+    Format,
+    FORMAT_LABELS,
+    Formats,
+    Genre,
+    GENRE_LABELS,
+    Genres,
+    Item,
+    ItemForm,
+    ItemType,
+    ITEM_TYPE_LABELS,
+} from '../../models/item';
 
 @Component({
     selector: 'app-item-form',
@@ -52,9 +65,12 @@ export class ItemFormComponent implements OnChanges, OnInit {
     @Input() mode: 'create' | 'edit' = 'create';
     @Input() busy = false;
 
+	@Input() resyncing = false;
+
 	@Output() readonly save = new EventEmitter<ItemForm>();
 	@Output() readonly cancelled = new EventEmitter<void>();
 	@Output() readonly deleteRequested = new EventEmitter<void>();
+	@Output() readonly resyncRequested = new EventEmitter<void>();
 
 	readonly itemTypeOptions = Object.entries(ITEM_TYPE_LABELS) as [ItemType, string][];
 	readonly bookStatusOptions: Array<{ value: BookStatus; label: string }> = (
@@ -63,6 +79,19 @@ export class ItemFormComponent implements OnChanges, OnInit {
 		value,
 		label,
 	}));
+	readonly formatOptions: Array<{ value: Format; label: string }> = (
+		Object.entries(FORMAT_LABELS) as [Format, string][]
+	).map(([value, label]) => ({
+		value,
+		label,
+	}));
+	readonly genreOptions: Array<{ value: Genre | ''; label: string }> = [
+		{ value: '', label: 'None' },
+		...(Object.entries(GENRE_LABELS) as [Genre, string][]).map(([value, label]) => ({
+			value,
+			label,
+		})),
+	];
 
     coverImageError: string | null = null;
 
@@ -77,6 +106,11 @@ export class ItemFormComponent implements OnChanges, OnInit {
         isbn10: ['', [Validators.maxLength(20)]],
         description: ['', [Validators.maxLength(2000)]],
         coverImage: [''],
+        format: [Formats.Unknown as Format],
+        genre: ['' as Genre | ''],
+        rating: [null, [Validators.min(1), Validators.max(10)]],
+        retailPriceUsd: [null, [Validators.min(0)]],
+        googleVolumeId: [''],
         platform: ['', [Validators.maxLength(200)]],
         ageGroup: ['', [Validators.maxLength(100)]],
         playerCount: ['', [Validators.maxLength(100)]],
@@ -119,11 +153,16 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 isbn13: '',
                 isbn10: '',
                 description: '',
-				coverImage: '',
+                coverImage: '',
+                format: Formats.Unknown,
+                genre: undefined,
+                rating: null,
+                retailPriceUsd: null,
+                googleVolumeId: '',
                 platform: '',
                 ageGroup: '',
                 playerCount: '',
-				readingStatus: BookStatus.None,
+                readingStatus: BookStatus.None,
                 readAt: null,
                 notes: '',
             };
@@ -168,6 +207,11 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 next.isbn10 = this.draft.isbn10 ?? next.isbn10;
                 next.description = this.draft.description ?? next.description;
                 next.coverImage = this.draft.coverImage ?? next.coverImage;
+                next.format = this.draft.format ?? next.format;
+                next.genre = this.draft.genre ?? next.genre;
+                next.rating = this.parseInteger(this.draft.rating) ?? next.rating;
+                next.retailPriceUsd = this.parseNumber(this.draft.retailPriceUsd) ?? next.retailPriceUsd;
+                next.googleVolumeId = this.draft.googleVolumeId ?? next.googleVolumeId;
                 next.platform = this.draft.platform ?? next.platform;
                 next.ageGroup = this.draft.ageGroup ?? next.ageGroup;
                 next.playerCount = this.draft.playerCount ?? next.playerCount;
@@ -186,6 +230,11 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 next.isbn10 = this.item.isbn10 ?? '';
                 next.description = this.item.description ?? '';
                 next.coverImage = this.item.coverImage ?? '';
+                next.format = this.item.format ?? Formats.Unknown;
+                next.genre = this.item.genre;
+                next.rating = this.item.rating ?? null;
+                next.retailPriceUsd = this.item.retailPriceUsd ?? null;
+                next.googleVolumeId = this.item.googleVolumeId ?? '';
                 next.platform = this.item.platform ?? '';
                 next.ageGroup = this.item.ageGroup ?? '';
                 next.playerCount = this.item.playerCount ?? '';
@@ -253,6 +302,11 @@ export class ItemFormComponent implements OnChanges, OnInit {
             isbn13: value.isbn13 ?? '',
             isbn10: value.isbn10 ?? '',
             coverImage: value.coverImage ?? '',
+            format: value.format ?? Formats.Unknown,
+            genre: value.genre || undefined,
+            rating: this.parseInteger(value.rating),
+            retailPriceUsd: this.parseNumber(value.retailPriceUsd),
+            googleVolumeId: value.googleVolumeId ?? '',
             platform: value.platform ?? '',
             ageGroup: value.ageGroup ?? '',
             playerCount: value.playerCount ?? '',
@@ -293,6 +347,18 @@ export class ItemFormComponent implements OnChanges, OnInit {
 
     clearCoverError(): void {
         this.coverImageError = null;
+    }
+
+    clearRating(): void {
+        this.form.patchValue({ rating: null });
+    }
+
+    clearRetailPrice(): void {
+        this.form.patchValue({ retailPriceUsd: null });
+    }
+
+    requestResync(): void {
+        this.resyncRequested.emit();
     }
 
     onStatusChange(status: BookStatus): void {
@@ -373,12 +439,20 @@ export class ItemFormComponent implements OnChanges, OnInit {
         return date;
     }
 
-	private handleItemTypeChange(type: ItemType): void {
-		if (type !== 'book') {
-			this.form.patchValue({ readingStatus: BookStatus.None, readAt: null });
-			this.form.get('readAt')?.setErrors(null);
-			this.clearCurrentPage();
-		}
+    private handleItemTypeChange(type: ItemType): void {
+        if (type !== 'book') {
+            this.form.patchValue({
+                readingStatus: BookStatus.None,
+                readAt: null,
+                format: Formats.Unknown,
+                genre: '',
+                rating: null,
+                retailPriceUsd: null,
+                googleVolumeId: '',
+            });
+            this.form.get('readAt')?.setErrors(null);
+            this.clearCurrentPage();
+        }
     }
 
 	private normalizeStatus(value: unknown): BookStatus | null {
@@ -397,6 +471,17 @@ export class ItemFormComponent implements OnChanges, OnInit {
             return Number.isFinite(value) ? value : null;
         }
         const parsed = Number.parseInt(String(value), 10);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    private parseNumber(value: unknown): number | null {
+        if (value === null || value === undefined || value === '') {
+            return null;
+        }
+        if (typeof value === 'number') {
+            return Number.isFinite(value) ? value : null;
+        }
+        const parsed = Number.parseFloat(String(value));
         return Number.isNaN(parsed) ? null : parsed;
     }
 

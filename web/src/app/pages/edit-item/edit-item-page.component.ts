@@ -37,6 +37,7 @@ export class EditItemPageComponent {
 
     readonly loading = signal(true);
     readonly busy = signal(false);
+    readonly resyncing = signal(false);
     readonly item = signal<Item | null>(null);
     readonly loadError = signal<string | null>(null);
     readonly itemId = signal<string | null>(null);
@@ -101,9 +102,34 @@ export class EditItemPageComponent {
     }
 
     handleCancel(): void {
-        if (!this.busy()) {
+        if (!this.busy() && !this.resyncing()) {
             this.navigateBack();
         }
+    }
+
+    handleResync(): void {
+        const current = this.item();
+        if (!current || this.busy() || this.resyncing()) {
+            return;
+        }
+
+        this.resyncing.set(true);
+        this.itemService
+            .resync(current.id)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (updatedItem) => {
+                    this.resyncing.set(false);
+                    this.item.set(updatedItem);
+                    this.snackBar.open('Metadata refreshed from Google Books.', 'Dismiss', { duration: 4000 });
+                },
+                error: () => {
+                    this.resyncing.set(false);
+                    this.snackBar.open('Unable to refresh metadata. The book may not be found in Google Books.', 'Dismiss', {
+                        duration: 5000,
+                    });
+                },
+            });
     }
 
     retry(): void {

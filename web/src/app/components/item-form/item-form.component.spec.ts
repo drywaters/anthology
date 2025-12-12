@@ -2,7 +2,7 @@ import { SimpleChange } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { ItemFormComponent } from './item-form.component';
-import { Item, BookStatus } from '../../models/item';
+import { Item, BookStatus, Formats } from '../../models/item';
 
 describe(ItemFormComponent.name, () => {
     beforeEach(async () => {
@@ -73,24 +73,29 @@ describe(ItemFormComponent.name, () => {
         const saveSpy = jasmine.createSpy('save');
         component.save.subscribe(saveSpy);
 
-	component.form.setValue({
-		title: 'Arrival',
-		creator: 'Denis Villeneuve',
-		itemType: 'movie',
-		releaseYear: null,
-		pageCount: null,
-		currentPage: null,
-		isbn13: '',
-		isbn10: '',
-		description: '',
-		coverImage: '',
-		platform: '',
-		ageGroup: '',
-		playerCount: '',
-		readingStatus: BookStatus.None,
-		readAt: null,
-		notes: '',
-	});
+        component.form.setValue({
+            title: 'Arrival',
+            creator: 'Denis Villeneuve',
+            itemType: 'movie',
+            releaseYear: null,
+            pageCount: null,
+            currentPage: null,
+            isbn13: '',
+            isbn10: '',
+            description: '',
+            coverImage: '',
+            format: Formats.Unknown,
+            genre: '',
+            rating: null,
+            retailPriceUsd: null,
+            googleVolumeId: '',
+            platform: '',
+            ageGroup: '',
+            playerCount: '',
+            readingStatus: BookStatus.None,
+            readAt: null,
+            notes: '',
+        });
 
         component.submit();
 
