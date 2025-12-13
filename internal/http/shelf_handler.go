@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
+	"anthology/internal/catalog"
 	"anthology/internal/items"
 	"anthology/internal/shelves"
 )
@@ -26,6 +27,8 @@ func (h *ShelfHandler) handleShelfError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, "slot not found")
 	case errors.Is(err, items.ErrNotFound):
 		writeError(w, http.StatusNotFound, "item not found")
+	case errors.Is(err, catalog.ErrNotFound):
+		writeError(w, http.StatusNotFound, "No results found")
 	case errors.Is(err, shelves.ErrValidation):
 		writeError(w, http.StatusBadRequest, err.Error())
 	default:
