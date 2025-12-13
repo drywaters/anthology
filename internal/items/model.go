@@ -57,6 +57,7 @@ const (
 	FormatUnknown   Format = "UNKNOWN"
 	FormatHardcover Format = "HARDCOVER"
 	FormatPaperback Format = "PAPERBACK"
+	FormatSoftcover Format = "SOFTCOVER"
 	FormatEbook     Format = "EBOOK"
 	FormatMagazine  Format = "MAGAZINE"
 )

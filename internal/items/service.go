@@ -542,7 +542,7 @@ func normalizeGameFields(itemType ItemType, platform, ageGroup, playerCount stri
 // normalizeFormat validates and normalizes the format enum.
 func normalizeFormat(format Format) Format {
 	switch format {
-	case FormatHardcover, FormatPaperback, FormatEbook, FormatMagazine:
+	case FormatHardcover, FormatPaperback, FormatSoftcover, FormatEbook, FormatMagazine:
 		return format
 	default:
 		return FormatUnknown
