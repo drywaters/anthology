@@ -20,6 +20,7 @@ export const Formats = {
     Unknown: 'UNKNOWN',
     Hardcover: 'HARDCOVER',
     Paperback: 'PAPERBACK',
+    Softcover: 'SOFTCOVER',
     Ebook: 'EBOOK',
     Magazine: 'MAGAZINE',
 } as const;
@@ -30,6 +31,7 @@ export const FORMAT_LABELS: Record<Format, string> = {
     [Formats.Unknown]: 'Unknown',
     [Formats.Hardcover]: 'Hardcover',
     [Formats.Paperback]: 'Paperback',
+    [Formats.Softcover]: 'Softcover',
     [Formats.Ebook]: 'E-Book',
     [Formats.Magazine]: 'Magazine',
 };
