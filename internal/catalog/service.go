@@ -299,6 +299,9 @@ func (s *Service) searchGoogleBooks(ctx context.Context, q string, maxResults in
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusBadRequest {
+		return nil, ErrNotFound
+	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("google books returned status %d", resp.StatusCode)
 	}
