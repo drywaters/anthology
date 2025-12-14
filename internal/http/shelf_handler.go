@@ -26,6 +26,8 @@ func (h *ShelfHandler) handleShelfError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, "slot not found")
 	case errors.Is(err, items.ErrNotFound):
 		writeError(w, http.StatusNotFound, "item not found")
+	case errors.Is(err, shelves.ErrISBNNotFound):
+		writeError(w, http.StatusNotFound, "no results found for scanned barcode")
 	case errors.Is(err, shelves.ErrValidation):
 		writeError(w, http.StatusBadRequest, err.Error())
 	default:
