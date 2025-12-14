@@ -29,6 +29,8 @@ func (h *ShelfHandler) handleShelfError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, "item not found")
 	case errors.Is(err, catalog.ErrNotFound):
 		writeError(w, http.StatusNotFound, "No results found")
+	case errors.Is(err, catalog.ErrInvalidQuery):
+		writeError(w, http.StatusBadRequest, err.Error())
 	case errors.Is(err, shelves.ErrValidation):
 		writeError(w, http.StatusBadRequest, err.Error())
 	default:
