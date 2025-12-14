@@ -19,6 +19,9 @@ var ErrSlotNotFound = errors.New("shelf slot not found")
 // ErrValidation wraps user-correctable validation errors safe to expose to clients.
 var ErrValidation = errors.New("validation error")
 
+// ErrISBNNotFound is returned when a scanned barcode cannot be found in the catalog.
+var ErrISBNNotFound = errors.New("no results found for scanned barcode")
+
 // ScanStatus indicates the result of a scan operation.
 type ScanStatus string
 

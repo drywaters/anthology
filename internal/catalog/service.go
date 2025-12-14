@@ -168,6 +168,12 @@ func (s *Service) lookupBook(ctx context.Context, query string) ([]Metadata, err
 		}
 	}
 
+	// If the query looks like a barcode (digits/X only) but isn't a valid ISBN
+	// length (10 or 13), return not found instead of doing a keyword search.
+	if isInvalidBarcodeQuery(query) {
+		return nil, ErrNotFound
+	}
+
 	return s.lookupBookByQuery(ctx, query)
 }
 
@@ -421,6 +427,29 @@ func parsePublishYear(raw string) *int {
 		return nil
 	}
 	return &year
+}
+
+// isInvalidBarcodeQuery returns true if the query looks like a barcode
+// (digits with optional X for ISBN-10 check digit) but is not a valid
+// ISBN length (10 or 13). This catches UPCs (12 digits) and other formats.
+func isInvalidBarcodeQuery(query string) bool {
+	charCount := 0
+	for _, r := range query {
+		if unicode.IsDigit(r) || r == 'X' || r == 'x' {
+			charCount++
+		} else if !unicode.IsSpace(r) && r != '-' {
+			// Contains other characters - likely a title search
+			return false
+		}
+	}
+
+	// If it looks like a barcode (digits/X only), check length
+	// Valid ISBNs are exactly 10 or 13 characters
+	if charCount > 0 && charCount != 10 && charCount != 13 {
+		return true
+	}
+
+	return false
 }
 
 func normalizeISBN(value string) string {

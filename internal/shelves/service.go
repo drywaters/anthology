@@ -3,6 +3,7 @@ package shelves
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/url"
 	"slices"
@@ -611,11 +612,14 @@ func (s *Service) ScanAndAssign(ctx context.Context, shelfID, slotID uuid.UUID, 
 		// Item doesn't exist - lookup metadata and create it
 		metadata, err := s.catalogSvc.Lookup(ctx, isbn, catalog.CategoryBook)
 		if err != nil {
+			if errors.Is(err, catalog.ErrNotFound) || errors.Is(err, catalog.ErrInvalidQuery) {
+				return ScanAndAssignResult{}, ErrISBNNotFound
+			}
 			return ScanAndAssignResult{}, fmt.Errorf("failed to lookup ISBN: %w", err)
 		}
 
 		if len(metadata) == 0 {
-			return ScanAndAssignResult{}, fmt.Errorf("no metadata found for ISBN: %s", isbn)
+			return ScanAndAssignResult{}, ErrISBNNotFound
 		}
 
 		// Use the first result

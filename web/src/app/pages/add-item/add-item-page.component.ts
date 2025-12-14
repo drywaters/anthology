@@ -397,14 +397,21 @@ export class AddItemPageComponent {
                         if (source !== 'scanner') {
                             const summary =
                                 drafts.length > 1
-                                    ? `Loaded ${drafts.length} matches for “${query}”. Choose one below.`
-                                    : `Metadata loaded for “${query}”.`;
+                                    ? `Loaded ${drafts.length} matches for "${query}". Choose one below.`
+                                    : `Metadata loaded for "${query}".`;
                             this.lastLookupSummary.set(summary);
                         }
                     } else {
                         this.manualDraft.set(null);
                         this.manualDraftSource.set(null);
                         this.lastLookupSummary.set(null);
+
+                        const message = 'No results found. Try another barcode or type the ISBN.';
+                        if (source === 'scanner') {
+                            this.barcodeScanner.reportScanFailure(message);
+                        } else {
+                            this.lookupError.set(message);
+                        }
                     }
                 },
                 error: (error) => {
@@ -418,11 +425,15 @@ export class AddItemPageComponent {
                         if (serverMessage) {
                             message = serverMessage;
                         } else if (error.status === 404) {
-                            message = 'We couldn\'t find a match. Try another ISBN.';
+                            message = 'No results found. Try another barcode or type the ISBN.';
                         }
                     }
 
-                    this.lookupError.set(message);
+                    if (source === 'scanner') {
+                        this.barcodeScanner.reportScanFailure(message);
+                    } else {
+                        this.lookupError.set(message);
+                    }
                 },
             });
     }
