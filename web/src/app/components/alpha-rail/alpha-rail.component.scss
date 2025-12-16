@@ -12,6 +12,10 @@
     backdrop-filter: blur(4px);
     border-radius: 1rem;
     box-shadow: 0 4px 12px rgb(15 23 42 / 12%);
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
 .rail-letter {

@@ -74,6 +74,13 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
 
     @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLElement>;
 
+    readonly alphaRailTop = signal<number>(0);
+    readonly alphaRailMaxHeight = computed(() => {
+        const top = this.alphaRailTop();
+        if (!top) return null;
+        return `calc(100dvh - ${top + 16}px)`;
+    });
+
     readonly displayedColumns = [
         'title',
         'creator',
@@ -145,6 +152,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     });
 
     private observer: IntersectionObserver | null = null;
+    private alphaRailUpdateHandler: (() => void) | null = null;
 
     constructor() {
         const filters$ = toObservable(computed(() => this.currentFilters()));
@@ -193,6 +201,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
 
     ngAfterViewInit(): void {
         this.setupScrollObserver();
+        this.setupAlphaRailMetrics();
 
         effect(
             () => {
@@ -206,6 +215,34 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
 
     ngOnDestroy(): void {
         this.observer?.disconnect();
+        this.teardownAlphaRailMetrics();
+    }
+
+    private setupAlphaRailMetrics(): void {
+        const update = () => this.updateAlphaRailMetrics();
+        this.alphaRailUpdateHandler = update;
+
+        // Ensure first measurement happens after initial layout.
+        requestAnimationFrame(update);
+
+        window.addEventListener('resize', update);
+        window.addEventListener('scroll', update, { passive: true });
+    }
+
+    private teardownAlphaRailMetrics(): void {
+        const update = this.alphaRailUpdateHandler;
+        if (!update) return;
+
+        window.removeEventListener('resize', update);
+        window.removeEventListener('scroll', update);
+        this.alphaRailUpdateHandler = null;
+    }
+
+    private updateAlphaRailMetrics(): void {
+        const container = this.scrollContainer?.nativeElement;
+        if (!container) return;
+        const rect = container.getBoundingClientRect();
+        this.alphaRailTop.set(Math.max(0, Math.round(rect.top)));
     }
 
     private setupScrollObserver(): void {
