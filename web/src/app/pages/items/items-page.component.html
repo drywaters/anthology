@@ -52,6 +52,8 @@
         <app-alpha-rail
             [histogram]="histogram"
             [activeLetter]="activeLetter"
+            [style.top.px]="alphaRailTop()"
+            [style.--alpha-rail-max-height]="alphaRailMaxHeight()"
             (letterSelected)="onLetterSelected($event)"
         ></app-alpha-rail>
     </div>
