@@ -36,16 +36,11 @@ import { ItemService } from '../../services/item.service';
 import { ItemLookupCategory, ItemLookupService } from '../../services/item-lookup.service';
 import { CsvImportSummary } from '../../models/import';
 import { BarcodeScannerService } from '../../services/barcode-scanner.service';
+import { CsvImportComponent } from './csv-import/csv-import.component';
+import { BarcodeScannerComponent } from './barcode-scanner/barcode-scanner.component';
+import { LookupResultsComponent } from './lookup-results/lookup-results.component';
 
 type SearchCategoryValue = ItemLookupCategory;
-
-type CsvImportStatusLevel = 'info' | 'success' | 'warning' | 'error';
-
-interface CsvImportStatus {
-    level: CsvImportStatusLevel;
-    icon: string;
-    message: string;
-}
 
 interface SearchCategoryConfig {
     value: SearchCategoryValue;
@@ -56,10 +51,6 @@ interface SearchCategoryConfig {
     itemType: ItemForm['itemType'];
     disabled?: boolean;
 }
-
-const CSV_MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB - matches server limit
-const CSV_ALLOWED_MIME_TYPES = ['text/csv', 'application/vnd.ms-excel'];
-const CSV_ALLOWED_EXTENSIONS = ['.csv'];
 
 @Component({
     selector: 'app-add-item-page',
@@ -79,6 +70,9 @@ const CSV_ALLOWED_EXTENSIONS = ['.csv'];
         ReactiveFormsModule,
         RouterModule,
         ItemFormComponent,
+        CsvImportComponent,
+        BarcodeScannerComponent,
+        LookupResultsComponent,
     ],
     templateUrl: './add-item-page.component.html',
     styleUrl: './add-item-page.component.scss',
@@ -150,8 +144,8 @@ export class AddItemPageComponent {
     private readonly barcodeScanner = inject(BarcodeScannerService);
     private readonly ngZone = inject(NgZone);
 
-    @ViewChild('scanVideo') scanVideo?: ElementRef<HTMLVideoElement>;
-    @ViewChild('csvInput') csvInput?: ElementRef<HTMLInputElement>;
+    @ViewChild('barcodeScanner') barcodeScannerComponent?: BarcodeScannerComponent;
+    @ViewChild('csvImport') csvImportComponent?: CsvImportComponent;
 
     readonly busy = signal(false);
     readonly lookupBusy = signal(false);
@@ -173,48 +167,6 @@ export class AddItemPageComponent {
     readonly scannerProcessing = computed(() => this.barcodeScanner.scannerProcessing());
     readonly scannerFlash = computed(() => this.barcodeScanner.scannerFlash());
     readonly scannerReady = computed(() => this.barcodeScanner.scannerReady());
-    readonly csvImportStatus = computed<CsvImportStatus | null>(() => {
-        if (this.importBusy()) {
-            return {
-                level: 'info',
-                icon: 'autorenew',
-                message: 'Importing CSV...',
-            };
-        }
-
-        const error = this.importError();
-        if (error) {
-            return {
-                level: 'error',
-                icon: 'error',
-                message: error,
-            };
-        }
-
-        const summary = this.importSummary();
-        if (summary) {
-            const totalRows = summary.totalRows ?? 0;
-            const imported = summary.imported ?? 0;
-            const notImported = Math.max(totalRows - imported, 0);
-            const baseMessage = `Imported ${imported} of ${totalRows} rows.`;
-
-            if (notImported > 0) {
-                return {
-                    level: 'warning',
-                    icon: 'error_outline',
-                    message: `${baseMessage} Not imported ${notImported} rows.`,
-                };
-            }
-
-            return {
-                level: 'success',
-                icon: 'check_circle',
-                message: baseMessage,
-            };
-        }
-
-        return null;
-    });
 
     readonly searchCategories = AddItemPageComponent.SEARCH_CATEGORIES;
     readonly csvFields = AddItemPageComponent.CSV_FIELDS;
@@ -258,6 +210,56 @@ export class AddItemPageComponent {
         });
     }
 
+    handleCsvFileSelected(file: File): void {
+        this.importError.set(null);
+        this.importSummary.set(null);
+        this.selectedCsvFile.set(file);
+        this.activateCsvImportTab();
+    }
+
+    handleCsvImportSubmit(): void {
+        const file = this.selectedCsvFile() ?? this.csvImportComponent?.selectedFile() ?? null;
+        if (!file || this.importBusy()) {
+            return;
+        }
+
+        this.activateCsvImportTab();
+
+        this.importBusy.set(true);
+        this.importError.set(null);
+        this.importSummary.set(null);
+
+        this.itemService
+            .importCsv(file)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .pipe(finalize(() => this.importBusy.set(false)))
+            .subscribe({
+                next: (summary: CsvImportSummary) => {
+                    const normalizedSummary: CsvImportSummary = {
+                        ...summary,
+                        skippedDuplicates: summary.skippedDuplicates ?? [],
+                        failed: summary.failed ?? [],
+                    };
+                    this.importSummary.set(normalizedSummary);
+                    this.selectedCsvFile.set(null);
+                    this.csvImportComponent?.clearSelectedFile();
+                    this.activateCsvImportTab();
+                },
+                error: (error) => {
+                    let message = 'Import failed. Confirm the CSV matches the template.';
+                    if (error instanceof HttpErrorResponse) {
+                        const serverMessage =
+                            typeof error.error?.error === 'string' ? error.error.error.trim() : '';
+                        if (serverMessage) {
+                            message = serverMessage;
+                        }
+                    }
+                    this.importError.set(message);
+                    this.activateCsvImportTab();
+                },
+            });
+    }
+
     handleDetectedBarcode(rawValue: string): void {
         const value = rawValue.trim();
         if (!value) {
@@ -273,12 +275,12 @@ export class AddItemPageComponent {
     }
 
     private async waitForScanVideoElement(): Promise<HTMLVideoElement | null> {
-        if (this.scanVideo?.nativeElement) {
-            return this.scanVideo.nativeElement;
+        if (this.barcodeScannerComponent?.getVideoElement()) {
+            return this.barcodeScannerComponent.getVideoElement();
         }
 
         await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-        return this.scanVideo?.nativeElement ?? null;
+        return this.barcodeScannerComponent?.getVideoElement() ?? null;
     }
 
     async handleSave(formValue: ItemForm): Promise<void> {
@@ -501,117 +503,12 @@ export class AddItemPageComponent {
         this.selectedTab.set(AddItemPageComponent.MANUAL_ENTRY_TAB_INDEX);
     }
 
-    handleCsvFileChange(event: Event): void {
-        const input = event.target as HTMLInputElement | null;
-        const file = input?.files?.[0] ?? null;
-
-        this.importError.set(null);
-        this.importSummary.set(null);
-
-        const validationError = this.validateCsvFile(file);
-        if (validationError) {
-            this.selectedCsvFile.set(null);
-            this.importError.set(validationError);
-            this.resetCsvInput();
-            this.activateCsvImportTab();
-            return;
-        }
-
-        this.selectedCsvFile.set(file);
-        this.activateCsvImportTab();
-    }
-
-    private validateCsvFile(file: File | null): string | null {
-        if (!file) {
-            return null;
-        }
-
-        const fileName = file.name.toLowerCase();
-        const hasValidExtension = CSV_ALLOWED_EXTENSIONS.some((ext) => fileName.endsWith(ext));
-        if (!hasValidExtension) {
-            return 'Only CSV files are allowed.';
-        }
-
-        if (file.type && !CSV_ALLOWED_MIME_TYPES.includes(file.type)) {
-            return 'Only CSV files are allowed.';
-        }
-
-        if (file.size > CSV_MAX_FILE_SIZE_BYTES) {
-            const maxSizeMB = CSV_MAX_FILE_SIZE_BYTES / (1024 * 1024);
-            return `File size exceeds ${maxSizeMB} MB limit.`;
-        }
-
-        return null;
-    }
-
-    handleImportSubmit(event?: Event): void {
-        event?.preventDefault();
-        event?.stopPropagation();
-
-        const fileFromInput = this.csvInput?.nativeElement?.files?.[0] ?? null;
-        const file = this.selectedCsvFile() ?? fileFromInput;
-        if (!file || this.importBusy()) {
-            return;
-        }
-
-        const validationError = this.validateCsvFile(file);
-        if (validationError) {
-            this.importError.set(validationError);
-            this.activateCsvImportTab();
-            return;
-        }
-
-        this.selectedCsvFile.set(file);
-
-        this.activateCsvImportTab();
-
-        this.importBusy.set(true);
-        this.importError.set(null);
-        this.importSummary.set(null);
-
-        this.itemService
-            .importCsv(file)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .pipe(finalize(() => this.importBusy.set(false)))
-            .subscribe({
-                next: (summary: CsvImportSummary) => {
-                    const normalizedSummary: CsvImportSummary = {
-                        ...summary,
-                        skippedDuplicates: summary.skippedDuplicates ?? [],
-                        failed: summary.failed ?? [],
-                    };
-                    this.importSummary.set(normalizedSummary);
-                    this.selectedCsvFile.set(null);
-                    this.resetCsvInput();
-                    this.activateCsvImportTab();
-                },
-                error: (error) => {
-                    let message = 'Import failed. Confirm the CSV matches the template.';
-                    if (error instanceof HttpErrorResponse) {
-                        const serverMessage =
-                            typeof error.error?.error === 'string' ? error.error.error.trim() : '';
-                        if (serverMessage) {
-                            message = serverMessage;
-                        }
-                    }
-                    this.importError.set(message);
-                    this.activateCsvImportTab();
-                },
-            });
-    }
-
     handleImportReset(): void {
         this.selectedCsvFile.set(null);
         this.importSummary.set(null);
         this.importError.set(null);
-        this.resetCsvInput();
+        this.csvImportComponent?.clearSelectedFile();
         this.activateCsvImportTab();
-    }
-
-    private resetCsvInput(): void {
-        if (this.csvInput?.nativeElement) {
-            this.csvInput.nativeElement.value = '';
-        }
     }
 
     private activateCsvImportTab(): void {

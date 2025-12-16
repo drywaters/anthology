@@ -1,0 +1,104 @@
+<div class="csv-import">
+    <div class="csv-header">
+        <div>
+            <h3>Bulk import</h3>
+            <p>Upload the Anthology CSV template to add multiple items at once.</p>
+        </div>
+    </div>
+
+    <div class="csv-instructions">
+        <h4>Required columns</h4>
+        <p>
+            Make sure your CSV includes this header row. Keep the column names lowercase to avoid
+            validation errors.
+        </p>
+        <div class="field-list">
+            <span class="field" *ngFor="let field of csvFields">{{ field }}</span>
+        </div>
+        <p class="hint">
+            For books, you can leave the title blank if you include an ISBN. We'll fetch the
+            metadata automatically. Use the <code>coverImage</code> column for an HTTPS image URL
+            (or leave it blank to add one later). Duplicate titles or ISBNs are skipped and reported
+            below.
+        </p>
+    </div>
+
+    <form class="csv-form" (ngSubmit)="handleSubmit($event)" novalidate>
+        <label class="file-input">
+            <span class="label">CSV file</span>
+            <input
+                #csvInput
+                type="file"
+                accept=".csv,text/csv"
+                (change)="handleFileChange($event)"
+                [disabled]="importBusy"
+            />
+            <div class="file-meta" *ngIf="selectedFile() as file">
+                <mat-icon aria-hidden="true">attach_file</mat-icon>
+                <span>{{ file.name }}</span>
+            </div>
+        </label>
+        <div class="csv-actions">
+            <button
+                mat-flat-button
+                color="primary"
+                type="button"
+                [disabled]="!selectedFile() || importBusy"
+                (click)="handleSubmit($event)"
+            >
+                <span *ngIf="!importBusy">Upload CSV</span>
+                <mat-progress-spinner
+                    *ngIf="importBusy"
+                    diameter="18"
+                    mode="indeterminate"
+                ></mat-progress-spinner>
+            </button>
+            <button
+                mat-stroked-button
+                type="button"
+                (click)="handleReset()"
+                [disabled]="importBusy || (!selectedFile() && !importSummary)"
+            >
+                Clear
+            </button>
+            <a
+                class="csv-template-link"
+                [href]="csvTemplateUrl"
+                download="anthology-import-template.csv"
+            >
+                <mat-icon aria-hidden="true">file_download</mat-icon>
+                <span>Download template</span>
+            </a>
+        </div>
+    </form>
+
+    <div class="csv-feedback" *ngIf="importError">
+        <mat-icon aria-hidden="true">error</mat-icon>
+        <span>{{ importError }}</span>
+    </div>
+
+    <div class="csv-summary" *ngIf="importSummary as summary">
+        <h4>Import summary</h4>
+        <p>Imported {{ summary.imported }} of {{ summary.totalRows }} rows.</p>
+
+        <div class="summary-section" *ngIf="summary.skippedDuplicates.length">
+            <h5>Skipped duplicates</h5>
+            <ul>
+                <li *ngFor="let entry of summary.skippedDuplicates">
+                    Row {{ entry.row }} · {{ entry.title || entry.identifier || 'Untitled item' }} —
+                    {{ entry.reason }}
+                </li>
+            </ul>
+        </div>
+
+        <div class="summary-section" *ngIf="summary.failed.length">
+            <h5>Rows with errors</h5>
+            <ul>
+                <li *ngFor="let entry of summary.failed">
+                    Row {{ entry.row }} · {{ entry.title || entry.identifier || 'Untitled item' }}:
+                    {{ entry.error }}
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
