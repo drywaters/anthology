@@ -1,0 +1,62 @@
+<article
+    class="item-card"
+    tabindex="0"
+    (click)="onCardClick()"
+    (keydown)="handleCardKeydown($event)"
+>
+    <div class="card-cover" [class.card-cover--empty]="!item.coverImage">
+        <img
+            *ngIf="item.coverImage"
+            [src]="item.coverImage | thumbnail"
+            [alt]="item.title + ' cover'"
+            loading="lazy"
+        />
+        <div *ngIf="!item.coverImage" class="card-cover-placeholder">
+            <mat-icon aria-hidden="true">book</mat-icon>
+            <span>Tap to edit</span>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="card-title-row">
+            <h4>{{ item.title }}</h4>
+            <span class="card-chip item-type-chip" [ngClass]="chipClassFor(item)">
+                {{ labelFor(item) }}
+            </span>
+        </div>
+        <p class="card-meta">
+            {{ item.creator || 'Unknown creator' }}
+        </p>
+        <p class="card-sub" *ngIf="item.releaseYear">Released {{ item.releaseYear }}</p>
+        <button
+            *ngIf="item.shelfPlacement"
+            type="button"
+            mat-icon-button
+            class="shelf-location-button shelf-location-button--card"
+            (click)="onShelfLocationClick($event)"
+            [attr.aria-label]="
+                'View shelf slot ' +
+                (item.shelfPlacement.rowIndex + 1) +
+                '/' +
+                (item.shelfPlacement.colIndex + 1) +
+                ' on ' +
+                item.shelfPlacement.shelfName
+            "
+        >
+            <mat-icon aria-hidden="true">visibility</mat-icon>
+        </button>
+        <p class="card-sub" *ngIf="readingStatusLabel(item) as statusLabel">
+            <span class="status-chip">{{ statusLabel }}</span>
+            <ng-container *ngIf="item.readingStatus === BookStatus.Read && item.readAt">
+                • Read {{ item.readAt | date: 'mediumDate' }}
+            </ng-container>
+            <ng-container *ngIf="readingProgress(item) as progress">
+                •
+                <ng-container *ngIf="progress.percent !== undefined; else cardProgressFallback">
+                    {{ progress.percent }}% complete ({{ progress.current }}/{{ progress.total }}
+                    pages)
+                </ng-container>
+                <ng-template #cardProgressFallback>On page {{ progress.current }}</ng-template>
+            </ng-container>
+        </p>
+    </div>
+</article>

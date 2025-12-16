@@ -1,0 +1,53 @@
+<div class="filters-panel">
+    <div class="filters">
+        <mat-form-field appearance="outline" class="type-select">
+            <mat-label>Type</mat-label>
+            <mat-select [value]="typeFilter()" (valueChange)="onTypeChange($event)">
+                <mat-option *ngFor="let option of typeOptions" [value]="option.value">
+                    {{ option.label }}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <mat-form-field *ngIf="showStatusFilter()" appearance="outline" class="status-select">
+            <mat-label>Reading status</mat-label>
+            <mat-select [value]="statusFilter()" (valueChange)="onStatusChange($event)">
+                <mat-option *ngFor="let option of statusOptions" [value]="option.value">
+                    {{ option.label }}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="shelf-status-select">
+            <mat-label>Shelf status</mat-label>
+            <mat-select [value]="shelfStatusFilter()" (valueChange)="onShelfStatusChange($event)">
+                <mat-option *ngFor="let option of shelfStatusOptions" [value]="option.value">
+                    {{ option.label }}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <div class="view-toggle" role="group" aria-label="Change view">
+            <button
+                mat-icon-button
+                type="button"
+                [class.active]="!isGridView()"
+                (click)="onViewModeChange('table')"
+                aria-label="Switch to list view"
+                [attr.aria-pressed]="!isGridView()"
+            >
+                <mat-icon>list</mat-icon>
+            </button>
+            <button
+                mat-icon-button
+                type="button"
+                [class.active]="isGridView()"
+                (click)="onViewModeChange('grid')"
+                aria-label="Switch to grid view"
+                [attr.aria-pressed]="isGridView()"
+            >
+                <mat-icon>grid_view</mat-icon>
+            </button>
+        </div>
+    </div>
+</div>

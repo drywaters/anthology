@@ -1,4 +1,4 @@
-import { DatePipe, NgClass, NgFor, NgIf, NgTemplateOutlet } from '@angular/common';
+import { NgIf } from '@angular/common';
 import {
     AfterViewInit,
     Component,
@@ -12,17 +12,12 @@ import {
     inject,
     signal,
 } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatTableModule } from '@angular/material/table';
-import { Router, RouterModule } from '@angular/router';
+import { Router } from '@angular/router';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { EMPTY, catchError, combineLatest, switchMap, tap } from 'rxjs';
+import { EMPTY, catchError, switchMap, tap } from 'rxjs';
 
 import {
     BOOK_STATUS_LABELS,
@@ -40,9 +35,13 @@ import {
 } from '../../models/item';
 import { ItemService } from '../../services/item.service';
 import { AlphaRailComponent } from '../../components/alpha-rail/alpha-rail.component';
-import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
-
-type ItemTypeFilter = ItemType | 'all';
+import {
+    ItemsFilterPanelComponent,
+    ItemTypeFilter,
+} from './items-filter-panel/items-filter-panel.component';
+import { ItemsGridViewComponent } from './items-grid-view/items-grid-view.component';
+import { ItemsTableViewComponent } from './items-table-view/items-table-view.component';
+import { ItemsEmptyStateComponent } from './items-empty-state/items-empty-state.component';
 
 export interface LetterGroup {
     letter: string;
@@ -53,22 +52,15 @@ export interface LetterGroup {
     selector: 'app-items-page',
     standalone: true,
     imports: [
-        DatePipe,
-        NgClass,
-        NgFor,
         NgIf,
-        NgTemplateOutlet,
-        MatFormFieldModule,
-        MatSelectModule,
-        MatButtonModule,
         MatCardModule,
-        MatIconModule,
         MatProgressBarModule,
         MatSnackBarModule,
-        MatTableModule,
-        RouterModule,
         AlphaRailComponent,
-        ThumbnailPipe,
+        ItemsFilterPanelComponent,
+        ItemsGridViewComponent,
+        ItemsTableViewComponent,
+        ItemsEmptyStateComponent,
     ],
     templateUrl: './items-page.component.html',
     styleUrl: './items-page.component.scss',
@@ -98,9 +90,6 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     readonly histogram = signal<LetterHistogram>({});
     readonly activeLetter = signal<string | null>(null);
 
-    readonly typeLabels = ITEM_TYPE_LABELS;
-    readonly statusLabels = BOOK_STATUS_LABELS;
-    readonly BookStatus = BookStatus;
     readonly typeOptions: Array<{ value: ItemTypeFilter; label: string }> = [
         { value: 'all', label: 'All items' },
         { value: ItemTypes.Book, label: ITEM_TYPE_LABELS[ItemTypes.Book] },
@@ -287,56 +276,6 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
         });
     }
 
-    trackById(_: number, item: Item): string {
-        return item.id;
-    }
-
-    trackByLetter(_: number, group: LetterGroup): string {
-        return group.letter;
-    }
-
-    labelFor(item: Item): string {
-        return this.typeLabels[item.itemType];
-    }
-
-    readingStatusLabel(item: Item): string | null {
-        if (
-            item.itemType !== ItemTypes.Book ||
-            !item.readingStatus ||
-            item.readingStatus === BookStatus.None
-        ) {
-            return null;
-        }
-
-        return this.statusLabels[item.readingStatus];
-    }
-
-    readingProgress(item: Item): { current: number; total?: number; percent?: number } | null {
-        if (item.itemType !== ItemTypes.Book || item.readingStatus !== BookStatus.Reading) {
-            return null;
-        }
-        if (item.currentPage === null || item.currentPage === undefined) {
-            return null;
-        }
-
-        const progress: { current: number; total?: number; percent?: number } = {
-            current: item.currentPage,
-        };
-
-        if (item.pageCount && item.pageCount > 0) {
-            const clampedCurrent = Math.max(0, Math.min(item.currentPage, item.pageCount));
-            progress.total = item.pageCount;
-            progress.percent = Math.round((clampedCurrent / item.pageCount) * 100);
-            progress.current = clampedCurrent;
-        }
-
-        return progress;
-    }
-
-    chipClassFor(itemType: ItemType): string {
-        return `item-type-chip--${itemType}`;
-    }
-
     filterByType(itemType: ItemType): void {
         this.setTypeFilter(itemType);
     }
@@ -361,11 +300,8 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
         this.viewMode.set(mode);
     }
 
-    handleCardKeydown(event: KeyboardEvent, item: Item): void {
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            this.startEdit(item);
-        }
+    viewShelfPlacementFromChild(data: { item: Item; event: MouseEvent }): void {
+        this.viewShelfPlacement(data.item, data.event);
     }
 
     private getFirstLetter(title: string): string {

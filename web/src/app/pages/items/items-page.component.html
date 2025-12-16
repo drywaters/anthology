@@ -1,331 +1,50 @@
 <div class="page">
-    <div class="filters-panel">
-        <div class="filters">
-            <mat-form-field appearance="outline" class="type-select">
-                <mat-label>Type</mat-label>
-                <mat-select [value]="typeFilter()" (valueChange)="setTypeFilter($event)">
-                    <mat-option *ngFor="let option of typeOptions" [value]="option.value">
-                        {{ option.label }}
-                    </mat-option>
-                </mat-select>
-            </mat-form-field>
+    <app-items-filter-panel
+        [typeFilter]="typeFilter"
+        [statusFilter]="statusFilter"
+        [shelfStatusFilter]="shelfStatusFilter"
+        [showStatusFilter]="showStatusFilter"
+        [isGridView]="isGridView"
+        [typeOptions]="typeOptions"
+        [statusOptions]="statusOptions"
+        [shelfStatusOptions]="shelfStatusOptions"
+        (typeFilterChange)="setTypeFilter($event)"
+        (statusFilterChange)="setStatusFilter($event)"
+        (shelfStatusFilterChange)="setShelfStatusFilter($event)"
+        (viewModeChange)="setViewMode($event)"
+    ></app-items-filter-panel>
 
-            <mat-form-field *ngIf="showStatusFilter()" appearance="outline" class="status-select">
-                <mat-label>Reading status</mat-label>
-                <mat-select [value]="statusFilter()" (valueChange)="setStatusFilter($event)">
-                    <mat-option *ngFor="let option of statusOptions" [value]="option.value">
-                        {{ option.label }}
-                    </mat-option>
-                </mat-select>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="shelf-status-select">
-                <mat-label>Shelf status</mat-label>
-                <mat-select
-                    [value]="shelfStatusFilter()"
-                    (valueChange)="setShelfStatusFilter($event)"
-                >
-                    <mat-option *ngFor="let option of shelfStatusOptions" [value]="option.value">
-                        {{ option.label }}
-                    </mat-option>
-                </mat-select>
-            </mat-form-field>
-
-            <div class="view-toggle" role="group" aria-label="Change view">
-                <button
-                    mat-icon-button
-                    type="button"
-                    [class.active]="!isGridView()"
-                    (click)="setViewMode('table')"
-                    aria-label="Switch to list view"
-                    [attr.aria-pressed]="!isGridView()"
-                >
-                    <mat-icon>list</mat-icon>
-                </button>
-                <button
-                    mat-icon-button
-                    type="button"
-                    [class.active]="isGridView()"
-                    (click)="setViewMode('grid')"
-                    aria-label="Switch to grid view"
-                    [attr.aria-pressed]="isGridView()"
-                >
-                    <mat-icon>grid_view</mat-icon>
-                </button>
-            </div>
-        </div>
-    </div>
     <div class="layout">
         <section class="items-panel" #scrollContainer>
             <mat-card>
                 <mat-progress-bar *ngIf="loading()" mode="indeterminate"></mat-progress-bar>
 
-                <ng-container *ngIf="isGridView(); else tableView">
-                    <ng-container *ngIf="hasFilteredItems(); else filteredFallback">
-                        <div class="grouped-content" data-testid="item-card-grid">
-                            <section
-                                class="letter-section"
-                                *ngFor="let group of groupedItems(); trackBy: trackByLetter"
-                                [attr.data-letter]="group.letter"
-                            >
-                                <h4 class="letter-header">{{ group.letter }}</h4>
-                                <div class="card-grid">
-                                    <article
-                                        class="item-card"
-                                        *ngFor="let item of group.items; trackBy: trackById"
-                                        (click)="startEdit(item)"
-                                        tabindex="0"
-                                        (keydown)="handleCardKeydown($event, item)"
-                                    >
-                                        <div
-                                            class="card-cover"
-                                            [class.card-cover--empty]="!item.coverImage"
-                                        >
-                                            <img
-                                                *ngIf="item.coverImage"
-                                                [src]="item.coverImage | thumbnail"
-                                                [alt]="item.title + ' cover'"
-                                                loading="lazy"
-                                            />
-                                            <div
-                                                *ngIf="!item.coverImage"
-                                                class="card-cover-placeholder"
-                                            >
-                                                <mat-icon aria-hidden="true">book</mat-icon>
-                                                <span>Tap to edit</span>
-                                            </div>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="card-title-row">
-                                                <h4>{{ item.title }}</h4>
-                                                <span
-                                                    class="card-chip item-type-chip"
-                                                    [ngClass]="chipClassFor(item.itemType)"
-                                                >
-                                                    {{ labelFor(item) }}
-                                                </span>
-                                            </div>
-                                            <p class="card-meta">
-                                                {{ item.creator || 'Unknown creator' }}
-                                            </p>
-                                            <p class="card-sub" *ngIf="item.releaseYear">
-                                                Released {{ item.releaseYear }}
-                                            </p>
-                                            <button
-                                                *ngIf="item.shelfPlacement"
-                                                type="button"
-                                                mat-icon-button
-                                                class="shelf-location-button shelf-location-button--card"
-                                                (click)="viewShelfPlacement(item, $event)"
-                                                [attr.aria-label]="
-                                                    'View shelf slot ' +
-                                                    (item.shelfPlacement.rowIndex + 1) +
-                                                    '/' +
-                                                    (item.shelfPlacement.colIndex + 1) +
-                                                    ' on ' +
-                                                    item.shelfPlacement.shelfName
-                                                "
-                                            >
-                                                <mat-icon aria-hidden="true">visibility</mat-icon>
-                                            </button>
-                                            <p
-                                                class="card-sub"
-                                                *ngIf="readingStatusLabel(item) as statusLabel"
-                                            >
-                                                <span class="status-chip">{{ statusLabel }}</span>
-                                                <ng-container
-                                                    *ngIf="
-                                                        item.readingStatus === BookStatus.Read &&
-                                                        item.readAt
-                                                    "
-                                                >
-                                                    • Read {{ item.readAt | date: 'mediumDate' }}
-                                                </ng-container>
-                                                <ng-container
-                                                    *ngIf="readingProgress(item) as progress"
-                                                >
-                                                    •
-                                                    <ng-container
-                                                        *ngIf="
-                                                            progress.percent !== undefined;
-                                                            else cardProgressFallback
-                                                        "
-                                                    >
-                                                        {{ progress.percent }}% complete ({{
-                                                            progress.current
-                                                        }}/{{ progress.total }} pages)
-                                                    </ng-container>
-                                                    <ng-template #cardProgressFallback
-                                                        >On page {{ progress.current }}</ng-template
-                                                    >
-                                                </ng-container>
-                                            </p>
-                                        </div>
-                                    </article>
-                                </div>
-                            </section>
-                        </div>
-                    </ng-container>
+                <ng-container *ngIf="hasFilteredItems(); else emptyState">
+                    <app-items-grid-view
+                        *ngIf="isGridView(); else tableView"
+                        [groupedItems]="groupedItems"
+                        (itemSelected)="startEdit($event)"
+                        (shelfLocationRequested)="viewShelfPlacementFromChild($event)"
+                    ></app-items-grid-view>
+
+                    <ng-template #tableView>
+                        <app-items-table-view
+                            [groupedItems]="groupedItems"
+                            [typeFilter]="typeFilter"
+                            [displayedColumns]="displayedColumns"
+                            (itemSelected)="startEdit($event)"
+                            (shelfLocationRequested)="viewShelfPlacementFromChild($event)"
+                            (typeFilterRequested)="filterByType($event)"
+                        ></app-items-table-view>
+                    </ng-template>
                 </ng-container>
 
-                <ng-template #tableView>
-                    <ng-container *ngIf="hasFilteredItems(); else filteredFallback">
-                        <div class="table-wrapper">
-                            <ng-container
-                                *ngFor="let group of groupedItems(); trackBy: trackByLetter"
-                            >
-                                <section class="letter-section" [attr.data-letter]="group.letter">
-                                    <h4 class="letter-header">{{ group.letter }}</h4>
-                                    <table
-                                        mat-table
-                                        [dataSource]="group.items"
-                                        [trackBy]="trackById"
-                                        class="items-table"
-                                        data-testid="items-table"
-                                    >
-                                        <colgroup>
-                                            <col class="col-title" />
-                                            <col class="col-creator" />
-                                            <col class="col-itemType" />
-                                            <col class="col-releaseYear" />
-                                            <col class="col-updatedAt" />
-                                        </colgroup>
-
-                                        <ng-container matColumnDef="title">
-                                            <th mat-header-cell *matHeaderCellDef>Title</th>
-                                            <td mat-cell *matCellDef="let item">
-                                                <div class="item-title-row">
-                                                    <div class="item-title">{{ item.title }}</div>
-                                                    <button
-                                                        *ngIf="item.shelfPlacement"
-                                                        mat-icon-button
-                                                        type="button"
-                                                        class="shelf-location-button"
-                                                        (click)="viewShelfPlacement(item, $event)"
-                                                        [attr.aria-label]="
-                                                            'View shelf slot ' +
-                                                            (item.shelfPlacement.rowIndex + 1) +
-                                                            '/' +
-                                                            (item.shelfPlacement.colIndex + 1) +
-                                                            ' on ' +
-                                                            item.shelfPlacement.shelfName
-                                                        "
-                                                    >
-                                                        <mat-icon aria-hidden="true"
-                                                            >visibility</mat-icon
-                                                        >
-                                                    </button>
-                                                </div>
-                                                <div
-                                                    class="item-subtext"
-                                                    *ngIf="readingProgress(item) as progress"
-                                                >
-                                                    Reading •
-                                                    <ng-container
-                                                        *ngIf="
-                                                            progress.percent !== undefined;
-                                                            else tableProgressFallback
-                                                        "
-                                                    >
-                                                        {{ progress.percent }}% complete ({{
-                                                            progress.current
-                                                        }}/{{ progress.total }} pages)
-                                                    </ng-container>
-                                                    <ng-template #tableProgressFallback
-                                                        >On page {{ progress.current }}</ng-template
-                                                    >
-                                                </div>
-                                            </td>
-                                        </ng-container>
-
-                                        <ng-container matColumnDef="creator">
-                                            <th mat-header-cell *matHeaderCellDef>Creator</th>
-                                            <td mat-cell *matCellDef="let item">
-                                                {{ item.creator || '—' }}
-                                            </td>
-                                        </ng-container>
-
-                                        <ng-container matColumnDef="itemType">
-                                            <th mat-header-cell *matHeaderCellDef>Type</th>
-                                            <td mat-cell *matCellDef="let item">
-                                                <button
-                                                    type="button"
-                                                    class="item-type-chip"
-                                                    [ngClass]="chipClassFor(item.itemType)"
-                                                    (click)="
-                                                        filterByType(item.itemType);
-                                                        $event.stopPropagation()
-                                                    "
-                                                    [attr.aria-label]="
-                                                        'Filter by ' + labelFor(item)
-                                                    "
-                                                    [attr.aria-pressed]="
-                                                        typeFilter() === item.itemType
-                                                    "
-                                                >
-                                                    {{ labelFor(item) }}
-                                                </button>
-                                            </td>
-                                        </ng-container>
-
-                                        <ng-container matColumnDef="releaseYear">
-                                            <th mat-header-cell *matHeaderCellDef>Released</th>
-                                            <td mat-cell *matCellDef="let item">
-                                                {{ item.releaseYear || '—' }}
-                                            </td>
-                                        </ng-container>
-
-                                        <ng-container matColumnDef="updatedAt">
-                                            <th mat-header-cell *matHeaderCellDef>Last updated</th>
-                                            <td mat-cell *matCellDef="let item">
-                                                {{ item.updatedAt | date: 'mediumDate' }}
-                                            </td>
-                                        </ng-container>
-
-                                        <tr
-                                            mat-header-row
-                                            *matHeaderRowDef="displayedColumns"
-                                            class="sr-only"
-                                        ></tr>
-                                        <tr
-                                            mat-row
-                                            *matRowDef="let row; columns: displayedColumns"
-                                            class="clickable-row"
-                                            tabindex="0"
-                                            (click)="startEdit(row)"
-                                            (keydown.enter)="startEdit(row)"
-                                            (keydown.space)="
-                                                startEdit(row); $event.preventDefault()
-                                            "
-                                        ></tr>
-                                    </table>
-                                </section>
-                            </ng-container>
-                        </div>
-                    </ng-container>
-                </ng-template>
-
-                <ng-template #filteredFallback>
-                    <ng-container *ngIf="isUnfiltered(); else noResults">
-                        <ng-container *ngTemplateOutlet="emptyState"></ng-container>
-                    </ng-container>
-                </ng-template>
-
                 <ng-template #emptyState>
-                    <div class="empty-state" *ngIf="!loading()">
-                        <mat-icon>auto_stories</mat-icon>
-                        <h3>Curate your first shelf</h3>
-                        <p>
-                            Capture the favorites you already love. Start with a few hallmark picks
-                            to shape your signature shelf.
-                        </p>
-                        <button mat-stroked-button color="accent" (click)="startCreate()">
-                            Create an entry
-                        </button>
-                    </div>
-                </ng-template>
-                <ng-template #noResults>
-                    <div class="no-results" *ngIf="!loading()">No items match your filters.</div>
+                    <app-items-empty-state
+                        [isUnfiltered]="isUnfiltered"
+                        [loading]="loading"
+                        (createRequested)="startCreate()"
+                    ></app-items-empty-state>
                 </ng-template>
             </mat-card>
         </section>

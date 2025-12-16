@@ -1,0 +1,144 @@
+.item-card {
+    border: 1px solid color-mix(in srgb, var(--mat-sys-primary) 20%, transparent);
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 10px 20px rgb(15 23 42 / 12%);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    transition:
+        transform 180ms ease,
+        box-shadow 180ms ease,
+        border-color 180ms ease;
+
+    &:hover,
+    &:focus-visible {
+        transform: translateY(-3px);
+        border-color: color-mix(in srgb, var(--mat-sys-primary) 65%, transparent);
+        box-shadow: 0 14px 24px rgb(15 23 42 / 18%);
+        outline: none;
+    }
+}
+
+.card-cover {
+    position: relative;
+    width: 100%;
+    padding-top: 70%;
+    background: color-mix(in srgb, var(--mat-sys-primary) 10%, #f8fafc);
+
+    img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+}
+
+.card-cover--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: color-mix(in srgb, var(--mat-sys-primary) 70%, #475569);
+}
+
+.card-cover-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    font-weight: 600;
+}
+
+.card-body {
+    padding: 0.7rem 0.8rem 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.card-title-row {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    justify-content: space-between;
+
+    h4 {
+        margin: 0;
+        font-size: 0.95rem;
+        flex: 1;
+    }
+}
+
+.card-chip {
+    background: var(--chip-bg);
+    color: var(--chip-color);
+    border-radius: 999px;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.card-meta {
+    margin: 0;
+    color: var(--mat-sys-on-surface-variant);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.card-sub {
+    margin: 0;
+    color: color-mix(in srgb, var(--mat-sys-primary) 80%, #0f172a);
+    font-size: 0.8rem;
+}
+
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.1rem 0.65rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--mat-sys-secondary) 18%, white);
+    color: color-mix(in srgb, var(--mat-sys-secondary) 85%, black);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.75rem;
+}
+
+.shelf-location-button--card {
+    align-self: flex-start;
+}
+
+// Item type chip variants (inherited from parent for consistency)
+.item-type-chip {
+    --chip-bg: var(--mat-sys-primary-container);
+    --chip-color: var(--mat-sys-on-primary-container);
+
+    text-transform: uppercase;
+}
+
+.item-type-chip--book {
+    --chip-bg: color-mix(in srgb, var(--mat-sys-primary) 18%, white);
+    --chip-color: var(--mat-sys-primary);
+}
+
+.item-type-chip--game {
+    --chip-bg: color-mix(in srgb, var(--mat-sys-secondary) 20%, white);
+    --chip-color: var(--mat-sys-secondary);
+}
+
+.item-type-chip--movie {
+    --chip-bg: color-mix(in srgb, var(--mat-sys-tertiary) 24%, white);
+    --chip-color: var(--mat-sys-tertiary);
+}
+
+.item-type-chip--music {
+    --chip-bg: color-mix(in srgb, var(--mat-sys-error) 22%, white);
+    --chip-color: var(--mat-sys-error);
+}

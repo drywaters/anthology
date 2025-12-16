@@ -1,0 +1,14 @@
+<ng-container *ngIf="isUnfiltered(); else noResults">
+    <div class="empty-state" *ngIf="!loading()">
+        <mat-icon>auto_stories</mat-icon>
+        <h3>Curate your first shelf</h3>
+        <p>
+            Capture the favorites you already love. Start with a few hallmark picks to shape your
+            signature shelf.
+        </p>
+        <button mat-stroked-button color="accent" (click)="onCreate()">Create an entry</button>
+    </div>
+</ng-container>
+<ng-template #noResults>
+    <div class="no-results" *ngIf="!loading()">No items match your filters.</div>
+</ng-template>
