@@ -2,7 +2,7 @@ import { SimpleChange } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { ItemFormComponent } from './item-form.component';
-import { Item, BookStatus, Formats } from '../../models/item';
+import { Item, BookStatus, Formats } from '../../models';
 
 describe(ItemFormComponent.name, () => {
     beforeEach(async () => {

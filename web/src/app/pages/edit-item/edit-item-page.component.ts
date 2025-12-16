@@ -8,7 +8,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { Item, ItemForm } from '../../models/item';
+import { Item, ItemForm } from '../../models';
 import { ItemService } from '../../services/item.service';
 import { ItemFormComponent } from '../../components/item-form/item-form.component';
 

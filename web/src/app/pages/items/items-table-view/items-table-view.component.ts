@@ -11,7 +11,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 
-import { Item, ItemType } from '../../../models/item';
+import { Item, ItemType } from '../../../models';
 import { LetterGroup } from '../items-page.component';
 import { ItemTypeFilter } from '../items-filter-panel/items-filter-panel.component';
 import { chipClassFor, labelFor, readingProgress, ReadingProgress } from '../items.utils';

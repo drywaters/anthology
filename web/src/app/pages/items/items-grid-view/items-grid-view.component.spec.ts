@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { ItemsGridViewComponent } from './items-grid-view.component';
-import { Item, ItemTypes } from '../../../models/item';
+import { Item, ItemTypes } from '../../../models';
 import { LetterGroup } from '../items-page.component';
 
 describe('ItemsGridViewComponent', () => {

@@ -32,7 +32,7 @@ import {
     SHELF_STATUS_LABELS,
     ShelfStatusFilter,
     ShelfStatusFilters,
-} from '../../models/item';
+} from '../../models';
 import { ItemService } from '../../services/item.service';
 import { AlphaRailComponent } from '../../components/alpha-rail/alpha-rail.component';
 import {

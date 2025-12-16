@@ -45,7 +45,7 @@ import {
     tap,
 } from 'rxjs';
 
-import { Item, ItemType, ITEM_TYPE_LABELS } from '../../models/item';
+import { Item, ItemType, ITEM_TYPE_LABELS } from '../../models';
 import {
     LayoutSlotInput,
     PlacementWithItem,

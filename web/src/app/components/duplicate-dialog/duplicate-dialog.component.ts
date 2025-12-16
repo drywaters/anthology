@@ -5,7 +5,7 @@ import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/materia
 import { MatIconModule } from '@angular/material/icon';
 import { Router } from '@angular/router';
 
-import { DuplicateMatch } from '../../models/item';
+import { DuplicateMatch } from '../../models';
 
 export interface DuplicateDialogData {
     duplicates: DuplicateMatch[];
