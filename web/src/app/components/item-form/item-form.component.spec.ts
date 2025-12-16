@@ -53,7 +53,7 @@ describe(ItemFormComponent.name, () => {
                 description: 'Cyberpunk classic',
                 coverImage: 'https://example.com/cover.jpg',
                 notes: 'Cyberpunk classic',
-            })
+            }),
         );
     });
 
@@ -104,7 +104,7 @@ describe(ItemFormComponent.name, () => {
                 title: 'Arrival',
                 releaseYear: null,
                 pageCount: null,
-            })
+            }),
         );
     });
 
@@ -131,13 +131,13 @@ describe(ItemFormComponent.name, () => {
     it('prevents current page from exceeding the total pages', () => {
         const fixture = createComponent();
         const component = fixture.componentInstance;
-	component.form.patchValue({
-		title: 'Test Book',
-		itemType: 'book',
-		pageCount: 100,
-		readingStatus: BookStatus.Reading,
-		currentPage: 150,
-	});
+        component.form.patchValue({
+            title: 'Test Book',
+            itemType: 'book',
+            pageCount: 100,
+            readingStatus: BookStatus.Reading,
+            currentPage: 150,
+        });
 
         component.submit();
 

@@ -55,8 +55,21 @@ import {
 export class ItemFormComponent implements OnChanges, OnInit {
     private readonly fb = inject(FormBuilder);
     private static readonly MAX_COVER_BYTES = 500 * 1024;
-    private static readonly ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
-    private static readonly ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+    private static readonly ALLOWED_IMAGE_TYPES = [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'image/svg+xml',
+    ];
+    private static readonly ALLOWED_IMAGE_EXTENSIONS = [
+        '.jpg',
+        '.jpeg',
+        '.png',
+        '.gif',
+        '.webp',
+        '.svg',
+    ];
 
     @ViewChild('coverInput') coverInput?: ElementRef<HTMLInputElement>;
 
@@ -65,33 +78,33 @@ export class ItemFormComponent implements OnChanges, OnInit {
     @Input() mode: 'create' | 'edit' = 'create';
     @Input() busy = false;
 
-	@Input() resyncing = false;
+    @Input() resyncing = false;
 
-	@Output() readonly save = new EventEmitter<ItemForm>();
-	@Output() readonly cancelled = new EventEmitter<void>();
-	@Output() readonly deleteRequested = new EventEmitter<void>();
-	@Output() readonly resyncRequested = new EventEmitter<void>();
+    @Output() readonly save = new EventEmitter<ItemForm>();
+    @Output() readonly cancelled = new EventEmitter<void>();
+    @Output() readonly deleteRequested = new EventEmitter<void>();
+    @Output() readonly resyncRequested = new EventEmitter<void>();
 
-	readonly itemTypeOptions = Object.entries(ITEM_TYPE_LABELS) as [ItemType, string][];
-	readonly bookStatusOptions: Array<{ value: BookStatus; label: string }> = (
-		Object.entries(BOOK_STATUS_LABELS) as [BookStatus, string][]
-	).map(([value, label]) => ({
-		value,
-		label,
-	}));
-	readonly formatOptions: Array<{ value: Format; label: string }> = (
-		Object.entries(FORMAT_LABELS) as [Format, string][]
-	).map(([value, label]) => ({
-		value,
-		label,
-	}));
-	readonly genreOptions: Array<{ value: Genre | ''; label: string }> = [
-		{ value: '', label: 'None' },
-		...(Object.entries(GENRE_LABELS) as [Genre, string][]).map(([value, label]) => ({
-			value,
-			label,
-		})),
-	];
+    readonly itemTypeOptions = Object.entries(ITEM_TYPE_LABELS) as [ItemType, string][];
+    readonly bookStatusOptions: Array<{ value: BookStatus; label: string }> = (
+        Object.entries(BOOK_STATUS_LABELS) as [BookStatus, string][]
+    ).map(([value, label]) => ({
+        value,
+        label,
+    }));
+    readonly formatOptions: Array<{ value: Format; label: string }> = (
+        Object.entries(FORMAT_LABELS) as [Format, string][]
+    ).map(([value, label]) => ({
+        value,
+        label,
+    }));
+    readonly genreOptions: Array<{ value: Genre | ''; label: string }> = [
+        { value: '', label: 'None' },
+        ...(Object.entries(GENRE_LABELS) as [Genre, string][]).map(([value, label]) => ({
+            value,
+            label,
+        })),
+    ];
 
     coverImageError: string | null = null;
 
@@ -114,7 +127,7 @@ export class ItemFormComponent implements OnChanges, OnInit {
         platform: ['', [Validators.maxLength(200)]],
         ageGroup: ['', [Validators.maxLength(100)]],
         playerCount: ['', [Validators.maxLength(100)]],
-		readingStatus: [BookStatus.None],
+        readingStatus: [BookStatus.None],
         readAt: [null],
         notes: ['', [Validators.maxLength(500)]],
     });
@@ -210,12 +223,14 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 next.format = this.draft.format ?? next.format;
                 next.genre = this.draft.genre ?? next.genre;
                 next.rating = this.parseInteger(this.draft.rating) ?? next.rating;
-                next.retailPriceUsd = this.parseNumber(this.draft.retailPriceUsd) ?? next.retailPriceUsd;
+                next.retailPriceUsd =
+                    this.parseNumber(this.draft.retailPriceUsd) ?? next.retailPriceUsd;
                 next.googleVolumeId = this.draft.googleVolumeId ?? next.googleVolumeId;
                 next.platform = this.draft.platform ?? next.platform;
                 next.ageGroup = this.draft.ageGroup ?? next.ageGroup;
                 next.playerCount = this.draft.playerCount ?? next.playerCount;
-                next.readingStatus = this.normalizeStatus(this.draft.readingStatus) ?? next.readingStatus;
+                next.readingStatus =
+                    this.normalizeStatus(this.draft.readingStatus) ?? next.readingStatus;
                 next.readAt = this.normalizeDateInput(this.draft.readAt) ?? next.readAt;
             }
 
@@ -239,7 +254,8 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 next.ageGroup = this.item.ageGroup ?? '';
                 next.playerCount = this.item.playerCount ?? '';
                 next.notes = this.item.notes;
-                next.readingStatus = this.normalizeStatus(this.item.readingStatus) ?? next.readingStatus;
+                next.readingStatus =
+                    this.normalizeStatus(this.item.readingStatus) ?? next.readingStatus;
                 next.readAt = this.normalizeDateInput(this.item.readAt) ?? next.readAt;
             }
 
@@ -285,18 +301,24 @@ export class ItemFormComponent implements OnChanges, OnInit {
             this.ensureCurrentPageWithinTotal(null, null);
         }
 
-		const readingStatus = value.itemType === 'book' ? value.readingStatus ?? BookStatus.None : undefined;
+        const readingStatus =
+            value.itemType === 'book' ? (value.readingStatus ?? BookStatus.None) : undefined;
         const readAt = value.itemType === 'book' ? this.normalizeDateOutput(value.readAt) : null;
-        const currentPage = value.itemType === 'book'
-            ? value.readingStatus === BookStatus.Reading
-                ? this.parseInteger(value.currentPage)
-                : null
-            : undefined;
+        const currentPage =
+            value.itemType === 'book'
+                ? value.readingStatus === BookStatus.Reading
+                    ? this.parseInteger(value.currentPage)
+                    : null
+                : undefined;
 
         this.save.emit({
             ...value,
-            releaseYear: value.releaseYear === null || value.releaseYear === undefined ? null : value.releaseYear,
-            pageCount: value.pageCount === null || value.pageCount === undefined ? null : value.pageCount,
+            releaseYear:
+                value.releaseYear === null || value.releaseYear === undefined
+                    ? null
+                    : value.releaseYear,
+            pageCount:
+                value.pageCount === null || value.pageCount === undefined ? null : value.pageCount,
             currentPage,
             description: value.description ?? '',
             isbn13: value.isbn13 ?? '',
@@ -383,7 +405,11 @@ export class ItemFormComponent implements OnChanges, OnInit {
             return;
         }
 
-        const validationError = this.validateImageFile(file, ItemFormComponent.MAX_COVER_BYTES, '500KB');
+        const validationError = this.validateImageFile(
+            file,
+            ItemFormComponent.MAX_COVER_BYTES,
+            '500KB',
+        );
         if (validationError) {
             this.coverImageError = validationError;
             this.resetCoverInput();
@@ -401,7 +427,9 @@ export class ItemFormComponent implements OnChanges, OnInit {
 
     private validateImageFile(file: File, maxBytes: number, maxSizeLabel: string): string | null {
         const fileName = file.name.toLowerCase();
-        const hasValidExtension = ItemFormComponent.ALLOWED_IMAGE_EXTENSIONS.some((ext) => fileName.endsWith(ext));
+        const hasValidExtension = ItemFormComponent.ALLOWED_IMAGE_EXTENSIONS.some((ext) =>
+            fileName.endsWith(ext),
+        );
         if (!hasValidExtension) {
             return 'Only image files (JPEG, PNG, GIF, WebP, SVG) are allowed.';
         }
@@ -455,13 +483,13 @@ export class ItemFormComponent implements OnChanges, OnInit {
         }
     }
 
-	private normalizeStatus(value: unknown): BookStatus | null {
-				return this.isValidStatus(value) ? (value as BookStatus) : null;
-	}
+    private normalizeStatus(value: unknown): BookStatus | null {
+        return this.isValidStatus(value) ? (value as BookStatus) : null;
+    }
 
-	private isValidStatus(value: unknown): value is BookStatus {
-		return Object.values(BookStatus).includes(value as BookStatus);
-	}
+    private isValidStatus(value: unknown): value is BookStatus {
+        return Object.values(BookStatus).includes(value as BookStatus);
+    }
 
     private parseInteger(value: unknown): number | null {
         if (value === null || value === undefined || value === '') {
@@ -485,7 +513,10 @@ export class ItemFormComponent implements OnChanges, OnInit {
         return Number.isNaN(parsed) ? null : parsed;
     }
 
-    private ensureCurrentPageWithinTotal(totalPages: number | null, currentPage: number | null): boolean {
+    private ensureCurrentPageWithinTotal(
+        totalPages: number | null,
+        currentPage: number | null,
+    ): boolean {
         const control = this.form.get('currentPage');
         if (!control) {
             return true;

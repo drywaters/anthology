@@ -17,7 +17,9 @@
                     <p>{{ loadError() }}</p>
                 </div>
                 <div class="state-actions">
-                    <button mat-stroked-button type="button" (click)="retry()" *ngIf="itemId()">Try again</button>
+                    <button mat-stroked-button type="button" (click)="retry()" *ngIf="itemId()">
+                        Try again
+                    </button>
                     <button mat-button type="button" (click)="navigateBack()">Back to list</button>
                 </div>
             </div>
@@ -35,7 +37,8 @@
                     <div>
                         <span class="placement-banner__meta-label">Slot</span>
                         <span class="placement-banner__meta-value"
-                            >Row {{ placement.rowIndex + 1 }} · Column {{ placement.colIndex + 1 }}</span
+                            >Row {{ placement.rowIndex + 1 }} · Column
+                            {{ placement.colIndex + 1 }}</span
                         >
                     </div>
                 </div>

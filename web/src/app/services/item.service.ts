@@ -3,7 +3,17 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 
 import { environment } from '../config/environment';
-import { BookStatus, DuplicateCheckInput, DuplicateMatch, Item, ItemForm, ItemType, LetterHistogram, ShelfStatusFilter, ShelfStatusFilters } from '../models/item';
+import {
+    BookStatus,
+    DuplicateCheckInput,
+    DuplicateMatch,
+    Item,
+    ItemForm,
+    ItemType,
+    LetterHistogram,
+    ShelfStatusFilter,
+    ShelfStatusFilters,
+} from '../models/item';
 import { CsvImportSummary } from '../models/import';
 
 @Injectable({ providedIn: 'root' })
@@ -40,7 +50,9 @@ export class ItemService {
         }
 
         return this.http
-            .get<{ items: Item[] }>(this.baseUrl, { params: params.keys().length ? params : undefined })
+            .get<{
+                items: Item[];
+            }>(this.baseUrl, { params: params.keys().length ? params : undefined })
             .pipe(map((response) => response.items));
     }
 
@@ -85,10 +97,10 @@ export class ItemService {
         }
 
         return this.http
-            .get<{ histogram: LetterHistogram; total: number }>(
-                `${this.baseUrl}/histogram`,
-                { params: params.keys().length ? params : undefined }
-            )
+            .get<{
+                histogram: LetterHistogram;
+                total: number;
+            }>(`${this.baseUrl}/histogram`, { params: params.keys().length ? params : undefined })
             .pipe(map((response) => response.histogram));
     }
 
@@ -105,10 +117,9 @@ export class ItemService {
         }
 
         return this.http
-            .get<{ duplicates: DuplicateMatch[] }>(
-                `${this.baseUrl}/duplicates`,
-                { params: params.keys().length ? params : undefined }
-            )
+            .get<{
+                duplicates: DuplicateMatch[];
+            }>(`${this.baseUrl}/duplicates`, { params: params.keys().length ? params : undefined })
             .pipe(map((response) => response.duplicates));
     }
 
@@ -151,7 +162,9 @@ export class ItemService {
                 payload['readAt'] = Number.isNaN(readAt.getTime()) ? null : readAt.toISOString();
             } else if (typeof readAt === 'string') {
                 const dateValue = new Date(readAt);
-                payload['readAt'] = Number.isNaN(dateValue.getTime()) ? null : dateValue.toISOString();
+                payload['readAt'] = Number.isNaN(dateValue.getTime())
+                    ? null
+                    : dateValue.toISOString();
             }
         }
 

@@ -16,18 +16,30 @@
                         autocomplete="off"
                         required
                     />
-                    <mat-error *ngIf="tokenControl.hasError('required')">A token is required.</mat-error>
-                    <mat-error *ngIf="tokenControl.hasError('invalid')">That token did not match the API.</mat-error>
+                    <mat-error *ngIf="tokenControl.hasError('required')"
+                        >A token is required.</mat-error
+                    >
+                    <mat-error *ngIf="tokenControl.hasError('invalid')"
+                        >That token did not match the API.</mat-error
+                    >
                 </mat-form-field>
 
                 <p class="error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
 
                 <div class="actions">
-                    <button mat-stroked-button type="button" (click)="clearSession()" [disabled]="submitting()">Clear session</button>
-                    <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">Continue</button>
+                    <button
+                        mat-stroked-button
+                        type="button"
+                        (click)="clearSession()"
+                        [disabled]="submitting()"
+                    >
+                        Clear session
+                    </button>
+                    <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">
+                        Continue
+                    </button>
                 </div>
             </form>
         </mat-card-content>
-
     </mat-card>
 </div>

@@ -31,8 +31,21 @@ import { ShelfService } from '../../services/shelf.service';
 })
 export class AddShelfPageComponent {
     private static readonly MAX_PHOTO_BYTES = 5 * 1024 * 1024;
-    private static readonly ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
-    private static readonly ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+    private static readonly ALLOWED_IMAGE_TYPES = [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'image/svg+xml',
+    ];
+    private static readonly ALLOWED_IMAGE_EXTENSIONS = [
+        '.jpg',
+        '.jpeg',
+        '.png',
+        '.gif',
+        '.webp',
+        '.svg',
+    ];
 
     private readonly shelfService = inject(ShelfService);
     private readonly snackBar = inject(MatSnackBar);
@@ -105,7 +118,9 @@ export class AddShelfPageComponent {
 
     private validateImageFile(file: File): string | null {
         const fileName = file.name.toLowerCase();
-        const hasValidExtension = AddShelfPageComponent.ALLOWED_IMAGE_EXTENSIONS.some((ext) => fileName.endsWith(ext));
+        const hasValidExtension = AddShelfPageComponent.ALLOWED_IMAGE_EXTENSIONS.some((ext) =>
+            fileName.endsWith(ext),
+        );
         if (!hasValidExtension) {
             return 'Only image files (JPEG, PNG, GIF, WebP, SVG) are allowed.';
         }

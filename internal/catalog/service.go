@@ -259,7 +259,7 @@ func (s *Service) LookupByVolumeID(ctx context.Context, volumeID string) (Metada
 	if err != nil {
 		return Metadata{}, fmt.Errorf("call google books: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return Metadata{}, ErrNotFound
@@ -303,7 +303,7 @@ func (s *Service) searchGoogleBooks(ctx context.Context, q string, maxResults in
 	if err != nil {
 		return nil, fmt.Errorf("call google books: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("google books returned status %d", resp.StatusCode)
@@ -473,7 +473,7 @@ func normalizeISBN(value string) string {
 			}
 		}
 		last := cleaned[9]
-		if !(unicode.IsDigit(last) || last == 'X') {
+		if !unicode.IsDigit(last) && last != 'X' {
 			return ""
 		}
 	case 13:

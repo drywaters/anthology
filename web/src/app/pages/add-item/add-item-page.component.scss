@@ -4,6 +4,7 @@
 
 .add-item-page {
     --page-gutter: clamp(1.5rem, 3vw, 4rem);
+
     width: 100%;
     margin: 0;
     padding: var(--page-gutter) var(--page-gutter) 3rem;
@@ -16,9 +17,8 @@
 
 mat-card {
     border-radius: 24px;
-    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.14);
+    box-shadow: 0 18px 38px rgb(15 23 42 / 14%);
 }
-
 
 .tab-body {
     display: flex;
@@ -47,6 +47,7 @@ mat-card {
 
 .category-option {
     --option-color: var(--mat-sys-surface-container-high);
+
     align-items: flex-start;
     background: var(--option-color);
     border-radius: 16px;
@@ -158,12 +159,12 @@ mat-card {
 }
 
 .scanner-preview .scanner-overlay--busy {
-    background: rgba(0, 0, 0, 0.55);
+    background: rgb(0 0 0 / 55%);
     z-index: 4;
 }
 
 .scanner-preview .scanner-overlay--flash {
-    background: rgba(0, 157, 255, 0.42);
+    background: rgb(0 157 255 / 42%);
     z-index: 5;
     animation: scanner-flash 640ms ease-out;
 }
@@ -176,12 +177,12 @@ mat-card {
     text-align: center;
     padding: 1rem 1.25rem;
     border-radius: 16px;
-    background: rgba(0, 0, 0, 0.35);
+    background: rgb(0 0 0 / 35%);
     max-width: min(90%, 340px);
 }
 
 .scanner-preview .busy-text {
-    color: rgba(255, 255, 255, 0.92);
+    color: rgb(255 255 255 / 92%);
     font-weight: 500;
 }
 
@@ -189,9 +190,9 @@ mat-card {
     width: 80%;
     max-width: 300px;
     height: 150px;
-    border: 3px dashed rgba(0, 157, 255, 0.8);
+    border: 3px dashed rgb(0 157 255 / 80%);
     border-radius: 8px;
-    background: rgba(0, 157, 255, 0.1);
+    background: rgb(0 157 255 / 10%);
 }
 
 .scanner-preview .hint {
@@ -204,9 +205,11 @@ mat-card {
     0% {
         opacity: 0;
     }
+
     30% {
         opacity: 1;
     }
+
     100% {
         opacity: 0;
     }
@@ -228,28 +231,28 @@ mat-card {
 }
 
 .lookup-preview {
-border: 1px solid color-mix(in srgb, var(--mat-sys-primary) 40%, transparent);
-border-radius: 20px;
-padding: 1.25rem 1.5rem;
-background: color-mix(in srgb, var(--mat-sys-primary) 6%, white);
-display: flex;
-flex-direction: column;
-gap: 1rem;
+    border: 1px solid color-mix(in srgb, var(--mat-sys-primary) 40%, transparent);
+    border-radius: 20px;
+    padding: 1.25rem 1.5rem;
+    background: color-mix(in srgb, var(--mat-sys-primary) 6%, white);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
 .preview-list {
-display: grid;
-gap: 1rem;
+    display: grid;
+    gap: 1rem;
 }
 
 .preview-card {
-background: white;
-border-radius: 16px;
-box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
-padding: 1rem 1.25rem;
-display: flex;
-flex-direction: column;
-gap: 1rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 1px 4px rgb(15 23 42 / 8%);
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
 .preview-header {
@@ -305,16 +308,15 @@ gap: 1rem;
     white-space: pre-line;
 }
 
-
 .preview-actions {
-display: flex;
-justify-content: flex-end;
-gap: 0.75rem;
-flex-wrap: wrap;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
 .preview-add {
-align-self: flex-end;
+    align-self: flex-end;
 }
 
 .manual-entry {
@@ -457,7 +459,7 @@ align-self: flex-end;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
     border-radius: 12px;
-    background: rgba(208, 48, 73, 0.1);
+    background: rgb(208 48 73 / 10%);
     color: var(--mat-sys-error);
 }
 
@@ -489,7 +491,7 @@ app-item-form {
     display: block;
 }
 
-@media (max-width: 600px) {
+@media (width <= 600px) {
     .add-item-page {
         padding-inline: 1.25rem;
     }

@@ -23,7 +23,9 @@ export type DuplicateDialogResult = 'add' | 'cancel';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DuplicateDialogComponent {
-    private readonly dialogRef = inject(MatDialogRef<DuplicateDialogComponent, DuplicateDialogResult>);
+    private readonly dialogRef = inject(
+        MatDialogRef<DuplicateDialogComponent, DuplicateDialogResult>,
+    );
     private readonly router = inject(Router);
     readonly data = inject<DuplicateDialogData>(MAT_DIALOG_DATA);
 
@@ -44,7 +46,9 @@ export class DuplicateDialogComponent {
     }
 
     handleOpenExisting(duplicate: DuplicateMatch): void {
-        const editUrl = this.router.serializeUrl(this.router.createUrlTree(['/items', duplicate.id, 'edit']));
+        const editUrl = this.router.serializeUrl(
+            this.router.createUrlTree(['/items', duplicate.id, 'edit']),
+        );
         window.open(editUrl, '_blank');
     }
 

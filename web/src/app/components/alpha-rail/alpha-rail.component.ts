@@ -1,11 +1,45 @@
-import { ChangeDetectionStrategy, Component, computed, EventEmitter, Input, Output, signal, Signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    EventEmitter,
+    Input,
+    Output,
+    signal,
+    Signal,
+} from '@angular/core';
 import { NgFor } from '@angular/common';
 
 export type LetterHistogram = Record<string, number>;
 
 const ALPHABET: string[] = [
-    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '#',
+    'A',
+    'B',
+    'C',
+    'D',
+    'E',
+    'F',
+    'G',
+    'H',
+    'I',
+    'J',
+    'K',
+    'L',
+    'M',
+    'N',
+    'O',
+    'P',
+    'Q',
+    'R',
+    'S',
+    'T',
+    'U',
+    'V',
+    'W',
+    'X',
+    'Y',
+    'Z',
+    '#',
 ];
 
 @Component({
@@ -63,5 +97,4 @@ export class AlphaRailComponent {
             buttons?.[targetIndex]?.focus();
         }
     }
-
 }

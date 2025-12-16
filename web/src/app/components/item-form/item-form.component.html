@@ -3,7 +3,9 @@
         <mat-label>Title</mat-label>
         <input matInput formControlName="title" maxlength="120" required />
         <mat-error *ngIf="form.get('title')?.hasError('required')">Title is required.</mat-error>
-        <mat-error *ngIf="form.get('title')?.hasError('maxlength')">Keep titles under 120 characters.</mat-error>
+        <mat-error *ngIf="form.get('title')?.hasError('maxlength')"
+            >Keep titles under 120 characters.</mat-error
+        >
     </mat-form-field>
 
     <mat-form-field appearance="fill">
@@ -24,8 +26,14 @@
     <mat-form-field appearance="fill">
         <mat-label>Release year</mat-label>
         <input matInput formControlName="releaseYear" type="number" min="0" />
-        <button mat-icon-button matSuffix type="button" (click)="clearReleaseYear()" aria-label="Clear release year">
-          <mat-icon>close</mat-icon>
+        <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            (click)="clearReleaseYear()"
+            aria-label="Clear release year"
+        >
+            <mat-icon>close</mat-icon>
         </button>
     </mat-form-field>
 
@@ -69,7 +77,9 @@
                 >
                     <mat-icon>close</mat-icon>
                 </button>
-                <mat-hint *ngIf="form.get('pageCount')?.value as total">Out of {{ total }} total pages.</mat-hint>
+                <mat-hint *ngIf="form.get('pageCount')?.value as total"
+                    >Out of {{ total }} total pages.</mat-hint
+                >
                 <mat-error *ngIf="form.get('currentPage')?.hasError('min')">
                     Current page cannot be negative.
                 </mat-error>
@@ -81,11 +91,19 @@
             <mat-form-field appearance="fill">
                 <mat-label>Number of pages</mat-label>
                 <input matInput formControlName="pageCount" type="number" min="1" />
-                <button mat-icon-button matSuffix type="button" (click)="clearPageCount()" aria-label="Clear page count">
+                <button
+                    mat-icon-button
+                    matSuffix
+                    type="button"
+                    (click)="clearPageCount()"
+                    aria-label="Clear page count"
+                >
                     <mat-icon>close</mat-icon>
                 </button>
                 <mat-hint>Total printed pages for the edition you own.</mat-hint>
-                <mat-error *ngIf="form.get('pageCount')?.hasError('min')">Use at least one page.</mat-error>
+                <mat-error *ngIf="form.get('pageCount')?.hasError('min')"
+                    >Use at least one page.</mat-error
+                >
             </mat-form-field>
 
             <mat-form-field appearance="fill">
@@ -134,13 +152,23 @@
                     <mat-icon>close</mat-icon>
                 </button>
                 <mat-hint>Personal enjoyment rating (1–10).</mat-hint>
-                <mat-error *ngIf="form.get('rating')?.hasError('min')">Rating must be at least 1.</mat-error>
-                <mat-error *ngIf="form.get('rating')?.hasError('max')">Rating cannot exceed 10.</mat-error>
+                <mat-error *ngIf="form.get('rating')?.hasError('min')"
+                    >Rating must be at least 1.</mat-error
+                >
+                <mat-error *ngIf="form.get('rating')?.hasError('max')"
+                    >Rating cannot exceed 10.</mat-error
+                >
             </mat-form-field>
 
             <mat-form-field appearance="fill">
                 <mat-label>Retail price (USD)</mat-label>
-                <input matInput formControlName="retailPriceUsd" type="number" min="0" step="0.01" />
+                <input
+                    matInput
+                    formControlName="retailPriceUsd"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                />
                 <button
                     mat-icon-button
                     matSuffix
@@ -152,7 +180,9 @@
                     <mat-icon>close</mat-icon>
                 </button>
                 <mat-hint>List price in US dollars.</mat-hint>
-                <mat-error *ngIf="form.get('retailPriceUsd')?.hasError('min')">Price cannot be negative.</mat-error>
+                <mat-error *ngIf="form.get('retailPriceUsd')?.hasError('min')"
+                    >Price cannot be negative.</mat-error
+                >
             </mat-form-field>
 
             <mat-form-field appearance="fill">
@@ -169,11 +199,17 @@
             </div>
             <mat-form-field appearance="fill" class="description-field">
                 <mat-label>Book description</mat-label>
-                <textarea matInput rows="5" formControlName="description" maxlength="2000"></textarea>
-                <mat-hint align="end">{{ form.get('description')?.value?.length || 0 }}/2000</mat-hint>
+                <textarea
+                    matInput
+                    rows="5"
+                    formControlName="description"
+                    maxlength="2000"
+                ></textarea>
+                <mat-hint align="end"
+                    >{{ form.get('description')?.value?.length || 0 }}/2000</mat-hint
+                >
             </mat-form-field>
         </div>
-
     </section>
 
     <section class="game-details" *ngIf="isGame">
@@ -186,7 +222,10 @@
             <mat-form-field appearance="fill">
                 <mat-label>Platform</mat-label>
                 <input matInput formControlName="platform" maxlength="200" />
-                <mat-hint>Console, system, or format (e.g., Nintendo Switch, PlayStation 5, PC, Board Game)</mat-hint>
+                <mat-hint
+                    >Console, system, or format (e.g., Nintendo Switch, PlayStation 5, PC, Board
+                    Game)</mat-hint
+                >
             </mat-form-field>
 
             <mat-form-field appearance="fill">
@@ -205,19 +244,33 @@
         <div class="description-section">
             <div class="description-heading">
                 <h4>Description</h4>
-                <span class="description-highlight description-highlight--game" aria-hidden="true"></span>
+                <span
+                    class="description-highlight description-highlight--game"
+                    aria-hidden="true"
+                ></span>
             </div>
             <mat-form-field appearance="fill" class="description-field">
                 <mat-label>Game description</mat-label>
-                <textarea matInput rows="5" formControlName="description" maxlength="2000"></textarea>
-                <mat-hint align="end">{{ form.get('description')?.value?.length || 0 }}/2000</mat-hint>
+                <textarea
+                    matInput
+                    rows="5"
+                    formControlName="description"
+                    maxlength="2000"
+                ></textarea>
+                <mat-hint align="end"
+                    >{{ form.get('description')?.value?.length || 0 }}/2000</mat-hint
+                >
             </mat-form-field>
         </div>
     </section>
 
     <div class="cover-section">
         <div class="cover-preview" [class.cover-preview--empty]="!form.get('coverImage')?.value">
-            <img *ngIf="form.get('coverImage')?.value" [src]="form.get('coverImage')?.value" alt="Cover preview" />
+            <img
+                *ngIf="form.get('coverImage')?.value"
+                [src]="form.get('coverImage')?.value"
+                alt="Cover preview"
+            />
             <div *ngIf="!form.get('coverImage')?.value" class="cover-placeholder">
                 <mat-icon aria-hidden="true">photo</mat-icon>
                 <span>No cover added yet</span>
@@ -227,7 +280,9 @@
         <div class="cover-fields">
             <div class="cover-header">
                 <h4>Cover image</h4>
-                <p class="cover-hint">Use a JPG/PNG under 500KB. Upload a file or paste an image link.</p>
+                <p class="cover-hint">
+                    Use a JPG/PNG under 500KB. Upload a file or paste an image link.
+                </p>
             </div>
 
             <mat-form-field appearance="fill" class="cover-image-field">
@@ -247,8 +302,15 @@
             </mat-form-field>
 
             <div class="cover-actions">
-                <button mat-stroked-button type="button" (click)="openCoverFilePicker()">Upload image</button>
-                <button mat-button type="button" (click)="clearCoverImage()" [disabled]="!form.get('coverImage')?.value">
+                <button mat-stroked-button type="button" (click)="openCoverFilePicker()">
+                    Upload image
+                </button>
+                <button
+                    mat-button
+                    type="button"
+                    (click)="clearCoverImage()"
+                    [disabled]="!form.get('coverImage')?.value"
+                >
                     Remove
                 </button>
                 <input
@@ -291,8 +353,13 @@
         >
             {{ resyncing ? 'Syncing...' : 'Re-sync' }}
         </button>
-        <button mat-stroked-button type="button" (click)="cancelled.emit()" [disabled]="busy || resyncing">
-           Cancel
+        <button
+            mat-stroked-button
+            type="button"
+            (click)="cancelled.emit()"
+            [disabled]="busy || resyncing"
+        >
+            Cancel
         </button>
         <button mat-flat-button color="primary" type="submit" [disabled]="busy || resyncing">
             {{ mode === 'create' ? 'Add to collection' : 'Save changes' }}

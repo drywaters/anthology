@@ -1,5 +1,17 @@
 import { DatePipe, NgClass, NgFor, NgIf, NgTemplateOutlet } from '@angular/common';
-import { AfterViewInit, Component, DestroyRef, ElementRef, Injector, OnDestroy, ViewChild, computed, effect, inject, signal } from '@angular/core';
+import {
+    AfterViewInit,
+    Component,
+    DestroyRef,
+    ElementRef,
+    Injector,
+    OnDestroy,
+    ViewChild,
+    computed,
+    effect,
+    inject,
+    signal,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -70,7 +82,13 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
 
     @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLElement>;
 
-    readonly displayedColumns = ['title', 'creator', 'itemType', 'releaseYear', 'updatedAt'] as const;
+    readonly displayedColumns = [
+        'title',
+        'creator',
+        'itemType',
+        'releaseYear',
+        'updatedAt',
+    ] as const;
     readonly items = signal<Item[]>([]);
     readonly loading = signal(false);
     readonly typeFilter = signal<ItemTypeFilter>('all');
@@ -105,7 +123,10 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
 
     readonly hasFilteredItems = computed(() => this.items().length > 0);
     readonly isUnfiltered = computed(
-        () => this.typeFilter() === 'all' && this.statusFilter() === BookStatusFilters.All && this.shelfStatusFilter() === ShelfStatusFilters.All
+        () =>
+            this.typeFilter() === 'all' &&
+            this.statusFilter() === BookStatusFilters.All &&
+            this.shelfStatusFilter() === ShelfStatusFilters.All,
     );
     readonly isGridView = computed(() => this.viewMode() === 'grid');
     readonly showStatusFilter = computed(() => {
@@ -147,19 +168,23 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
                     return this.itemService.list(filters).pipe(
                         tap((items) => {
                             const sortedItems = [...items].sort((a, b) =>
-                                a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+                                a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }),
                             );
                             this.items.set(sortedItems);
                             this.loading.set(false);
                         }),
                         catchError(() => {
                             this.loading.set(false);
-                            this.snackBar.open('Unable to load your anthology right now.', 'Dismiss', { duration: 5000 });
+                            this.snackBar.open(
+                                'Unable to load your anthology right now.',
+                                'Dismiss',
+                                { duration: 5000 },
+                            );
                             return EMPTY;
-                        })
+                        }),
                     );
                 }),
-                takeUntilDestroyed(this.destroyRef)
+                takeUntilDestroyed(this.destroyRef),
             )
             .subscribe();
 
@@ -169,10 +194,10 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
                 switchMap((filters) => {
                     return this.itemService.getHistogram(filters).pipe(
                         tap((histogram) => this.histogram.set(histogram)),
-                        catchError(() => EMPTY)
+                        catchError(() => EMPTY),
                     );
                 }),
-                takeUntilDestroyed(this.destroyRef)
+                takeUntilDestroyed(this.destroyRef),
             )
             .subscribe();
     }
@@ -186,7 +211,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
                 this.groupedItems();
                 setTimeout(() => this.observeLetterSections(), 0);
             },
-            { injector: this.injector }
+            { injector: this.injector },
         );
     }
 
@@ -275,7 +300,11 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     }
 
     readingStatusLabel(item: Item): string | null {
-        if (item.itemType !== ItemTypes.Book || !item.readingStatus || item.readingStatus === BookStatus.None) {
+        if (
+            item.itemType !== ItemTypes.Book ||
+            !item.readingStatus ||
+            item.readingStatus === BookStatus.None
+        ) {
             return null;
         }
 
@@ -352,8 +381,14 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
         return '#';
     }
 
-	private currentFilters(): { itemType?: ItemType; status?: BookStatus; shelfStatus?: ShelfStatusFilter } | undefined {
-		const filters: { itemType?: ItemType; status?: BookStatus; shelfStatus?: ShelfStatusFilter } = {};
+    private currentFilters():
+        | { itemType?: ItemType; status?: BookStatus; shelfStatus?: ShelfStatusFilter }
+        | undefined {
+        const filters: {
+            itemType?: ItemType;
+            status?: BookStatus;
+            shelfStatus?: ShelfStatusFilter;
+        } = {};
 
         const typeFilter = this.typeFilter();
         if (typeFilter !== 'all') {
@@ -362,7 +397,10 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
 
         // Only include status filter when type is 'all' or 'book' (FE-1, FE-2)
         const statusFilter = this.statusFilter();
-        if (statusFilter !== BookStatusFilters.All && (typeFilter === 'all' || typeFilter === ItemTypes.Book)) {
+        if (
+            statusFilter !== BookStatusFilters.All &&
+            (typeFilter === 'all' || typeFilter === ItemTypes.Book)
+        ) {
             filters.status = statusFilter;
         }
 

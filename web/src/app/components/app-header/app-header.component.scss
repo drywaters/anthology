@@ -13,12 +13,13 @@
     padding: 0.65rem 1.25rem;
     background: color-mix(in srgb, #e8f5ef 90%, white 10%);
     border-bottom: 1px solid var(--mat-sys-outline-variant);
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 8px 24px rgb(15 23 42 / 8%);
 }
 
 button[mat-icon-button] {
     --mdc-icon-button-size: 44px;
     --mdc-icon-button-icon-size: 24px;
+
     color: var(--mat-sys-primary);
 }
 
@@ -51,7 +52,7 @@ button[mat-icon-button] {
     gap: 0.5rem;
 }
 
-@media (max-width: 600px) {
+@media (width <= 600px) {
     .app-header {
         padding: 0.6rem 1rem;
     }

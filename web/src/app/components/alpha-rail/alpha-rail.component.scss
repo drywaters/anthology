@@ -11,7 +11,7 @@
     background: color-mix(in srgb, var(--mat-sys-surface) 90%, transparent);
     backdrop-filter: blur(4px);
     border-radius: 1rem;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+    box-shadow: 0 4px 12px rgb(15 23 42 / 12%);
 }
 
 .rail-letter {
@@ -52,10 +52,9 @@
     }
 }
 
-@media (max-width: 680px) {
+@media (width <= 680px) {
     .alpha-rail {
-        flex-direction: row;
-        flex-wrap: wrap;
+        flex-flow: row wrap;
         justify-content: center;
         position: fixed;
         bottom: 16px;
@@ -66,7 +65,7 @@
         overflow-y: auto;
         z-index: 10;
         border-radius: 1.5rem;
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
+        box-shadow: 0 8px 24px rgb(15 23 42 / 20%);
     }
 
     .rail-letter {

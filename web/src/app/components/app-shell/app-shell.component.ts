@@ -31,14 +31,23 @@ export class AppShellComponent {
             label: 'Library',
             icon: 'menu_book',
             route: '/',
-            actions: [{ id: 'add-item', label: 'Add Item', icon: 'library_add', route: '/items/add' }],
+            actions: [
+                { id: 'add-item', label: 'Add Item', icon: 'library_add', route: '/items/add' },
+            ],
         },
         {
             id: 'shelves',
             label: 'Shelves',
             icon: 'grid_on',
             route: '/shelves',
-            actions: [{ id: 'add-shelf', label: 'Add Shelf', icon: 'add_photo_alternate', route: '/shelves/add' }],
+            actions: [
+                {
+                    id: 'add-shelf',
+                    label: 'Add Shelf',
+                    icon: 'add_photo_alternate',
+                    route: '/shelves/add',
+                },
+            ],
         },
     ];
 
@@ -92,7 +101,11 @@ export class AppShellComponent {
                     this.router.navigate(['/login']);
                 },
                 error: () => {
-                    this.snackBar.open('We could not clear your session; please try again.', 'Dismiss', { duration: 5000 });
+                    this.snackBar.open(
+                        'We could not clear your session; please try again.',
+                        'Dismiss',
+                        { duration: 5000 },
+                    );
                     this.closeSidebar();
                     this.router.navigate(['/login']);
                 },

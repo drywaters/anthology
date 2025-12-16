@@ -71,9 +71,13 @@ export class EditItemPageComponent {
                 },
                 error: () => {
                     this.busy.set(false);
-                    this.snackBar.open('We could not save the item. Double-check required fields.', 'Dismiss', {
-                        duration: 5000,
-                    });
+                    this.snackBar.open(
+                        'We could not save the item. Double-check required fields.',
+                        'Dismiss',
+                        {
+                            duration: 5000,
+                        },
+                    );
                 },
             });
     }
@@ -96,7 +100,9 @@ export class EditItemPageComponent {
                 },
                 error: () => {
                     this.busy.set(false);
-                    this.snackBar.open('Unable to delete this entry right now.', 'Dismiss', { duration: 5000 });
+                    this.snackBar.open('Unable to delete this entry right now.', 'Dismiss', {
+                        duration: 5000,
+                    });
                 },
             });
     }
@@ -121,13 +127,19 @@ export class EditItemPageComponent {
                 next: (updatedItem) => {
                     this.resyncing.set(false);
                     this.item.set(updatedItem);
-                    this.snackBar.open('Metadata refreshed from Google Books.', 'Dismiss', { duration: 4000 });
+                    this.snackBar.open('Metadata refreshed from Google Books.', 'Dismiss', {
+                        duration: 4000,
+                    });
                 },
                 error: () => {
                     this.resyncing.set(false);
-                    this.snackBar.open('Unable to refresh metadata. The book may not be found in Google Books.', 'Dismiss', {
-                        duration: 5000,
-                    });
+                    this.snackBar.open(
+                        'Unable to refresh metadata. The book may not be found in Google Books.',
+                        'Dismiss',
+                        {
+                            duration: 5000,
+                        },
+                    );
                 },
             });
     }

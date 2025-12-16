@@ -68,7 +68,7 @@ func (r *postgresRepository) ListShelves(ctx context.Context) ([]ShelfSummary, e
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	summaries := make([]ShelfSummary, 0)
 	for rows.Next() {
