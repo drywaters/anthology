@@ -20,7 +20,9 @@ describe(LoginPageComponent.name, () => {
                 { provide: Router, useValue: routerSpy },
                 {
                     provide: ActivatedRoute,
-                    useValue: { snapshot: { queryParamMap: convertToParamMap({ redirectTo: '/items' }) } },
+                    useValue: {
+                        snapshot: { queryParamMap: convertToParamMap({ redirectTo: '/items' }) },
+                    },
                 },
             ],
         }).compileComponents();

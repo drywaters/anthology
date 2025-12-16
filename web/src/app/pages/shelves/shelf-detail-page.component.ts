@@ -1,7 +1,24 @@
-import { Component, DestroyRef, ElementRef, computed, inject, signal, ViewChild, NgZone, ChangeDetectorRef } from '@angular/core';
+import {
+    Component,
+    DestroyRef,
+    ElementRef,
+    computed,
+    inject,
+    signal,
+    ViewChild,
+    NgZone,
+    ChangeDetectorRef,
+} from '@angular/core';
 import { NgClass, NgFor, NgIf, NgStyle } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+    FormArray,
+    FormBuilder,
+    FormControl,
+    FormGroup,
+    ReactiveFormsModule,
+    Validators,
+} from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -15,10 +32,27 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { catchError, combineLatest, debounceTime, distinctUntilChanged, finalize, map, of, startWith, switchMap, tap } from 'rxjs';
+import {
+    catchError,
+    combineLatest,
+    debounceTime,
+    distinctUntilChanged,
+    finalize,
+    map,
+    of,
+    startWith,
+    switchMap,
+    tap,
+} from 'rxjs';
 
 import { Item, ItemType, ITEM_TYPE_LABELS } from '../../models/item';
-import { LayoutSlotInput, PlacementWithItem, ScanStatus, ShelfSlot, ShelfWithLayout } from '../../models/shelf';
+import {
+    LayoutSlotInput,
+    PlacementWithItem,
+    ScanStatus,
+    ShelfSlot,
+    ShelfWithLayout,
+} from '../../models/shelf';
 import { ShelfService } from '../../services/shelf.service';
 import { ItemService } from '../../services/item.service';
 import { BarcodeScannerService } from '../../services/barcode-scanner.service';
@@ -201,7 +235,9 @@ export class ShelfDetailPageComponent {
             return;
         }
         const slotMap = new Map<string, ShelfSlot>();
-        (shelf.slots ?? []).forEach((slot) => slotMap.set(`${slot.rowIndex}-${slot.colIndex}`, slot));
+        (shelf.slots ?? []).forEach((slot) =>
+            slotMap.set(`${slot.rowIndex}-${slot.colIndex}`, slot),
+        );
         shelf.rows.forEach((row) => {
             const columns = row.columns ?? [];
             const columnGroups = columns.map((col) => {
@@ -217,7 +253,10 @@ export class ShelfDetailPageComponent {
             });
             const group = this.fb.group<LayoutRowGroup>({
                 rowId: this.fb.control(row.id, { nonNullable: false }),
-                rowIndex: this.fb.control(row.rowIndex, { nonNullable: true, validators: [Validators.required] }),
+                rowIndex: this.fb.control(row.rowIndex, {
+                    nonNullable: true,
+                    validators: [Validators.required],
+                }),
                 columns: this.fb.array(columnGroups),
             });
             this.rows.push(group);
@@ -244,14 +283,14 @@ export class ShelfDetailPageComponent {
             startWith(this.itemSearchControl.value),
             debounceTime(250),
             map((value) => (value ?? '').trim()),
-            distinctUntilChanged()
+            distinctUntilChanged(),
         );
         const type$ = this.itemSearchType.valueChanges.pipe(startWith(this.itemSearchType.value));
 
         combineLatest([query$, type$])
             .pipe(
                 switchMap(([query, type]) => this.queryItems(query, type)),
-                takeUntilDestroyed(this.destroyRef)
+                takeUntilDestroyed(this.destroyRef),
             )
             .subscribe((results) => {
                 this.itemSearchResults.set(results);
@@ -279,7 +318,7 @@ export class ShelfDetailPageComponent {
                 this.snackBar.open('Unable to search your library', 'Dismiss', { duration: 4000 });
                 return of<Item[]>([]);
             }),
-            finalize(() => this.searchingItems.set(false))
+            finalize(() => this.searchingItems.set(false)),
         );
     }
 
@@ -292,11 +331,14 @@ export class ShelfDetailPageComponent {
             xEndNorm: number;
             yStartNorm: number;
             yEndNorm: number;
-        }>
+        }>,
     ): FormGroup<LayoutColumnGroup> {
         return this.fb.group<LayoutColumnGroup>({
             columnId: this.fb.control(initial?.columnId ?? null, { nonNullable: false }),
-            colIndex: this.fb.control(colIndex, { nonNullable: true, validators: [Validators.required] }),
+            colIndex: this.fb.control(colIndex, {
+                nonNullable: true,
+                validators: [Validators.required],
+            }),
             xStartNorm: this.fb.control(initial?.xStartNorm ?? 0, {
                 nonNullable: true,
                 validators: [Validators.required, Validators.min(0), Validators.max(1)],
@@ -345,7 +387,7 @@ export class ShelfDetailPageComponent {
                         yEndNorm: 1 - margin,
                     }),
                 ]),
-            })
+            }),
         );
         this.reindexRows();
     }
@@ -360,7 +402,7 @@ export class ShelfDetailPageComponent {
                 xEndNorm: lastColumn?.controls.xEndNorm.value ?? 1 - margin,
                 yStartNorm: lastColumn?.controls.yStartNorm.value ?? margin,
                 yEndNorm: lastColumn?.controls.yEndNorm.value ?? 1 - margin,
-            })
+            }),
         );
         this.reindexRows();
     }
@@ -465,7 +507,12 @@ export class ShelfDetailPageComponent {
         };
     }
 
-    beginCornerDrag(rowIndex: number, columnIndex: number, corner: CornerPosition, event: PointerEvent): void {
+    beginCornerDrag(
+        rowIndex: number,
+        columnIndex: number,
+        corner: CornerPosition,
+        event: PointerEvent,
+    ): void {
         if (this.mode() !== 'edit' || !this.isLayoutSlotSelected(rowIndex, columnIndex)) {
             return;
         }
@@ -474,7 +521,12 @@ export class ShelfDetailPageComponent {
 
     isSlotActive(rowIndex: number, columnIndex: number): boolean {
         const active = this.activeDrag;
-        if (!!active && active.kind === 'corner' && active.rowIndex === rowIndex && active.columnIndex === columnIndex) {
+        if (
+            !!active &&
+            active.kind === 'corner' &&
+            active.rowIndex === rowIndex &&
+            active.columnIndex === columnIndex
+        ) {
             return true;
         }
         return this.isLayoutSlotSelected(rowIndex, columnIndex);
@@ -491,7 +543,7 @@ export class ShelfDetailPageComponent {
 
     sortedAssignedItems(slotId: string): PlacementWithItem[] {
         return this.assignedItems(slotId).sort((a, b) =>
-            a.item.title.localeCompare(b.item.title, undefined, { sensitivity: 'base' })
+            a.item.title.localeCompare(b.item.title, undefined, { sensitivity: 'base' }),
         );
     }
 
@@ -516,7 +568,8 @@ export class ShelfDetailPageComponent {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (updated) => this.shelf.set(updated),
-                error: () => this.snackBar.open('Unable to assign item', 'Dismiss', { duration: 4000 }),
+                error: () =>
+                    this.snackBar.open('Unable to assign item', 'Dismiss', { duration: 4000 }),
             });
     }
 
@@ -531,7 +584,8 @@ export class ShelfDetailPageComponent {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (updated) => this.shelf.set(updated),
-                error: () => this.snackBar.open('Unable to remove item', 'Dismiss', { duration: 4000 }),
+                error: () =>
+                    this.snackBar.open('Unable to remove item', 'Dismiss', { duration: 4000 }),
             });
     }
 
@@ -543,7 +597,10 @@ export class ShelfDetailPageComponent {
         event.preventDefault();
         event.stopPropagation();
         this.endDrag();
-        this.activeLayoutSelection.set({ rowIndex: context.rowIndex, columnIndex: context.columnIndex });
+        this.activeLayoutSelection.set({
+            rowIndex: context.rowIndex,
+            columnIndex: context.columnIndex,
+        });
         this.activeDrag = context;
         this.overlayRect = this.canvasOverlay?.nativeElement.getBoundingClientRect() ?? null;
         this.dragLockedAxis = null;
@@ -589,7 +646,9 @@ export class ShelfDetailPageComponent {
         if (!this.activeDrag || this.activeDrag.kind !== 'corner' || !this.dragStartPoint) {
             return;
         }
-        const column = this.rows.at(this.activeDrag.rowIndex)?.controls.columns.at(this.activeDrag.columnIndex);
+        const column = this.rows
+            .at(this.activeDrag.rowIndex)
+            ?.controls.columns.at(this.activeDrag.columnIndex);
         if (!column) {
             return;
         }
@@ -598,7 +657,10 @@ export class ShelfDetailPageComponent {
         const dy = Math.abs(clientY - this.dragStartPoint.y);
 
         // Try to establish a lock if not already locked
-        if (!this.dragLockedAxis && Math.max(dx, dy) >= ShelfDetailPageComponent.AXIS_LOCK_THRESHOLD_PX) {
+        if (
+            !this.dragLockedAxis &&
+            Math.max(dx, dy) >= ShelfDetailPageComponent.AXIS_LOCK_THRESHOLD_PX
+        ) {
             const AXIS_LOCK_DOMINANCE_RATIO = 2; // One axis must be 2x greater than other to lock
             if (dy > dx * AXIS_LOCK_DOMINANCE_RATIO) {
                 this.dragLockedAxis = 'y';
@@ -617,8 +679,10 @@ export class ShelfDetailPageComponent {
         const normalizedX = this.clamp((clientX - rect.left) / rect.width, 0, 1);
         const normalizedY = this.clamp((clientY - rect.top) / rect.height, 0, 1);
 
-        const isTop = this.activeDrag.corner === 'top-left' || this.activeDrag.corner === 'top-right';
-        const isLeft = this.activeDrag.corner === 'top-left' || this.activeDrag.corner === 'bottom-left';
+        const isTop =
+            this.activeDrag.corner === 'top-left' || this.activeDrag.corner === 'top-right';
+        const isLeft =
+            this.activeDrag.corner === 'top-left' || this.activeDrag.corner === 'bottom-left';
 
         this.ngZone.run(() => {
             if (allowY && isTop) {
@@ -648,8 +712,6 @@ export class ShelfDetailPageComponent {
             this.overlayRect = this.canvasOverlay?.nativeElement.getBoundingClientRect() ?? null;
         }
     }
-
-
 
     private clamp(value: number, min: number, max: number): number {
         if (Number.isNaN(value)) {
@@ -697,7 +759,9 @@ export class ShelfDetailPageComponent {
         }
 
         if (this.scannerSupported() === false) {
-            this.snackBar.open('Camera scanning is not supported on this device.', 'Dismiss', { duration: 5000 });
+            this.snackBar.open('Camera scanning is not supported on this device.', 'Dismiss', {
+                duration: 5000,
+            });
             return;
         }
 
@@ -735,8 +799,15 @@ export class ShelfDetailPageComponent {
         const now = Date.now();
 
         // Debounce: prevent scanning the same ISBN within 3 seconds
-        if (isbn === this.lastScannedISBN && now - this.lastScanTime < ShelfDetailPageComponent.SCAN_DEBOUNCE_MS) {
-            this.snackBar.open('Item already scanned. Wait a moment before scanning again.', 'Dismiss', { duration: 2000 });
+        if (
+            isbn === this.lastScannedISBN &&
+            now - this.lastScanTime < ShelfDetailPageComponent.SCAN_DEBOUNCE_MS
+        ) {
+            this.snackBar.open(
+                'Item already scanned. Wait a moment before scanning again.',
+                'Dismiss',
+                { duration: 2000 },
+            );
             this.barcodeScanner.reportScanComplete();
             return;
         }
@@ -757,7 +828,7 @@ export class ShelfDetailPageComponent {
             .scanAndAssign(shelf.shelf.id, slot.id, isbn)
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
-                finalize(() => undefined)
+                finalize(() => undefined),
             )
             .subscribe({
                 next: (result) => {
@@ -790,7 +861,11 @@ export class ShelfDetailPageComponent {
         if (status === 'created') {
             this.snackBar.open(`Added: ${title}`, 'Dismiss', { duration: 5000 });
         } else if (status === 'moved') {
-            this.snackBar.open(`Moved: ${title} → Slot ${slot.rowIndex + 1}·${slot.colIndex + 1}`, 'Dismiss', { duration: 5000 });
+            this.snackBar.open(
+                `Moved: ${title} → Slot ${slot.rowIndex + 1}·${slot.colIndex + 1}`,
+                'Dismiss',
+                { duration: 5000 },
+            );
         } else if (status === 'present') {
             this.snackBar.open(`Already here: ${title}`, 'Dismiss', { duration: 4000 });
         }

@@ -20,10 +20,16 @@ describe(AddItemPageComponent.name, () => {
     let dialogSpy: jasmine.SpyObj<MatDialog>;
 
     beforeEach(async () => {
-        itemServiceSpy = jasmine.createSpyObj<ItemService>('ItemService', ['create', 'importCsv', 'checkDuplicates']);
+        itemServiceSpy = jasmine.createSpyObj<ItemService>('ItemService', [
+            'create',
+            'importCsv',
+            'checkDuplicates',
+        ]);
         itemServiceSpy.checkDuplicates.and.returnValue(of([])); // Default: no duplicates
         snackBarSpy = jasmine.createSpyObj<MatSnackBar>('MatSnackBar', ['open']);
-        itemLookupServiceSpy = jasmine.createSpyObj<ItemLookupService>('ItemLookupService', ['lookup']);
+        itemLookupServiceSpy = jasmine.createSpyObj<ItemLookupService>('ItemLookupService', [
+            'lookup',
+        ]);
         dialogSpy = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
 
         await TestBed.configureTestingModule({
@@ -221,20 +227,20 @@ describe(AddItemPageComponent.name, () => {
         expect(navigateSpy).not.toHaveBeenCalled();
     });
 
-it('looks up metadata and pre-fills manual entry on success', fakeAsync(() => {
-itemLookupServiceSpy.lookup.and.returnValue(
-of([
-{
-title: 'Metadata Title',
-creator: 'Someone',
-releaseYear: 2001,
-pageCount: 320,
-isbn13: '9780000000002',
-isbn10: '0000000002',
-description: 'From lookup',
-},
-])
-);
+    it('looks up metadata and pre-fills manual entry on success', fakeAsync(() => {
+        itemLookupServiceSpy.lookup.and.returnValue(
+            of([
+                {
+                    title: 'Metadata Title',
+                    creator: 'Someone',
+                    releaseYear: 2001,
+                    pageCount: 320,
+                    isbn13: '9780000000002',
+                    isbn10: '0000000002',
+                    description: 'From lookup',
+                },
+            ]),
+        );
 
         const fixture = createComponent();
         fixture.componentInstance.searchForm.setValue({ category: 'book', query: '9780000000002' });
@@ -246,10 +252,13 @@ description: 'From lookup',
         expect(fixture.componentInstance.manualDraft()?.creator).toBe('Someone');
         expect(fixture.componentInstance.manualDraft()?.pageCount).toBe(320);
         expect(fixture.componentInstance.manualDraft()?.description).toBe('From lookup');
-expect(fixture.componentInstance.lookupResults().length).toBe(1);
-expect(fixture.componentInstance.lookupResults()[0]?.isbn13).toBe('9780000000002');
+        expect(fixture.componentInstance.lookupResults().length).toBe(1);
+        expect(fixture.componentInstance.lookupResults()[0]?.isbn13).toBe('9780000000002');
         expect(fixture.componentInstance.selectedTab()).toBe(0);
-        expect(fixture.componentInstance.manualDraftSource()).toEqual({ query: '9780000000002', label: 'Book' });
+        expect(fixture.componentInstance.manualDraftSource()).toEqual({
+            query: '9780000000002',
+            label: 'Book',
+        });
     }));
 
     it('switches to the manual entry tab when using a lookup result manually', () => {
@@ -277,7 +286,7 @@ expect(fixture.componentInstance.lookupResults()[0]?.isbn13).toBe('9780000000002
         });
     });
 
-it('adds a lookup result directly to the collection', fakeAsync(() => {
+    it('adds a lookup result directly to the collection', fakeAsync(() => {
         const mockItem = {
             id: 'item-1',
             title: 'Metadata Title',
@@ -304,7 +313,7 @@ it('adds a lookup result directly to the collection', fakeAsync(() => {
             notes: '',
         } satisfies ItemForm;
 
-fixture.componentInstance.handleQuickAdd(draft);
+        fixture.componentInstance.handleQuickAdd(draft);
         flush();
 
         expect(itemServiceSpy.create).toHaveBeenCalledWith(draft);
@@ -312,7 +321,7 @@ fixture.componentInstance.handleQuickAdd(draft);
     }));
 
     it('stores an error when lookup fails', fakeAsync(() => {
-itemLookupServiceSpy.lookup.and.returnValue(throwError(() => new Error('network error')));
+        itemLookupServiceSpy.lookup.and.returnValue(throwError(() => new Error('network error')));
 
         const fixture = createComponent();
         fixture.componentInstance.searchForm.setValue({ category: 'book', query: 'bad' });
@@ -322,24 +331,24 @@ itemLookupServiceSpy.lookup.and.returnValue(throwError(() => new Error('network 
         expect(itemLookupServiceSpy.lookup).toHaveBeenCalled();
         expect(fixture.componentInstance.lookupError()).toBeTruthy();
         expect(fixture.componentInstance.manualDraft()).toBeNull();
-expect(fixture.componentInstance.lookupResults().length).toBe(0);
+        expect(fixture.componentInstance.lookupResults().length).toBe(0);
     }));
 
     it('clears the lookup preview when starting fresh', fakeAsync(() => {
-itemLookupServiceSpy.lookup.and.returnValue(
-of([{ title: 'Metadata Title', creator: 'Someone', releaseYear: 2001 }])
-);
+        itemLookupServiceSpy.lookup.and.returnValue(
+            of([{ title: 'Metadata Title', creator: 'Someone', releaseYear: 2001 }]),
+        );
 
         const fixture = createComponent();
         fixture.componentInstance.searchForm.setValue({ category: 'book', query: 'test' });
         fixture.componentInstance.handleLookupSubmit();
         flush();
 
-expect(fixture.componentInstance.lookupResults().length).toBe(1);
+        expect(fixture.componentInstance.lookupResults().length).toBe(1);
 
         fixture.componentInstance.clearManualDraft();
 
-expect(fixture.componentInstance.lookupResults().length).toBe(0);
+        expect(fixture.componentInstance.lookupResults().length).toBe(0);
         expect(fixture.componentInstance.manualDraft()).toBeNull();
     }));
 
@@ -349,9 +358,11 @@ expect(fixture.componentInstance.lookupResults().length).toBe(0);
                 () =>
                     new HttpErrorResponse({
                         status: 400,
-                        error: { error: 'metadata lookups for this category are not available yet' },
-                    })
-            )
+                        error: {
+                            error: 'metadata lookups for this category are not available yet',
+                        },
+                    }),
+            ),
         );
 
         const fixture = createComponent();
@@ -359,7 +370,9 @@ expect(fixture.componentInstance.lookupResults().length).toBe(0);
         fixture.componentInstance.handleLookupSubmit();
         flush();
 
-        expect(fixture.componentInstance.lookupError()).toBe('metadata lookups for this category are not available yet');
+        expect(fixture.componentInstance.lookupError()).toBe(
+            'metadata lookups for this category are not available yet',
+        );
         expect(fixture.componentInstance.manualDraft()).toBeNull();
     }));
 
@@ -372,7 +385,9 @@ expect(fixture.componentInstance.lookupResults().length).toBe(0);
         } satisfies CsvImportSummary;
         itemServiceSpy.importCsv.and.returnValue(of(summary));
         const fixture = createComponent();
-        fixture.componentInstance.selectedCsvFile.set(new File(['title'], 'import.csv', { type: 'text/csv' }));
+        fixture.componentInstance.selectedCsvFile.set(
+            new File(['title'], 'import.csv', { type: 'text/csv' }),
+        );
         fixture.componentInstance.handleImportSubmit();
         flush();
 
@@ -383,11 +398,17 @@ expect(fixture.componentInstance.lookupResults().length).toBe(0);
     it('captures CSV import errors from the server', fakeAsync(() => {
         itemServiceSpy.importCsv.and.returnValue(
             throwError(
-                () => new HttpErrorResponse({ status: 400, error: { error: 'missing required columns' } })
-            )
+                () =>
+                    new HttpErrorResponse({
+                        status: 400,
+                        error: { error: 'missing required columns' },
+                    }),
+            ),
         );
         const fixture = createComponent();
-        fixture.componentInstance.selectedCsvFile.set(new File(['title'], 'import.csv', { type: 'text/csv' }));
+        fixture.componentInstance.selectedCsvFile.set(
+            new File(['title'], 'import.csv', { type: 'text/csv' }),
+        );
         fixture.componentInstance.handleImportSubmit();
         flush();
 
@@ -421,7 +442,9 @@ expect(fixture.componentInstance.lookupResults().length).toBe(0);
         } satisfies CsvImportSummary);
 
         expect(fixture.componentInstance.csvImportStatus()?.level).toBe('success');
-        expect(fixture.componentInstance.csvImportStatus()?.message).toContain('Imported 3 of 3 rows.');
+        expect(fixture.componentInstance.csvImportStatus()?.message).toContain(
+            'Imported 3 of 3 rows.',
+        );
 
         fixture.componentInstance.importSummary.set({
             totalRows: 4,

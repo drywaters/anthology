@@ -1,6 +1,15 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, ElementRef, NgZone, ViewChild, computed, inject, signal } from '@angular/core';
+import {
+    Component,
+    DestroyRef,
+    ElementRef,
+    NgZone,
+    ViewChild,
+    computed,
+    inject,
+    signal,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,7 +26,11 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { catchError, finalize, of, switchMap, firstValueFrom } from 'rxjs';
 
 import { ItemFormComponent } from '../../components/item-form/item-form.component';
-import { DuplicateDialogComponent, DuplicateDialogData, DuplicateDialogResult } from '../../components/duplicate-dialog/duplicate-dialog.component';
+import {
+    DuplicateDialogComponent,
+    DuplicateDialogData,
+    DuplicateDialogResult,
+} from '../../components/duplicate-dialog/duplicate-dialog.component';
 import { DuplicateMatch, ItemForm } from '../../models/item';
 import { ItemService } from '../../services/item.service';
 import { ItemLookupCategory, ItemLookupService } from '../../services/item-lookup.service';
@@ -208,7 +221,10 @@ export class AddItemPageComponent {
     readonly csvTemplateUrl = '/csv-import-template.csv';
 
     readonly searchForm = this.fb.group({
-        category: [AddItemPageComponent.SEARCH_CATEGORIES[0].value as SearchCategoryValue, Validators.required],
+        category: [
+            AddItemPageComponent.SEARCH_CATEGORIES[0].value as SearchCategoryValue,
+            Validators.required,
+        ],
         query: ['', [Validators.required, Validators.minLength(3)]],
     });
 
@@ -274,20 +290,26 @@ export class AddItemPageComponent {
 
         try {
             const duplicates = await firstValueFrom(
-                this.itemService.checkDuplicates({
-                    title: formValue.title,
-                    isbn13: formValue.isbn13,
-                    isbn10: formValue.isbn10,
-                }).pipe(
-                    takeUntilDestroyed(this.destroyRef),
-                    catchError((error) => {
-                        console.warn('Duplicate check failed', error);
-                        this.snackBar.open('Duplicate check failed; proceeding may create duplicates.', 'Dismiss', {
-                            duration: 4000,
-                        });
-                        return of([] as DuplicateMatch[]);
+                this.itemService
+                    .checkDuplicates({
+                        title: formValue.title,
+                        isbn13: formValue.isbn13,
+                        isbn10: formValue.isbn10,
                     })
-                )
+                    .pipe(
+                        takeUntilDestroyed(this.destroyRef),
+                        catchError((error) => {
+                            console.warn('Duplicate check failed', error);
+                            this.snackBar.open(
+                                'Duplicate check failed; proceeding may create duplicates.',
+                                'Dismiss',
+                                {
+                                    duration: 4000,
+                                },
+                            );
+                            return of([] as DuplicateMatch[]);
+                        }),
+                    ),
             );
 
             if (duplicates.length > 0) {
@@ -311,7 +333,7 @@ export class AddItemPageComponent {
             }
 
             const item = await firstValueFrom(
-                this.itemService.create(formValue).pipe(takeUntilDestroyed(this.destroyRef))
+                this.itemService.create(formValue).pipe(takeUntilDestroyed(this.destroyRef)),
             );
             if (item) {
                 this.snackBar.open(`Saved "${item.title}"`, 'Dismiss', { duration: 4000 });
@@ -319,9 +341,13 @@ export class AddItemPageComponent {
             }
         } catch (error) {
             console.error('Failed to save item', error);
-            this.snackBar.open('We could not save the item. Double-check required fields.', 'Dismiss', {
-                duration: 5000,
-            });
+            this.snackBar.open(
+                'We could not save the item. Double-check required fields.',
+                'Dismiss',
+                {
+                    duration: 5000,
+                },
+            );
         } finally {
             this.busy.set(false);
         }
@@ -345,7 +371,9 @@ export class AddItemPageComponent {
         if (this.searchForm.invalid) {
             this.searchForm.markAllAsTouched();
             if (source === 'scanner') {
-                this.barcodeScanner.reportScanFailure('That barcode was not valid. Try again or type the ISBN.');
+                this.barcodeScanner.reportScanFailure(
+                    'That barcode was not valid. Try again or type the ISBN.',
+                );
             }
             return;
         }
@@ -357,7 +385,9 @@ export class AddItemPageComponent {
         if (!rawCategory || !query) {
             this.searchForm.get('query')?.setErrors({ required: true });
             if (source === 'scanner') {
-                this.barcodeScanner.reportScanFailure('That barcode was not valid. Try again or type the ISBN.');
+                this.barcodeScanner.reportScanFailure(
+                    'That barcode was not valid. Try again or type the ISBN.',
+                );
             }
             return;
         }
@@ -378,7 +408,7 @@ export class AddItemPageComponent {
                     if (source === 'scanner') {
                         this.stopBarcodeScanner();
                     }
-                })
+                }),
             )
             .subscribe({
                 next: (results) => {
@@ -419,9 +449,10 @@ export class AddItemPageComponent {
                     this.manualDraftSource.set(null);
                     this.lookupResults.set([]);
 
-                    let message = 'We couldn\'t find a match. Try another ISBN.';
+                    let message = "We couldn't find a match. Try another ISBN.";
                     if (error instanceof HttpErrorResponse) {
-                        const serverMessage = typeof error.error?.error === 'string' ? error.error.error.trim() : '';
+                        const serverMessage =
+                            typeof error.error?.error === 'string' ? error.error.error.trim() : '';
                         if (serverMessage) {
                             message = serverMessage;
                         } else if (error.status === 404) {

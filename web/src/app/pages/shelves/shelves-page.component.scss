@@ -5,6 +5,7 @@
 .page {
     --page-gap: 2rem;
     --page-gutter: clamp(1.5rem, 3vw, 4rem);
+
     min-height: 100%;
     box-sizing: border-box;
     display: flex;

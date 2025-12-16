@@ -17,7 +17,9 @@ export class ThumbnailPipe implements PipeTransform {
         }
 
         const isGoogleBooksUrl =
-            url.includes('books.google.com') || url.includes('googleapis.com/books') || url.includes('books.googleusercontent.com');
+            url.includes('books.google.com') ||
+            url.includes('googleapis.com/books') ||
+            url.includes('books.googleusercontent.com');
 
         // Avoid requesting undersized Google Books thumbnails that often return the "image not available" placeholder.
         // Clamp zoom to at least 1 and ensure a zoom parameter exists for consistent rendering.

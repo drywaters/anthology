@@ -125,7 +125,7 @@ func newMultipartCSVRequest(t *testing.T, csv string) *http.Request {
 	if _, err := io.Copy(part, strings.NewReader(csv)); err != nil {
 		t.Fatalf("failed to write csv: %v", err)
 	}
-	writer.Close()
+	_ = writer.Close()
 	req := httptest.NewRequest(http.MethodPost, "/api/items/import", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	return req

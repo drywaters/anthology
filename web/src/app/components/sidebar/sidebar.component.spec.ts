@@ -19,17 +19,28 @@ describe(SidebarComponent.name, () => {
                 label: 'Library',
                 icon: 'menu_book',
                 route: '/',
-                actions: [{ id: 'add-item', label: 'Add Item', icon: 'library_add', route: '/items/add' }],
+                actions: [
+                    { id: 'add-item', label: 'Add Item', icon: 'library_add', route: '/items/add' },
+                ],
             },
             {
                 id: 'shelves',
                 label: 'Shelves',
                 icon: 'grid_on',
                 route: '/shelves',
-                actions: [{ id: 'add-shelf', label: 'Add Shelf', icon: 'add_photo_alternate', route: '/shelves/add' }],
+                actions: [
+                    {
+                        id: 'add-shelf',
+                        label: 'Add Shelf',
+                        icon: 'add_photo_alternate',
+                        route: '/shelves/add',
+                    },
+                ],
             },
         ];
-        fixture.componentInstance.actionItems = [{ id: 'logout', label: 'Log out', icon: 'logout' }];
+        fixture.componentInstance.actionItems = [
+            { id: 'logout', label: 'Log out', icon: 'logout' },
+        ];
         fixture.detectChanges();
     });
 
@@ -63,7 +74,9 @@ describe(SidebarComponent.name, () => {
         firstNav.click();
         expect(navigateSpy).toHaveBeenCalledWith('/');
 
-        const contextualAction = compiled.querySelector('.nav-section__actions .action-button') as HTMLButtonElement;
+        const contextualAction = compiled.querySelector(
+            '.nav-section__actions .action-button',
+        ) as HTMLButtonElement;
         contextualAction.click();
         expect(actionSpy).toHaveBeenCalledWith('add-item');
 

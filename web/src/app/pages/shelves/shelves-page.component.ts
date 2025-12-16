@@ -52,7 +52,9 @@ export class ShelvesPageComponent {
                 },
                 error: () => {
                     this.loading.set(false);
-                    this.snackBar.open('Unable to load shelves right now.', 'Dismiss', { duration: 4000 });
+                    this.snackBar.open('Unable to load shelves right now.', 'Dismiss', {
+                        duration: 4000,
+                    });
                 },
             });
     }

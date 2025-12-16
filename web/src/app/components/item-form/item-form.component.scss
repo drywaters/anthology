@@ -89,7 +89,7 @@
     gap: 1rem;
     align-items: center;
 
-    @media (max-width: 720px) {
+    @media (width <= 720px) {
         grid-template-columns: 1fr;
         align-items: stretch;
     }
@@ -209,15 +209,23 @@
     &:hover,
     &:focus-visible {
         background-color: color-mix(in srgb, var(--mat-sys-error) 90%, black) !important;
+
         --mdc-filled-button-container-color: color-mix(in srgb, var(--mat-sys-error) 90%, black);
     }
 
     &:disabled {
         background-color: color-mix(in srgb, var(--mat-sys-error) 65%, white) !important;
-        color: color-mix(in srgb, var(--mat-sys-on-error) 75%, var(--mat-sys-on-surface)) !important;
+        color: color-mix(
+            in srgb,
+            var(--mat-sys-on-error) 75%,
+            var(--mat-sys-on-surface)
+        ) !important;
 
         --mdc-filled-button-container-color: color-mix(in srgb, var(--mat-sys-error) 65%, white);
-        --mdc-filled-button-label-text-color: color-mix(in srgb, var(--mat-sys-on-error) 75%, var(--mat-sys-on-surface));
+        --mdc-filled-button-label-text-color: color-mix(
+            in srgb,
+            var(--mat-sys-on-error) 75%,
+            var(--mat-sys-on-surface)
+        );
     }
 }
-

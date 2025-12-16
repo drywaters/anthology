@@ -8,11 +8,14 @@
         "watch": "ng build --watch --configuration development",
         "test": "ng test --watch=false --browsers=ChromeHeadless",
         "test-watch": "ng test --browsers=Chrome",
-        "lint": "ng lint"
+        "lint": "ng lint && stylelint \"src/**/*.scss\" && prettier --check \"src/**/*.{ts,html,scss,json}\"",
+        "lint:fix": "ng lint --fix && stylelint \"src/**/*.scss\" --fix && prettier --write \"src/**/*.{ts,html,scss,json}\"",
+        "format": "prettier --write \"src/**/*.{ts,html,scss,json}\""
     },
     "prettier": {
         "printWidth": 100,
         "singleQuote": true,
+        "tabWidth": 4,
         "overrides": [
             {
                 "files": "*.html",
@@ -58,6 +61,9 @@
         "karma-coverage": "~2.2.0",
         "karma-jasmine": "~5.1.0",
         "karma-jasmine-html-reporter": "~2.1.0",
+        "prettier": "^3.7.4",
+        "stylelint": "^16.26.1",
+        "stylelint-config-standard-scss": "^16.0.0",
         "typescript": "~5.9.2"
     }
 }

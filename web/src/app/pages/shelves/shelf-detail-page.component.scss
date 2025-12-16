@@ -5,6 +5,7 @@
 .page {
     --page-gap: 2rem;
     --page-gutter: clamp(1.5rem, 3vw, 4rem);
+
     min-height: 100%;
     width: 100%;
     box-sizing: border-box;
@@ -74,19 +75,24 @@
 .slot {
     position: absolute;
     box-sizing: border-box;
-    border: 2px dashed rgba(255, 255, 255, 0.8);
-    background: rgba(3, 155, 229, 0.15);
+    border: 2px dashed rgb(255 255 255 / 80%);
+    background: rgb(3 155 229 / 15%);
     color: #fff;
     font-size: 12px;
     pointer-events: auto;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
+    transition:
+        border-color 0.2s ease,
+        background-color 0.2s ease;
 }
 
 .slot--selected {
-    border: 4px solid #009DFF;
+    border: 4px solid #009dff;
+
     /* Electric Blue */
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 157, 255, 0.4);
-    background: rgba(0, 157, 255, 0.7);
+    box-shadow:
+        0 0 0 1px rgb(0 0 0 / 20%),
+        0 4px 12px rgb(0 157 255 / 40%);
+    background: rgb(0 157 255 / 70%);
     z-index: 10;
 }
 
@@ -94,7 +100,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.8);
+    background: rgb(0 0 0 / 80%);
     border-radius: 4px;
     font-size: 14px;
     font-weight: 600;
@@ -103,8 +109,8 @@
 }
 
 .slot--draft {
-    border: 2px solid rgba(255, 255, 255, 0.6);
-    background: rgba(3, 155, 229, 0.4);
+    border: 2px solid rgb(255 255 255 / 60%);
+    background: rgb(3 155 229 / 40%);
     pointer-events: auto;
 }
 
@@ -112,27 +118,27 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.8);
+    background: rgb(0 0 0 / 80%);
     border-radius: 4px;
     font-size: 14px;
     font-weight: 600;
     white-space: nowrap;
 
     &.slot__label-button--selected {
-        background: rgba(26, 115, 232, 0.8);
+        background: rgb(26 115 232 / 80%);
     }
 }
 
 .slot--active {
-    border-color: rgba(255, 255, 255, 0.95);
-    background: rgba(0, 157, 255, 0.7);
+    border-color: rgb(255 255 255 / 95%);
+    background: rgb(0 157 255 / 70%);
 }
 
 .slot__label {
     position: absolute;
     top: 4px;
     left: 4px;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgb(0 0 0 / 40%);
     padding: 2px 4px;
     border-radius: 2px;
     border: none;
@@ -142,12 +148,14 @@
 }
 
 .slot__label-button {
-    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    transition:
+        background-color 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 .slot__label-button--selected {
-    background: rgba(26, 115, 232, 0.8);
-    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.35);
+    background: rgb(26 115 232 / 80%);
+    box-shadow: 0 0 0 2px rgb(26 115 232 / 35%);
 }
 
 .slot__handle {
@@ -161,7 +169,7 @@
     background: #1a73e8;
     pointer-events: auto;
     cursor: grab;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+    box-shadow: 0 4px 12px rgb(15 23 42 / 25%);
     display: inline-flex;
     justify-content: center;
     align-items: center;
@@ -208,7 +216,7 @@
 .sidebar,
 .layout-editor {
     border-radius: 24px;
-    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.14);
+    box-shadow: 0 18px 38px rgb(15 23 42 / 14%);
 }
 
 .sidebar__header {
@@ -332,7 +340,7 @@
 }
 
 // Mobile adjustments for assigned items
-@media (max-width: 600px) {
+@media (width <= 600px) {
     .assigned-items__container {
         max-height: 180px;
     }
@@ -419,7 +427,7 @@
 
 /* removed back-link styles with layout refactor */
 
-@media (max-width: 960px) {
+@media (width <= 960px) {
     .content {
         grid-template-columns: 1fr;
     }
@@ -487,12 +495,12 @@
 }
 
 .scanner-overlay--busy {
-    background: rgba(0, 0, 0, 0.55);
+    background: rgb(0 0 0 / 55%);
     z-index: 2;
 }
 
 .scanner-overlay--flash {
-    background: rgba(0, 157, 255, 0.42);
+    background: rgb(0 157 255 / 42%);
     z-index: 3;
     animation: scanner-flash 640ms ease-out;
 }
@@ -504,13 +512,13 @@
     gap: 0.75rem;
     padding: 1rem 1.25rem;
     border-radius: 16px;
-    background: rgba(0, 0, 0, 0.35);
+    background: rgb(0 0 0 / 35%);
     text-align: center;
     max-width: min(90%, 360px);
 }
 
 .busy-text {
-    color: rgba(255, 255, 255, 0.92);
+    color: rgb(255 255 255 / 92%);
     font-weight: 500;
 }
 
@@ -518,15 +526,16 @@
     width: 80%;
     max-width: 300px;
     height: 150px;
-    border: 3px dashed rgba(0, 157, 255, 0.8);
+    border: 3px dashed rgb(0 157 255 / 80%);
     border-radius: 8px;
-    background: rgba(0, 157, 255, 0.1);
+    background: rgb(0 157 255 / 10%);
 }
 
 @keyframes spin {
     from {
         transform: rotate(0deg);
     }
+
     to {
         transform: rotate(360deg);
     }
@@ -536,9 +545,11 @@
     0% {
         opacity: 0;
     }
+
     30% {
         opacity: 1;
     }
+
     100% {
         opacity: 0;
     }
@@ -557,12 +568,14 @@
 }
 
 @keyframes highlight-pulse {
-    0%, 100% {
+    0%,
+    100% {
         background-color: #d1f4d1;
-        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
+        box-shadow: 0 0 0 0 rgb(76 175 80 / 40%);
     }
+
     50% {
         background-color: #a5d6a7;
-        box-shadow: 0 0 0 6px rgba(76, 175, 80, 0);
+        box-shadow: 0 0 0 6px rgb(76 175 80 / 0%);
     }
 }

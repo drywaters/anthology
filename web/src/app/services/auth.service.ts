@@ -29,11 +29,7 @@ export class AuthService {
 
     login(token: string): Observable<void> {
         return this.http
-            .post<void>(
-                this.sessionUrl,
-                { token },
-                { withCredentials: true }
-            )
+            .post<void>(this.sessionUrl, { token }, { withCredentials: true })
             .pipe(tap(() => this.sessionState.next(true)));
     }
 
@@ -46,7 +42,7 @@ export class AuthService {
                     return of(void 0);
                 }
                 return throwError(() => error);
-            })
+            }),
         );
     }
 
@@ -64,7 +60,7 @@ export class AuthService {
                     return of(false);
                 }
                 return throwError(() => error);
-            })
+            }),
         );
     }
 }

@@ -5,12 +5,23 @@
             <mat-card-subtitle>Search for metadata or enter details manually.</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
-            <mat-tab-group [selectedIndex]="selectedTab()" (selectedIndexChange)="handleTabChange($event)">
+            <mat-tab-group
+                [selectedIndex]="selectedTab()"
+                (selectedIndexChange)="handleTabChange($event)"
+            >
                 <mat-tab label="Search">
                     <div class="tab-body search-tab">
-                        <form class="search-form" [formGroup]="searchForm" (ngSubmit)="handleLookupSubmit()" novalidate>
+                        <form
+                            class="search-form"
+                            [formGroup]="searchForm"
+                            (ngSubmit)="handleLookupSubmit()"
+                            novalidate
+                        >
                             <div class="category-section">
-                                <mat-radio-group formControlName="category" class="category-options">
+                                <mat-radio-group
+                                    formControlName="category"
+                                    class="category-options"
+                                >
                                     <mat-radio-button
                                         class="category-option"
                                         *ngFor="let option of searchCategories"
@@ -18,7 +29,9 @@
                                         [disabled]="option.disabled"
                                     >
                                         <span class="category-label">{{ option.label }}</span>
-                                        <span class="category-description">{{ option.description }}</span>
+                                        <span class="category-description">{{
+                                            option.description
+                                        }}</span>
                                     </mat-radio-button>
                                 </mat-radio-group>
                             </div>
@@ -43,11 +56,18 @@
                                     >
                                         <mat-icon>close</mat-icon>
                                     </button>
-                                    <mat-hint>At least three characters; ISBN searches work best with numbers only.</mat-hint>
-                                    <mat-error *ngIf="searchForm.get('query')?.hasError('required')">
+                                    <mat-hint
+                                        >At least three characters; ISBN searches work best with
+                                        numbers only.</mat-hint
+                                    >
+                                    <mat-error
+                                        *ngIf="searchForm.get('query')?.hasError('required')"
+                                    >
                                         Enter an ISBN or keyword.
                                     </mat-error>
-                                    <mat-error *ngIf="searchForm.get('query')?.hasError('minlength')">
+                                    <mat-error
+                                        *ngIf="searchForm.get('query')?.hasError('minlength')"
+                                    >
                                         Use at least three characters.
                                     </mat-error>
                                 </mat-form-field>
@@ -58,7 +78,9 @@
                                         type="submit"
                                         [disabled]="lookupBusy() || searchForm.invalid"
                                     >
-                                        <span class="button-label" *ngIf="!lookupBusy()">Search</span>
+                                        <span class="button-label" *ngIf="!lookupBusy()"
+                                            >Search</span
+                                        >
                                         <mat-progress-spinner
                                             *ngIf="lookupBusy()"
                                             mode="indeterminate"
@@ -69,7 +91,11 @@
                                         mat-stroked-button
                                         type="button"
                                         *ngIf="activeCategory().value === 'book'"
-                                        (click)="scannerActive() ? stopBarcodeScanner() : startBarcodeScan()"
+                                        (click)="
+                                            scannerActive()
+                                                ? stopBarcodeScanner()
+                                                : startBarcodeScan()
+                                        "
                                         [disabled]="lookupBusy()"
                                     >
                                         <mat-icon aria-hidden="true">photo_camera</mat-icon>
@@ -79,11 +105,19 @@
                                 </div>
                                 <div
                                     class="scanner-feedback"
-                                    *ngIf="activeCategory().value === 'book' && scannerActive() && (scannerStatus() || scannerError())"
+                                    *ngIf="
+                                        activeCategory().value === 'book' &&
+                                        scannerActive() &&
+                                        (scannerStatus() || scannerError())
+                                    "
                                     aria-live="polite"
                                 >
-                                    <div class="status" *ngIf="scannerStatus()">{{ scannerStatus() }}</div>
-                                    <div class="error" *ngIf="scannerError()">{{ scannerError() }}</div>
+                                    <div class="status" *ngIf="scannerStatus()">
+                                        {{ scannerStatus() }}
+                                    </div>
+                                    <div class="error" *ngIf="scannerError()">
+                                        {{ scannerError() }}
+                                    </div>
                                 </div>
                                 <div
                                     class="scanner-preview"
@@ -91,19 +125,41 @@
                                     [attr.aria-hidden]="scannerActive() ? 'false' : 'true'"
                                 >
                                     <p class="hint" *ngIf="scannerActive()">
-                                        Once we read a code, we'll automatically run the lookup for you.
+                                        Once we read a code, we'll automatically run the lookup for
+                                        you.
                                     </p>
                                     <div class="video-frame">
-                                        <video #scanVideo autoplay playsinline muted class="scanner-video"></video>
-                                        <div class="scanner-overlay" *ngIf="scannerActive() && scannerReady()">
+                                        <video
+                                            #scanVideo
+                                            autoplay
+                                            playsinline
+                                            muted
+                                            class="scanner-video"
+                                        ></video>
+                                        <div
+                                            class="scanner-overlay"
+                                            *ngIf="scannerActive() && scannerReady()"
+                                        >
                                             <div class="scanner-frame"></div>
                                         </div>
-                                        <div class="scanner-overlay scanner-overlay--flash" *ngIf="scannerFlash()"></div>
-                                        <div class="scanner-overlay scanner-overlay--busy" *ngIf="scannerProcessing()">
+                                        <div
+                                            class="scanner-overlay scanner-overlay--flash"
+                                            *ngIf="scannerFlash()"
+                                        ></div>
+                                        <div
+                                            class="scanner-overlay scanner-overlay--busy"
+                                            *ngIf="scannerProcessing()"
+                                        >
                                             <div class="busy-indicator">
-                                                <mat-progress-spinner mode="indeterminate" diameter="44"></mat-progress-spinner>
+                                                <mat-progress-spinner
+                                                    mode="indeterminate"
+                                                    diameter="44"
+                                                ></mat-progress-spinner>
                                                 <div class="busy-text">
-                                                    {{ scannerStatus() ?? 'Found barcode. Searching...' }}
+                                                    {{
+                                                        scannerStatus() ??
+                                                            'Found barcode. Searching...'
+                                                    }}
                                                 </div>
                                             </div>
                                         </div>
@@ -114,74 +170,83 @@
 
                         <div class="lookup-feedback" *ngIf="lookupError() || lastLookupSummary()">
                             <div class="error" *ngIf="lookupError()">{{ lookupError() }}</div>
-                            <div class="success" *ngIf="!lookupError() && lastLookupSummary()">{{ lastLookupSummary() }}</div>
+                            <div class="success" *ngIf="!lookupError() && lastLookupSummary()">
+                                {{ lastLookupSummary() }}
+                            </div>
                         </div>
 
                         <div class="lookup-preview" *ngIf="lookupResults().length">
-<div class="preview-header">
-<h3>Metadata preview</h3>
-<p>
-Review the fetched details, then choose the best match to add immediately or continue editing
-from the Manual Entry tab.
-</p>
-</div>
+                            <div class="preview-header">
+                                <h3>Metadata preview</h3>
+                                <p>
+                                    Review the fetched details, then choose the best match to add
+                                    immediately or continue editing from the Manual Entry tab.
+                                </p>
+                            </div>
 
-<div class="preview-list">
-<article class="preview-card" *ngFor="let preview of lookupResults()">
-<div class="preview-grid">
-<div class="preview-field">
-<span class="label">Title</span>
-<span class="value">{{ preview.title || '—' }}</span>
-</div>
-<div class="preview-field">
-<span class="label">Creator</span>
-<span class="value">{{ preview.creator || '—' }}</span>
-</div>
-<div class="preview-field">
-<span class="label">Release year</span>
-<span class="value">{{ preview.releaseYear ?? '—' }}</span>
-</div>
-<div class="preview-field">
-<span class="label">Number of pages</span>
-<span class="value">{{ preview.pageCount ?? '—' }}</span>
-</div>
-<div class="preview-field">
-<span class="label">EAN / ISBN13</span>
-<span class="value">{{ preview.isbn13 || '—' }}</span>
-</div>
-<div class="preview-field">
-<span class="label">ISBN-10</span>
-<span class="value">{{ preview.isbn10 || '—' }}</span>
-</div>
-</div>
+                            <div class="preview-list">
+                                <article
+                                    class="preview-card"
+                                    *ngFor="let preview of lookupResults()"
+                                >
+                                    <div class="preview-grid">
+                                        <div class="preview-field">
+                                            <span class="label">Title</span>
+                                            <span class="value">{{ preview.title || '—' }}</span>
+                                        </div>
+                                        <div class="preview-field">
+                                            <span class="label">Creator</span>
+                                            <span class="value">{{ preview.creator || '—' }}</span>
+                                        </div>
+                                        <div class="preview-field">
+                                            <span class="label">Release year</span>
+                                            <span class="value">{{
+                                                preview.releaseYear ?? '—'
+                                            }}</span>
+                                        </div>
+                                        <div class="preview-field">
+                                            <span class="label">Number of pages</span>
+                                            <span class="value">{{
+                                                preview.pageCount ?? '—'
+                                            }}</span>
+                                        </div>
+                                        <div class="preview-field">
+                                            <span class="label">EAN / ISBN13</span>
+                                            <span class="value">{{ preview.isbn13 || '—' }}</span>
+                                        </div>
+                                        <div class="preview-field">
+                                            <span class="label">ISBN-10</span>
+                                            <span class="value">{{ preview.isbn10 || '—' }}</span>
+                                        </div>
+                                    </div>
 
-<div class="preview-description" *ngIf="preview.description">
-<h4>Description</h4>
-<p>{{ preview.description }}</p>
-</div>
+                                    <div class="preview-description" *ngIf="preview.description">
+                                        <h4>Description</h4>
+                                        <p>{{ preview.description }}</p>
+                                    </div>
 
-<div class="preview-actions">
-<button
-mat-flat-button
-color="primary"
-type="button"
-class="preview-add"
-(click)="handleQuickAdd(preview)"
-[disabled]="busy()"
->
-Add to collection
-</button>
-<button
-mat-stroked-button
-type="button"
-(click)="handleUseForManual(preview)"
->
-Use for manual entry
-</button>
-</div>
-</article>
-</div>
-</div>
+                                    <div class="preview-actions">
+                                        <button
+                                            mat-flat-button
+                                            color="primary"
+                                            type="button"
+                                            class="preview-add"
+                                            (click)="handleQuickAdd(preview)"
+                                            [disabled]="busy()"
+                                        >
+                                            Add to collection
+                                        </button>
+                                        <button
+                                            mat-stroked-button
+                                            type="button"
+                                            (click)="handleUseForManual(preview)"
+                                        >
+                                            Use for manual entry
+                                        </button>
+                                    </div>
+                                </article>
+                            </div>
+                        </div>
                     </div>
                 </mat-tab>
                 <mat-tab label="Manual Entry">
@@ -189,7 +254,9 @@ Use for manual entry
                         <div class="manual-entry-header">
                             <div>
                                 <h3>Manual entry</h3>
-                                <p>Fill in each field and save to add the item to your collection.</p>
+                                <p>
+                                    Fill in each field and save to add the item to your collection.
+                                </p>
                             </div>
                             <button
                                 mat-stroked-button
@@ -204,8 +271,8 @@ Use for manual entry
                         <div class="lookup-summary" *ngIf="manualDraftSource() as source">
                             <mat-icon aria-hidden="true">check_circle</mat-icon>
                             <span>
-                                Pre-filled from {{ source.label }} search for “{{ source.query }}”. Update anything before
-                                saving.
+                                Pre-filled from {{ source.label }} search for “{{ source.query }}”.
+                                Update anything before saving.
                             </span>
                         </div>
 
@@ -224,23 +291,29 @@ Use for manual entry
                         <div class="csv-header">
                             <div>
                                 <h3>Bulk import</h3>
-                                <p>Upload the Anthology CSV template to add multiple items at once.</p>
+                                <p>
+                                    Upload the Anthology CSV template to add multiple items at once.
+                                </p>
                             </div>
                         </div>
 
                         <div class="csv-instructions">
                             <h4>Required columns</h4>
                             <p>
-                                Make sure your CSV includes this header row. Keep the column names lowercase to
-                                avoid validation errors.
+                                Make sure your CSV includes this header row. Keep the column names
+                                lowercase to avoid validation errors.
                             </p>
                             <div class="field-list">
-                                <span class="field" *ngFor="let field of csvFields">{{ field }}</span>
+                                <span class="field" *ngFor="let field of csvFields">{{
+                                    field
+                                }}</span>
                             </div>
                             <p class="hint">
-                                For books, you can leave the title blank if you include an ISBN. We'll fetch the
-                                metadata automatically. Use the <code>coverImage</code> column for an HTTPS image URL (or
-                                leave it blank to add one later). Duplicate titles or ISBNs are skipped and reported below.
+                                For books, you can leave the title blank if you include an ISBN.
+                                We'll fetch the metadata automatically. Use the
+                                <code>coverImage</code> column for an HTTPS image URL (or leave it
+                                blank to add one later). Duplicate titles or ISBNs are skipped and
+                                reported below.
                             </p>
                         </div>
 
@@ -278,7 +351,9 @@ Use for manual entry
                                     mat-stroked-button
                                     type="button"
                                     (click)="handleImportReset()"
-                                    [disabled]="importBusy() || (!selectedCsvFile() && !importSummary())"
+                                    [disabled]="
+                                        importBusy() || (!selectedCsvFile() && !importSummary())
+                                    "
                                 >
                                     Clear
                                 </button>
@@ -302,7 +377,8 @@ Use for manual entry
                                 <ul>
                                     <li *ngFor="let entry of summary.skippedDuplicates">
                                         Row {{ entry.row }} ·
-                                        {{ entry.title || entry.identifier || 'Untitled item' }} — {{ entry.reason }}
+                                        {{ entry.title || entry.identifier || 'Untitled item' }} —
+                                        {{ entry.reason }}
                                     </li>
                                 </ul>
                             </div>
@@ -311,14 +387,15 @@ Use for manual entry
                                 <h5>Rows with errors</h5>
                                 <ul>
                                     <li *ngFor="let entry of summary.failed">
-                                        Row {{ entry.row }} · {{ entry.title || entry.identifier || 'Untitled item' }}:
+                                        Row {{ entry.row }} ·
+                                        {{ entry.title || entry.identifier || 'Untitled item' }}:
                                         {{ entry.error }}
                                     </li>
                                 </ul>
                             </div>
                         </div>
-                   </div>
-               </mat-tab>
+                    </div>
+                </mat-tab>
             </mat-tab-group>
         </mat-card-content>
     </mat-card>

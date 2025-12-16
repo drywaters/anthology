@@ -482,7 +482,7 @@ func (h *ItemHandler) ImportCSV(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "CSV file is required")
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	summary, err := h.importer.Import(r.Context(), file)
 	if err != nil {

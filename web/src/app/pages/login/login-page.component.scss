@@ -3,7 +3,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, rgba(63, 81, 181, 0.1), rgba(103, 58, 183, 0.15));
+    background: linear-gradient(135deg, rgb(63 81 181 / 10%), rgb(103 58 183 / 15%));
     padding: 2rem;
 }
 
@@ -34,7 +34,7 @@
 .hint {
     margin: 0;
     font-size: 0.85rem;
-    color: rgba(0, 0, 0, 0.6);
+    color: rgb(0 0 0 / 60%);
 }
 
 :host ::ng-deep code {

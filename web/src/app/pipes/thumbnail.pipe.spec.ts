@@ -24,21 +24,27 @@ describe('ThumbnailPipe', () => {
     });
 
     it('should leave zoom=1 for Google Books URLs', () => {
-        const url = 'https://books.google.com/books/content?id=abc&printsec=frontcover&img=1&zoom=1';
+        const url =
+            'https://books.google.com/books/content?id=abc&printsec=frontcover&img=1&zoom=1';
         const result = pipe.transform(url);
         expect(result).toBe(url);
     });
 
     it('should clamp zoom=0 to zoom=1 for Google Books URLs', () => {
-        const url = 'https://books.google.com/books/content?id=abc&printsec=frontcover&img=1&zoom=0';
+        const url =
+            'https://books.google.com/books/content?id=abc&printsec=frontcover&img=1&zoom=0';
         const result = pipe.transform(url);
-        expect(result).toBe('https://books.google.com/books/content?id=abc&printsec=frontcover&img=1&zoom=1');
+        expect(result).toBe(
+            'https://books.google.com/books/content?id=abc&printsec=frontcover&img=1&zoom=1',
+        );
     });
 
     it('should add zoom=1 for Google Books URLs without zoom parameter', () => {
         const url = 'https://books.google.com/books/content?id=abc&printsec=frontcover&img=1';
         const result = pipe.transform(url);
-        expect(result).toBe('https://books.google.com/books/content?id=abc&printsec=frontcover&img=1&zoom=1');
+        expect(result).toBe(
+            'https://books.google.com/books/content?id=abc&printsec=frontcover&img=1&zoom=1',
+        );
     });
 
     it('should handle googleapis.com/books URLs', () => {
@@ -48,9 +54,12 @@ describe('ThumbnailPipe', () => {
     });
 
     it('should handle googleusercontent URLs', () => {
-        const url = 'https://books.googleusercontent.com/books/content?id=abc&printsec=frontcover&img=1';
+        const url =
+            'https://books.googleusercontent.com/books/content?id=abc&printsec=frontcover&img=1';
         const result = pipe.transform(url);
-        expect(result).toBe('https://books.googleusercontent.com/books/content?id=abc&printsec=frontcover&img=1&zoom=1');
+        expect(result).toBe(
+            'https://books.googleusercontent.com/books/content?id=abc&printsec=frontcover&img=1&zoom=1',
+        );
     });
 
     it('should not modify non-Google Books URLs', () => {

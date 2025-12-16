@@ -1,0 +1,21 @@
+{
+    "extends": ["stylelint-config-standard-scss"],
+    "rules": {
+        "selector-class-pattern": null,
+        "scss/at-extend-no-missing-placeholder": null,
+        "selector-pseudo-element-no-unknown": [
+            true,
+            { "ignorePseudoElements": ["ng-deep"] }
+        ],
+        "no-empty-source": null,
+        "import-notation": null,
+        "scss/at-mixin-argumentless-call-parentheses": null,
+        "font-family-name-quotes": null,
+        "no-descending-specificity": null,
+        "keyframes-name-pattern": null,
+        "custom-property-pattern": null,
+        "declaration-property-value-keyword-no-deprecated": null,
+        "property-no-deprecated": null
+    }
+}
+

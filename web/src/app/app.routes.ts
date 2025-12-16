@@ -6,38 +6,55 @@ export const routes: Routes = [
     {
         path: '',
         canActivate: [authGuard],
-        loadComponent: () => import('./components/app-shell/app-shell.component').then((m) => m.AppShellComponent),
+        loadComponent: () =>
+            import('./components/app-shell/app-shell.component').then((m) => m.AppShellComponent),
         children: [
             {
                 path: '',
-                loadComponent: () => import('./pages/items/items-page.component').then((m) => m.ItemsPageComponent),
+                loadComponent: () =>
+                    import('./pages/items/items-page.component').then((m) => m.ItemsPageComponent),
             },
             {
                 path: 'shelves',
-                loadComponent: () => import('./pages/shelves/shelves-page.component').then((m) => m.ShelvesPageComponent),
+                loadComponent: () =>
+                    import('./pages/shelves/shelves-page.component').then(
+                        (m) => m.ShelvesPageComponent,
+                    ),
             },
             {
                 path: 'shelves/add',
-                loadComponent: () => import('./pages/shelves/add-shelf-page.component').then((m) => m.AddShelfPageComponent),
+                loadComponent: () =>
+                    import('./pages/shelves/add-shelf-page.component').then(
+                        (m) => m.AddShelfPageComponent,
+                    ),
             },
             {
                 path: 'shelves/:id',
                 loadComponent: () =>
-                    import('./pages/shelves/shelf-detail-page.component').then((m) => m.ShelfDetailPageComponent),
+                    import('./pages/shelves/shelf-detail-page.component').then(
+                        (m) => m.ShelfDetailPageComponent,
+                    ),
             },
             {
                 path: 'items/add',
-                loadComponent: () => import('./pages/add-item/add-item-page.component').then((m) => m.AddItemPageComponent),
+                loadComponent: () =>
+                    import('./pages/add-item/add-item-page.component').then(
+                        (m) => m.AddItemPageComponent,
+                    ),
             },
             {
                 path: 'items/:id/edit',
-                loadComponent: () => import('./pages/edit-item/edit-item-page.component').then((m) => m.EditItemPageComponent),
+                loadComponent: () =>
+                    import('./pages/edit-item/edit-item-page.component').then(
+                        (m) => m.EditItemPageComponent,
+                    ),
             },
         ],
     },
     {
         path: 'login',
-        loadComponent: () => import('./pages/login/login-page.component').then((m) => m.LoginPageComponent),
+        loadComponent: () =>
+            import('./pages/login/login-page.component').then((m) => m.LoginPageComponent),
     },
     { path: '**', redirectTo: '' },
 ];

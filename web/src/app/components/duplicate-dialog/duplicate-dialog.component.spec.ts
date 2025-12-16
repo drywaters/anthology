@@ -2,7 +2,11 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
-import { DuplicateDialogComponent, DuplicateDialogData, DuplicateDialogResult } from './duplicate-dialog.component';
+import {
+    DuplicateDialogComponent,
+    DuplicateDialogData,
+    DuplicateDialogResult,
+} from './duplicate-dialog.component';
 
 describe('DuplicateDialogComponent', () => {
     let component: DuplicateDialogComponent;

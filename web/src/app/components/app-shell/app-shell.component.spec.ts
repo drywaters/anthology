@@ -33,7 +33,7 @@ describe(AppShellComponent.name, () => {
                             component: TestPageComponent,
                         },
                     ],
-                    withDisabledInitialNavigation()
+                    withDisabledInitialNavigation(),
                 ),
                 { provide: AuthService, useValue: authServiceSpy },
                 { provide: MatSnackBar, useValue: snackBarSpy },
@@ -56,7 +56,9 @@ describe(AppShellComponent.name, () => {
         fixture.detectChanges();
         const compiled = fixture.nativeElement as HTMLElement;
 
-        const menuButton = compiled.querySelector('app-header button[mat-icon-button]') as HTMLButtonElement;
+        const menuButton = compiled.querySelector(
+            'app-header button[mat-icon-button]',
+        ) as HTMLButtonElement;
         menuButton.click();
         fixture.detectChanges();
 
@@ -68,7 +70,9 @@ describe(AppShellComponent.name, () => {
         fixture.detectChanges();
         const compiled = fixture.nativeElement as HTMLElement;
 
-        const menuButton = compiled.querySelector('app-header button[mat-icon-button]') as HTMLButtonElement;
+        const menuButton = compiled.querySelector(
+            'app-header button[mat-icon-button]',
+        ) as HTMLButtonElement;
 
         menuButton.click();
         fixture.detectChanges();

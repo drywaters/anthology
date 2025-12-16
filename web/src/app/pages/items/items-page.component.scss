@@ -4,6 +4,7 @@
 
 .page {
     --layout-gap: 2rem;
+
     min-height: 100%;
     padding: var(--layout-gap) clamp(1.5rem, 3vw, 4rem) 3rem;
     display: flex;
@@ -45,7 +46,7 @@ app-alpha-rail {
 
 mat-card {
     border-radius: 20px;
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+    box-shadow: 0 12px 24px rgb(15 23 42 / 12%);
     position: relative;
     overflow: hidden;
     flex: 0 0 auto; // prevent flex shrink so card content can overflow and be scrollable
@@ -72,7 +73,7 @@ mat-progress-bar {
     padding: 0.5rem 0.75rem 0.6rem;
     background: color-mix(in srgb, #e8f5ef 80%, white);
     border-radius: 1rem;
-    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+    box-shadow: 0 8px 18px rgb(15 23 42 / 18%);
 }
 
 .view-toggle {
@@ -136,6 +137,7 @@ mat-progress-bar {
 .item-type-chip {
     --chip-bg: var(--mat-sys-primary-container);
     --chip-color: var(--mat-sys-on-primary-container);
+
     border: none;
     background: var(--chip-bg);
     color: var(--chip-color);
@@ -151,12 +153,15 @@ mat-progress-bar {
     align-items: center;
     justify-content: center;
     gap: 0.25rem;
-    transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+    transition:
+        transform 160ms ease,
+        box-shadow 160ms ease,
+        opacity 160ms ease;
+    box-shadow: 0 4px 12px rgb(15 23 42 / 15%);
 
     &:hover {
         transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
+        box-shadow: 0 6px 16px rgb(15 23 42 / 20%);
     }
 
     &:focus-visible {
@@ -195,6 +200,7 @@ mat-progress-bar {
 .items-table {
     width: 100%;
     border-spacing: 0;
+
     --col-title: 35%;
     --col-creator: 23%;
     --col-itemType: 14%;
@@ -269,7 +275,7 @@ mat-progress-bar {
     }
 }
 
-@media (max-width: 680px) {
+@media (width <= 680px) {
     .items-table {
         --col-title: 41%;
         --col-creator: 28%;
@@ -383,18 +389,21 @@ mat-progress-bar {
     border: 1px solid color-mix(in srgb, var(--mat-sys-primary) 20%, transparent);
     border-radius: 1rem;
     overflow: hidden;
-    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
+    box-shadow: 0 10px 20px rgb(15 23 42 / 12%);
     cursor: pointer;
     display: flex;
     flex-direction: column;
     background: white;
-    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    transition:
+        transform 180ms ease,
+        box-shadow 180ms ease,
+        border-color 180ms ease;
 
     &:hover,
     &:focus-visible {
         transform: translateY(-3px);
         border-color: color-mix(in srgb, var(--mat-sys-primary) 65%, transparent);
-        box-shadow: 0 14px 24px rgba(15, 23, 42, 0.18);
+        box-shadow: 0 14px 24px rgb(15 23 42 / 18%);
         outline: none;
     }
 }
@@ -488,7 +497,7 @@ mat-progress-bar {
     border: 0;
 }
 
-@media (max-width: 680px) {
+@media (width <= 680px) {
     .layout {
         flex-direction: column;
         align-items: stretch;

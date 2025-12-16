@@ -6,8 +6,21 @@
                 <p class="helper">Provide a name and upload a photo to start laying out slots.</p>
             </div>
             <div class="create-card__header-actions">
-                <button mat-stroked-button type="button" routerLink="/shelves" [disabled]="creating()">Cancel</button>
-                <button mat-flat-button color="primary" type="button" (click)="createShelf()" [disabled]="creating()">
+                <button
+                    mat-stroked-button
+                    type="button"
+                    routerLink="/shelves"
+                    [disabled]="creating()"
+                >
+                    Cancel
+                </button>
+                <button
+                    mat-flat-button
+                    color="primary"
+                    type="button"
+                    (click)="createShelf()"
+                    [disabled]="creating()"
+                >
                     Create shelf
                 </button>
             </div>
@@ -20,13 +33,23 @@
                 <mat-error *ngIf="form.controls.name.invalid">A name is required</mat-error>
             </mat-form-field>
 
-            <div class="file-upload" [class.file-upload--error]="form.controls.photoUrl.invalid && form.controls.photoUrl.touched">
+            <div
+                class="file-upload"
+                [class.file-upload--error]="
+                    form.controls.photoUrl.invalid && form.controls.photoUrl.touched
+                "
+            >
                 <div class="file-upload__header">
                     <div>
                         <div class="file-upload__label">Shelf photo</div>
                         <p class="helper">Upload a JPG or PNG up to 5MB.</p>
                     </div>
-                    <button mat-stroked-button type="button" (click)="openPhotoPicker(photoInput)" [disabled]="creating()">
+                    <button
+                        mat-stroked-button
+                        type="button"
+                        (click)="openPhotoPicker(photoInput)"
+                        [disabled]="creating()"
+                    >
                         Choose file
                     </button>
                 </div>
@@ -40,14 +63,24 @@
                 <div class="file-meta" *ngIf="selectedPhotoName() as fileName">
                     <mat-icon inline aria-hidden="true">image</mat-icon>
                     <span>{{ fileName }}</span>
-                    <button mat-icon-button type="button" aria-label="Remove uploaded photo" (click)="clearPhotoSelection(true, photoInput)" [disabled]="creating()">
+                    <button
+                        mat-icon-button
+                        type="button"
+                        aria-label="Remove uploaded photo"
+                        (click)="clearPhotoSelection(true, photoInput)"
+                        [disabled]="creating()"
+                    >
                         <mat-icon>close</mat-icon>
                     </button>
                 </div>
                 <p class="error" *ngIf="photoUploadError()">{{ photoUploadError() }}</p>
                 <p
                     class="error"
-                    *ngIf="form.controls.photoUrl.invalid && form.controls.photoUrl.touched && !photoUploadError()"
+                    *ngIf="
+                        form.controls.photoUrl.invalid &&
+                        form.controls.photoUrl.touched &&
+                        !photoUploadError()
+                    "
                 >
                     A shelf photo is required.
                 </p>
