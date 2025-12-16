@@ -72,6 +72,11 @@
         </div>
     </form>
 
+    <div class="csv-feedback" *ngIf="importError">
+        <mat-icon aria-hidden="true">error</mat-icon>
+        <span>{{ importError }}</span>
+    </div>
+
     <div class="csv-summary" *ngIf="importSummary as summary">
         <h4>Import summary</h4>
         <p>Imported {{ summary.imported }} of {{ summary.totalRows }} rows.</p>
