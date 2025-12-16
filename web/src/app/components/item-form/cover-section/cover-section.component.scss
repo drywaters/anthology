@@ -1,0 +1,105 @@
+.cover-section {
+    display: grid;
+    grid-template-columns: minmax(180px, 240px) 1fr;
+    gap: 1rem;
+    align-items: center;
+
+    @media (width <= 720px) {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+}
+
+.cover-preview {
+    width: 100%;
+    aspect-ratio: 3 / 4.5;
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, var(--mat-sys-primary) 4%, white);
+    border: 1px dashed color-mix(in srgb, var(--mat-sys-primary) 40%, transparent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+}
+
+.cover-preview--empty {
+    color: color-mix(in srgb, var(--mat-sys-primary) 70%, #475569);
+    background: repeating-linear-gradient(
+        45deg,
+        color-mix(in srgb, var(--mat-sys-primary) 6%, #f8fafc),
+        color-mix(in srgb, var(--mat-sys-primary) 6%, #f8fafc) 12px,
+        color-mix(in srgb, var(--mat-sys-primary) 12%, #e2e8f0) 12px,
+        color-mix(in srgb, var(--mat-sys-primary) 12%, #e2e8f0) 24px
+    );
+}
+
+.cover-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 600;
+    color: inherit;
+
+    mat-icon {
+        font-size: 2rem;
+        height: 2rem;
+        width: 2rem;
+    }
+}
+
+.cover-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.cover-image-field {
+    margin: 0 0 1.25rem;
+}
+
+.cover-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    h4 {
+        margin: 0;
+        font-size: 1.1rem;
+    }
+
+    .cover-hint {
+        margin: 0;
+        color: color-mix(in srgb, #334155 75%, white);
+    }
+}
+
+.cover-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.cover-error {
+    color: var(--mat-sys-error);
+    font-weight: 600;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
