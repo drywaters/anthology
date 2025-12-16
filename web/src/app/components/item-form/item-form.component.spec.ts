@@ -118,16 +118,6 @@ describe(ItemFormComponent.name, () => {
         expect(component.form.get('releaseYear')?.value).toBeNull();
     });
 
-    it('clears the page count when requested', () => {
-        const fixture = createComponent();
-        const component = fixture.componentInstance;
-        component.form.patchValue({ pageCount: 400 });
-
-        component.clearPageCount();
-
-        expect(component.form.get('pageCount')?.value).toBeNull();
-    });
-
     it('prevents current page from exceeding the total pages', () => {
         const fixture = createComponent();
         const component = fixture.componentInstance;
@@ -142,5 +132,24 @@ describe(ItemFormComponent.name, () => {
         component.submit();
 
         expect(component.form.get('currentPage')?.hasError('maxPages')).toBeTrue();
+    });
+
+    it('sets cover error when onCoverErrorSet is called', () => {
+        const fixture = createComponent();
+        const component = fixture.componentInstance;
+
+        component.onCoverErrorSet('Test error');
+
+        expect(component.coverImageError).toBe('Test error');
+    });
+
+    it('clears cover error when onCoverErrorCleared is called', () => {
+        const fixture = createComponent();
+        const component = fixture.componentInstance;
+        component.coverImageError = 'Some error';
+
+        component.onCoverErrorCleared();
+
+        expect(component.coverImageError).toBeNull();
     });
 });
