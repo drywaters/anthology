@@ -103,68 +103,16 @@
                                         <span *ngIf="scannerActive()">Stop scanning</span>
                                     </button>
                                 </div>
-                                <div
-                                    class="scanner-feedback"
-                                    *ngIf="
-                                        activeCategory().value === 'book' &&
-                                        scannerActive() &&
-                                        (scannerStatus() || scannerError())
-                                    "
-                                    aria-live="polite"
-                                >
-                                    <div class="status" *ngIf="scannerStatus()">
-                                        {{ scannerStatus() }}
-                                    </div>
-                                    <div class="error" *ngIf="scannerError()">
-                                        {{ scannerError() }}
-                                    </div>
-                                </div>
-                                <div
-                                    class="scanner-preview"
-                                    [class.scanner-preview--visible]="scannerActive()"
-                                    [attr.aria-hidden]="scannerActive() ? 'false' : 'true'"
-                                >
-                                    <p class="hint" *ngIf="scannerActive()">
-                                        Once we read a code, we'll automatically run the lookup for
-                                        you.
-                                    </p>
-                                    <div class="video-frame">
-                                        <video
-                                            #scanVideo
-                                            autoplay
-                                            playsinline
-                                            muted
-                                            class="scanner-video"
-                                        ></video>
-                                        <div
-                                            class="scanner-overlay"
-                                            *ngIf="scannerActive() && scannerReady()"
-                                        >
-                                            <div class="scanner-frame"></div>
-                                        </div>
-                                        <div
-                                            class="scanner-overlay scanner-overlay--flash"
-                                            *ngIf="scannerFlash()"
-                                        ></div>
-                                        <div
-                                            class="scanner-overlay scanner-overlay--busy"
-                                            *ngIf="scannerProcessing()"
-                                        >
-                                            <div class="busy-indicator">
-                                                <mat-progress-spinner
-                                                    mode="indeterminate"
-                                                    diameter="44"
-                                                ></mat-progress-spinner>
-                                                <div class="busy-text">
-                                                    {{
-                                                        scannerStatus() ??
-                                                            'Found barcode. Searching...'
-                                                    }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <app-barcode-scanner
+                                    #barcodeScanner
+                                    *ngIf="activeCategory().value === 'book'"
+                                    [scannerActive]="scannerActive()"
+                                    [scannerReady]="scannerReady()"
+                                    [scannerStatus]="scannerStatus()"
+                                    [scannerError]="scannerError()"
+                                    [scannerProcessing]="scannerProcessing()"
+                                    [scannerFlash]="scannerFlash()"
+                                ></app-barcode-scanner>
                             </div>
                         </form>
 
@@ -175,78 +123,12 @@
                             </div>
                         </div>
 
-                        <div class="lookup-preview" *ngIf="lookupResults().length">
-                            <div class="preview-header">
-                                <h3>Metadata preview</h3>
-                                <p>
-                                    Review the fetched details, then choose the best match to add
-                                    immediately or continue editing from the Manual Entry tab.
-                                </p>
-                            </div>
-
-                            <div class="preview-list">
-                                <article
-                                    class="preview-card"
-                                    *ngFor="let preview of lookupResults()"
-                                >
-                                    <div class="preview-grid">
-                                        <div class="preview-field">
-                                            <span class="label">Title</span>
-                                            <span class="value">{{ preview.title || '—' }}</span>
-                                        </div>
-                                        <div class="preview-field">
-                                            <span class="label">Creator</span>
-                                            <span class="value">{{ preview.creator || '—' }}</span>
-                                        </div>
-                                        <div class="preview-field">
-                                            <span class="label">Release year</span>
-                                            <span class="value">{{
-                                                preview.releaseYear ?? '—'
-                                            }}</span>
-                                        </div>
-                                        <div class="preview-field">
-                                            <span class="label">Number of pages</span>
-                                            <span class="value">{{
-                                                preview.pageCount ?? '—'
-                                            }}</span>
-                                        </div>
-                                        <div class="preview-field">
-                                            <span class="label">EAN / ISBN13</span>
-                                            <span class="value">{{ preview.isbn13 || '—' }}</span>
-                                        </div>
-                                        <div class="preview-field">
-                                            <span class="label">ISBN-10</span>
-                                            <span class="value">{{ preview.isbn10 || '—' }}</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="preview-description" *ngIf="preview.description">
-                                        <h4>Description</h4>
-                                        <p>{{ preview.description }}</p>
-                                    </div>
-
-                                    <div class="preview-actions">
-                                        <button
-                                            mat-flat-button
-                                            color="primary"
-                                            type="button"
-                                            class="preview-add"
-                                            (click)="handleQuickAdd(preview)"
-                                            [disabled]="busy()"
-                                        >
-                                            Add to collection
-                                        </button>
-                                        <button
-                                            mat-stroked-button
-                                            type="button"
-                                            (click)="handleUseForManual(preview)"
-                                        >
-                                            Use for manual entry
-                                        </button>
-                                    </div>
-                                </article>
-                            </div>
-                        </div>
+                        <app-lookup-results
+                            [results]="lookupResults()"
+                            [busy]="busy()"
+                            (quickAdd)="handleQuickAdd($event)"
+                            (useForManual)="handleUseForManual($event)"
+                        ></app-lookup-results>
                     </div>
                 </mat-tab>
                 <mat-tab label="Manual Entry">
@@ -287,113 +169,18 @@
                     </div>
                 </mat-tab>
                 <mat-tab label="CSV Import">
-                    <div class="tab-body csv-tab">
-                        <div class="csv-header">
-                            <div>
-                                <h3>Bulk import</h3>
-                                <p>
-                                    Upload the Anthology CSV template to add multiple items at once.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="csv-instructions">
-                            <h4>Required columns</h4>
-                            <p>
-                                Make sure your CSV includes this header row. Keep the column names
-                                lowercase to avoid validation errors.
-                            </p>
-                            <div class="field-list">
-                                <span class="field" *ngFor="let field of csvFields">{{
-                                    field
-                                }}</span>
-                            </div>
-                            <p class="hint">
-                                For books, you can leave the title blank if you include an ISBN.
-                                We'll fetch the metadata automatically. Use the
-                                <code>coverImage</code> column for an HTTPS image URL (or leave it
-                                blank to add one later). Duplicate titles or ISBNs are skipped and
-                                reported below.
-                            </p>
-                        </div>
-
-                        <form class="csv-form" (ngSubmit)="handleImportSubmit($event)" novalidate>
-                            <label class="file-input">
-                                <span class="label">CSV file</span>
-                                <input
-                                    #csvInput
-                                    type="file"
-                                    accept=".csv,text/csv"
-                                    (change)="handleCsvFileChange($event)"
-                                    [disabled]="importBusy()"
-                                />
-                                <div class="file-meta" *ngIf="selectedCsvFile() as file">
-                                    <mat-icon aria-hidden="true">attach_file</mat-icon>
-                                    <span>{{ file.name }}</span>
-                                </div>
-                            </label>
-                            <div class="csv-actions">
-                                <button
-                                    mat-flat-button
-                                    color="primary"
-                                    type="button"
-                                    [disabled]="!selectedCsvFile() || importBusy()"
-                                    (click)="handleImportSubmit($event)"
-                                >
-                                    <span *ngIf="!importBusy()">Upload CSV</span>
-                                    <mat-progress-spinner
-                                        *ngIf="importBusy()"
-                                        diameter="18"
-                                        mode="indeterminate"
-                                    ></mat-progress-spinner>
-                                </button>
-                                <button
-                                    mat-stroked-button
-                                    type="button"
-                                    (click)="handleImportReset()"
-                                    [disabled]="
-                                        importBusy() || (!selectedCsvFile() && !importSummary())
-                                    "
-                                >
-                                    Clear
-                                </button>
-                                <a
-                                    class="csv-template-link"
-                                    [href]="csvTemplateUrl"
-                                    download="anthology-import-template.csv"
-                                >
-                                    <mat-icon aria-hidden="true">file_download</mat-icon>
-                                    <span>Download template</span>
-                                </a>
-                            </div>
-                        </form>
-
-                        <div class="csv-summary" *ngIf="importSummary() as summary">
-                            <h4>Import summary</h4>
-                            <p>Imported {{ summary.imported }} of {{ summary.totalRows }} rows.</p>
-
-                            <div class="summary-section" *ngIf="summary.skippedDuplicates.length">
-                                <h5>Skipped duplicates</h5>
-                                <ul>
-                                    <li *ngFor="let entry of summary.skippedDuplicates">
-                                        Row {{ entry.row }} ·
-                                        {{ entry.title || entry.identifier || 'Untitled item' }} —
-                                        {{ entry.reason }}
-                                    </li>
-                                </ul>
-                            </div>
-
-                            <div class="summary-section" *ngIf="summary.failed.length">
-                                <h5>Rows with errors</h5>
-                                <ul>
-                                    <li *ngFor="let entry of summary.failed">
-                                        Row {{ entry.row }} ·
-                                        {{ entry.title || entry.identifier || 'Untitled item' }}:
-                                        {{ entry.error }}
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
+                    <div class="tab-body">
+                        <app-csv-import
+                            #csvImport
+                            [csvFields]="csvFields"
+                            [csvTemplateUrl]="csvTemplateUrl"
+                            [importBusy]="importBusy()"
+                            [importSummary]="importSummary()"
+                            [importError]="importError()"
+                            (fileSelected)="handleCsvFileSelected($event)"
+                            (importSubmit)="handleCsvImportSubmit()"
+                            (cleared)="handleImportReset()"
+                        ></app-csv-import>
                     </div>
                 </mat-tab>
             </mat-tab-group>

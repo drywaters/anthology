@@ -388,7 +388,7 @@ describe(AddItemPageComponent.name, () => {
         fixture.componentInstance.selectedCsvFile.set(
             new File(['title'], 'import.csv', { type: 'text/csv' }),
         );
-        fixture.componentInstance.handleImportSubmit();
+        fixture.componentInstance.handleCsvImportSubmit();
         flush();
 
         expect(itemServiceSpy.importCsv).toHaveBeenCalled();
@@ -409,58 +409,20 @@ describe(AddItemPageComponent.name, () => {
         fixture.componentInstance.selectedCsvFile.set(
             new File(['title'], 'import.csv', { type: 'text/csv' }),
         );
-        fixture.componentInstance.handleImportSubmit();
+        fixture.componentInstance.handleCsvImportSubmit();
         flush();
 
         expect(fixture.componentInstance.importError()).toBe('missing required columns');
     }));
 
-    it('keeps the CSV import tab active when attaching a file', () => {
+    it('keeps the CSV import tab active when selecting a file', () => {
         const fixture = createComponent();
         fixture.componentInstance.selectedTab.set(0);
         const file = new File(['data'], 'import.csv', { type: 'text/csv' });
-        const event = { target: { files: [file] } } as unknown as Event;
 
-        fixture.componentInstance.handleCsvFileChange(event);
+        fixture.componentInstance.handleCsvFileSelected(file);
 
         expect(fixture.componentInstance.selectedTab()).toBe(2);
-    });
-
-    it('exposes a status for each CSV import phase', () => {
-        const fixture = createComponent();
-
-        fixture.componentInstance.importBusy.set(true);
-        expect(fixture.componentInstance.csvImportStatus()?.level).toBe('info');
-        expect(fixture.componentInstance.csvImportStatus()?.message).toContain('Importing CSV');
-
-        fixture.componentInstance.importBusy.set(false);
-        fixture.componentInstance.importSummary.set({
-            totalRows: 3,
-            imported: 3,
-            skippedDuplicates: [],
-            failed: [],
-        } satisfies CsvImportSummary);
-
-        expect(fixture.componentInstance.csvImportStatus()?.level).toBe('success');
-        expect(fixture.componentInstance.csvImportStatus()?.message).toContain(
-            'Imported 3 of 3 rows.',
-        );
-
-        fixture.componentInstance.importSummary.set({
-            totalRows: 4,
-            imported: 2,
-            skippedDuplicates: [{ row: 1, reason: 'duplicate' }],
-            failed: [{ row: 3, error: 'bad row' }],
-        } satisfies CsvImportSummary);
-
-        const warningStatus = fixture.componentInstance.csvImportStatus();
-        expect(warningStatus?.level).toBe('warning');
-        expect(warningStatus?.message).toContain('Not imported 2 rows');
-
-        fixture.componentInstance.importSummary.set(null);
-        fixture.componentInstance.importError.set('bad csv');
-        const errorStatus = fixture.componentInstance.csvImportStatus();
-        expect(errorStatus?.level).toBe('error');
-        expect(errorStatus?.message).toBe('bad csv');
+        expect(fixture.componentInstance.selectedCsvFile()).toBe(file);
     });
 });
