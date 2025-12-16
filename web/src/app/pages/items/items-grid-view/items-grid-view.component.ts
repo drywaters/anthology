@@ -8,7 +8,7 @@ import {
     Signal,
 } from '@angular/core';
 
-import { Item } from '../../../models/item';
+import { Item } from '../../../models';
 import { ItemCardComponent } from '../item-card/item-card.component';
 import { LetterGroup } from '../items-page.component';
 

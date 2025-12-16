@@ -9,7 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
-import { BookStatus, Format, Genre } from '../../../models/item';
+import { BookStatus, Format, Genre } from '../../../models';
 
 @Component({
     selector: 'app-book-details',

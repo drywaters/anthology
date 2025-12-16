@@ -29,7 +29,7 @@ import {
     ItemForm,
     ItemType,
     ITEM_TYPE_LABELS,
-} from '../../models/item';
+} from '../../models';
 import { BookDetailsComponent } from './book-details/book-details.component';
 import { CoverSectionComponent } from './cover-section/cover-section.component';
 import { GameDetailsComponent } from './game-details/game-details.component';

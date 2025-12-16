@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { LookupResultsComponent } from './lookup-results.component';
-import { ItemForm } from '../../../models/item';
+import { ItemForm } from '../../../models';
 
 describe('LookupResultsComponent', () => {
     let component: LookupResultsComponent;

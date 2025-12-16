@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { signal } from '@angular/core';
 import { ItemsFilterPanelComponent } from './items-filter-panel.component';
-import { BookStatusFilters, ItemTypes, ShelfStatusFilters } from '../../../models/item';
+import { BookStatusFilters, ItemTypes, ShelfStatusFilters } from '../../../models';
 
 describe('ItemsFilterPanelComponent', () => {
     let component: ItemsFilterPanelComponent;

@@ -31,7 +31,7 @@ import {
     DuplicateDialogData,
     DuplicateDialogResult,
 } from '../../components/duplicate-dialog/duplicate-dialog.component';
-import { DuplicateMatch, ItemForm } from '../../models/item';
+import { DuplicateMatch, ItemForm } from '../../models';
 import { ItemService } from '../../services/item.service';
 import { ItemLookupCategory, ItemLookupService } from '../../services/item-lookup.service';
 import { CsvImportSummary } from '../../models/import';

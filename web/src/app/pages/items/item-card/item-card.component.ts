@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
-import { BookStatus, Item } from '../../../models/item';
+import { BookStatus, Item } from '../../../models';
 import { ThumbnailPipe } from '../../../pipes/thumbnail.pipe';
 import {
     chipClassFor,

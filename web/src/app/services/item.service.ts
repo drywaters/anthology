@@ -13,7 +13,7 @@ import {
     LetterHistogram,
     ShelfStatusFilter,
     ShelfStatusFilters,
-} from '../models/item';
+} from '../models';
 import { CsvImportSummary } from '../models/import';
 
 @Injectable({ providedIn: 'root' })

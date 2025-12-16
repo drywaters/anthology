@@ -5,7 +5,7 @@ import {
     ItemType,
     ItemTypes,
     ITEM_TYPE_LABELS,
-} from '../../models/item';
+} from '../../models';
 
 export interface ReadingProgress {
     current: number;

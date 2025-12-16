@@ -9,7 +9,7 @@ import { MatDialog } from '@angular/material/dialog';
 
 import { AddItemPageComponent } from './add-item-page.component';
 import { ItemService } from '../../services/item.service';
-import { Item, ItemForm } from '../../models/item';
+import { Item, ItemForm } from '../../models';
 import { CsvImportSummary } from '../../models/import';
 import { ItemLookupService } from '../../services/item-lookup.service';
 

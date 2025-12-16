@@ -12,7 +12,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 
-import { BookStatusFilter, ItemType, ShelfStatusFilter } from '../../../models/item';
+import { BookStatusFilter, ItemType, ShelfStatusFilter } from '../../../models';
 
 export type ItemTypeFilter = ItemType | 'all';
 

@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
 import { BookDetailsComponent } from './book-details.component';
-import { BookStatus, Formats } from '../../../models/item';
+import { BookStatus, Formats } from '../../../models';
 
 describe(BookDetailsComponent.name, () => {
     let form: FormGroup;

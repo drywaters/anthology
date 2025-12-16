@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 
 import { environment } from '../config/environment';
-import { ItemForm } from '../models/item';
+import { ItemForm } from '../models';
 
 export type ItemLookupCategory = 'book' | 'game' | 'movie' | 'music';
 
