@@ -1,0 +1,17 @@
+<div class="grouped-content" data-testid="item-card-grid">
+    <section
+        class="letter-section"
+        *ngFor="let group of groupedItems(); trackBy: trackByLetter"
+        [attr.data-letter]="group.letter"
+    >
+        <h4 class="letter-header">{{ group.letter }}</h4>
+        <div class="card-grid">
+            <app-item-card
+                *ngFor="let item of group.items; trackBy: trackById"
+                [item]="item"
+                (cardClicked)="onItemSelected($event)"
+                (shelfLocationClicked)="onShelfLocationRequested($event)"
+            ></app-item-card>
+        </div>
+    </section>
+</div>
