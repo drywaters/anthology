@@ -23,24 +23,32 @@
 
     &:hover,
     &:focus-visible {
-        background-color: color-mix(in srgb, var(--mat-sys-error) 90%, black) !important;
+        background-color: color-mix(
+            in srgb,
+            var(--mat-sys-error) 88%,
+            var(--mat-sys-surface)
+        ) !important;
 
-        --mdc-filled-button-container-color: color-mix(in srgb, var(--mat-sys-error) 90%, black);
+        --mdc-filled-button-container-color: color-mix(
+            in srgb,
+            var(--mat-sys-error) 88%,
+            var(--mat-sys-surface)
+        );
     }
 
     &:disabled {
-        background-color: color-mix(in srgb, var(--mat-sys-error) 65%, white) !important;
-        color: color-mix(
+        background-color: color-mix(
             in srgb,
-            var(--mat-sys-on-error) 75%,
-            var(--mat-sys-on-surface)
+            var(--mat-sys-error) 35%,
+            var(--mat-sys-surface)
         ) !important;
+        color: var(--mat-sys-on-surface-variant) !important;
 
-        --mdc-filled-button-container-color: color-mix(in srgb, var(--mat-sys-error) 65%, white);
-        --mdc-filled-button-label-text-color: color-mix(
+        --mdc-filled-button-container-color: color-mix(
             in srgb,
-            var(--mat-sys-on-error) 75%,
-            var(--mat-sys-on-surface)
+            var(--mat-sys-error) 35%,
+            var(--mat-sys-surface)
         );
+        --mdc-filled-button-label-text-color: var(--mat-sys-on-surface-variant);
     }
 }

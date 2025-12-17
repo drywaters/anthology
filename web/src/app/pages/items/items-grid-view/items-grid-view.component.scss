@@ -10,7 +10,7 @@
 .letter-header {
     position: sticky;
     top: 0;
-    background: color-mix(in srgb, var(--mat-sys-surface) 98%, var(--mat-sys-primary));
+    background: var(--mat-sys-surface-container-high);
     padding: 0.5rem 1rem;
     margin: 0;
     font-weight: 700;

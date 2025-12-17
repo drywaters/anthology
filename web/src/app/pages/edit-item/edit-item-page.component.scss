@@ -57,7 +57,7 @@ mat-card {
 
 .state.error p {
     margin: 0;
-    color: color-mix(in srgb, var(--mat-sys-error) 80%, var(--mat-sys-on-surface));
+    color: var(--mat-sys-on-surface);
 }
 
 .state-actions {
@@ -73,8 +73,8 @@ mat-card {
     gap: 0.75rem;
     padding: 1rem 1.25rem;
     border-radius: 16px;
-    background: color-mix(in srgb, var(--mat-sys-primary) 12%, white);
-    color: var(--mat-sys-on-surface);
+    background: var(--mat-sys-primary-container);
+    color: var(--mat-sys-on-primary-container);
     margin-bottom: 1rem;
 
     mat-icon {
@@ -103,7 +103,7 @@ mat-card {
 
     &__meta-value {
         font-weight: 600;
-        color: var(--mat-sys-on-surface);
+        color: inherit;
     }
 
     a[mat-stroked-button] {

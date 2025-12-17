@@ -1,8 +1,8 @@
 .book-details {
     padding: 1rem 1.25rem 1.5rem;
-    border: 1px solid color-mix(in srgb, var(--mat-sys-primary) 15%, white);
+    border: 1px solid var(--mat-sys-outline-variant);
     border-radius: 1.25rem;
-    background: color-mix(in srgb, var(--mat-sys-primary) 6%, white);
+    background: var(--mat-sys-primary-container);
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -23,7 +23,7 @@
     text-transform: uppercase;
     letter-spacing: 0.18em;
     font-size: 0.7rem;
-    color: color-mix(in srgb, var(--mat-sys-primary) 80%, black);
+    color: var(--mat-sys-primary);
     margin: 0;
 }
 
@@ -54,7 +54,7 @@
     width: 90px;
     height: 6px;
     border-radius: 999px;
-    background: linear-gradient(90deg, #16a34a, #4ade80);
+    background: linear-gradient(90deg, var(--mat-sys-primary), var(--mat-sys-tertiary));
 }
 
 .description-field textarea {

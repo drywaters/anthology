@@ -8,7 +8,7 @@
     min-height: 100vh;
     background: linear-gradient(
         180deg,
-        color-mix(in srgb, var(--mat-sys-surface) 90%, white) 0%,
+        var(--mat-sys-surface) 0%,
         var(--mat-sys-surface-container-high) 65%
     );
     color: var(--mat-sys-on-surface);
