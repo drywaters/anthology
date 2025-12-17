@@ -10,7 +10,7 @@ import {
     DestroyRef,
     inject,
 } from '@angular/core';
-import { NgFor, NgIf, NgClass } from '@angular/common';
+import { NgFor, NgIf } from '@angular/common';
 
 import {
     SlotOverlayComponent,
@@ -48,7 +48,7 @@ export interface SlotPositionUpdate {
 @Component({
     selector: 'app-shelf-canvas',
     standalone: true,
-    imports: [NgFor, NgIf, NgClass, SlotOverlayComponent],
+    imports: [NgFor, NgIf, SlotOverlayComponent],
     templateUrl: './shelf-canvas.component.html',
     styleUrl: './shelf-canvas.component.scss',
 })
