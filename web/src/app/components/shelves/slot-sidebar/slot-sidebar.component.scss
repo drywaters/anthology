@@ -1,0 +1,67 @@
+:host {
+    display: block;
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 24px;
+    border-radius: 24px;
+    box-shadow: 0 18px 38px rgb(15 23 42 / 14%);
+}
+
+.sidebar__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h3 {
+        margin: 0;
+    }
+}
+
+.sidebar__section-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.sidebar__section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.helper {
+    color: #5f6368;
+    margin: 0;
+}
+
+.badge {
+    background: #e3f2fd;
+    color: #0d47a1;
+    padding: 4px 8px;
+    border-radius: 16px;
+    font-weight: 600;
+}
+
+.chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.sidebar__tabs {
+    margin-top: 16px;
+
+    ::ng-deep .mat-mdc-tab-body,
+    ::ng-deep .mat-mdc-tab-body-content {
+        height: auto;
+        overflow: visible;
+    }
+
+    ::ng-deep .mat-mdc-tab-body-content {
+        padding-top: 16px;
+        box-sizing: border-box;
+    }
+}

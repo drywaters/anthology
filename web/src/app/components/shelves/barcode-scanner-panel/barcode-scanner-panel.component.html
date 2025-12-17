@@ -1,0 +1,22 @@
+<div class="scanner-section" #scannerSection>
+    <div class="scanner-instructions">
+        <p>Scan ISBN barcodes to automatically add and place items in this slot.</p>
+    </div>
+
+    <div class="scanner-preview">
+        <video #scanVideo autoplay playsinline muted class="scanner-video"></video>
+        <div class="scanner-overlay" *ngIf="scannerActive()">
+            <div class="scanner-frame"></div>
+        </div>
+        <div class="scanner-overlay scanner-overlay--flash" *ngIf="scannerFlash()"></div>
+        <div class="scanner-overlay scanner-overlay--busy" *ngIf="scannerProcessing()">
+            <div class="busy-indicator">
+                <mat-spinner diameter="32"></mat-spinner>
+                <span class="busy-text">Processing...</span>
+            </div>
+        </div>
+    </div>
+
+    <p class="scanner-error" *ngIf="scannerError()">{{ scannerError() }}</p>
+    <p class="scanner-hint" *ngIf="scannerHint() && !scannerError()">{{ scannerHint() }}</p>
+</div>
