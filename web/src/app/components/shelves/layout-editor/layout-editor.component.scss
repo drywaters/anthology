@@ -17,7 +17,7 @@
 
 .layout-editor__header {
     .helper {
-        color: #5f6368;
+        color: var(--mat-sys-on-surface-variant);
         margin: 4px 0 0;
     }
 }
@@ -29,7 +29,7 @@
 }
 
 .layout-row {
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--mat-sys-outline-variant);
     border-radius: 8px;
     padding: 12px;
     display: flex;
@@ -55,7 +55,7 @@
 }
 
 .column-card {
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--mat-sys-outline-variant);
     border-radius: 6px;
     padding: 8px;
     display: flex;
@@ -82,8 +82,8 @@
 }
 
 .column-card__pill {
-    background: #e3f2fd;
-    color: #0d47a1;
+    background: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
     padding: 2px 8px;
     border-radius: 999px;
     font-size: 12px;

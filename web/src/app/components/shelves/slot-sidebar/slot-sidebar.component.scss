@@ -33,13 +33,13 @@
 }
 
 .helper {
-    color: #5f6368;
+    color: var(--mat-sys-on-surface-variant);
     margin: 0;
 }
 
 .badge {
-    background: #e3f2fd;
-    color: #0d47a1;
+    background: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
     padding: 4px 8px;
     border-radius: 16px;
     font-weight: 600;

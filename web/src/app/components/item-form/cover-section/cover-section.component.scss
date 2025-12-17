@@ -14,8 +14,8 @@
     width: 100%;
     aspect-ratio: 3 / 4.5;
     border-radius: 0.75rem;
-    background: color-mix(in srgb, var(--mat-sys-primary) 4%, white);
-    border: 1px dashed color-mix(in srgb, var(--mat-sys-primary) 40%, transparent);
+    background: var(--mat-sys-surface-container-low);
+    border: 1px dashed var(--mat-sys-outline-variant);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -29,13 +29,13 @@
 }
 
 .cover-preview--empty {
-    color: color-mix(in srgb, var(--mat-sys-primary) 70%, #475569);
+    color: var(--mat-sys-on-surface-variant);
     background: repeating-linear-gradient(
         45deg,
-        color-mix(in srgb, var(--mat-sys-primary) 6%, #f8fafc),
-        color-mix(in srgb, var(--mat-sys-primary) 6%, #f8fafc) 12px,
-        color-mix(in srgb, var(--mat-sys-primary) 12%, #e2e8f0) 12px,
-        color-mix(in srgb, var(--mat-sys-primary) 12%, #e2e8f0) 24px
+        var(--mat-sys-surface-container-low),
+        var(--mat-sys-surface-container-low) 12px,
+        var(--mat-sys-surface-container) 12px,
+        var(--mat-sys-surface-container) 24px
     );
 }
 
@@ -76,7 +76,7 @@
 
     .cover-hint {
         margin: 0;
-        color: color-mix(in srgb, #334155 75%, white);
+        color: var(--mat-sys-on-surface-variant);
     }
 }
 

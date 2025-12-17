@@ -1,8 +1,8 @@
 .game-details {
     padding: 1rem 1.25rem 1.5rem;
-    border: 1px solid color-mix(in srgb, var(--mat-sys-tertiary) 15%, white);
+    border: 1px solid var(--mat-sys-outline-variant);
     border-radius: 1.25rem;
-    background: color-mix(in srgb, var(--mat-sys-tertiary) 6%, white);
+    background: var(--mat-sys-tertiary-container);
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -23,7 +23,7 @@
     text-transform: uppercase;
     letter-spacing: 0.18em;
     font-size: 0.7rem;
-    color: color-mix(in srgb, var(--mat-sys-primary) 80%, black);
+    color: var(--mat-sys-tertiary);
     margin: 0;
 }
 
@@ -56,7 +56,7 @@
     border-radius: 999px;
 
     &--game {
-        background: linear-gradient(90deg, #7c3aed, #a78bfa);
+        background: linear-gradient(90deg, var(--mat-sys-tertiary), var(--mat-sys-secondary));
     }
 }
 

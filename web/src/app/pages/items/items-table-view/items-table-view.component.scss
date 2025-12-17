@@ -13,7 +13,7 @@
 .letter-header {
     position: sticky;
     top: 0;
-    background: color-mix(in srgb, var(--mat-sys-surface) 98%, var(--mat-sys-primary));
+    background: var(--mat-sys-surface-container-high);
     padding: 0.5rem 1rem;
     margin: 0;
     font-weight: 700;
@@ -127,7 +127,7 @@
 }
 
 .items-table tr.mat-mdc-row:hover {
-    background-color: color-mix(in srgb, var(--mat-sys-primary) 12%, white);
+    background-color: color-mix(in srgb, var(--mat-sys-primary) 10%, var(--mat-sys-surface));
 }
 
 .items-table tr.mat-mdc-row:focus-visible {
@@ -183,29 +183,29 @@
     }
 
     &:focus-visible {
-        outline: 2px solid color-mix(in srgb, var(--chip-color) 60%, white);
+        outline: 2px solid var(--mat-sys-outline);
         outline-offset: 2px;
     }
 }
 
 .item-type-chip--book {
-    --chip-bg: color-mix(in srgb, var(--mat-sys-primary) 18%, white);
-    --chip-color: var(--mat-sys-primary);
+    --chip-bg: var(--mat-sys-primary-container);
+    --chip-color: var(--mat-sys-on-primary-container);
 }
 
 .item-type-chip--game {
-    --chip-bg: color-mix(in srgb, var(--mat-sys-secondary) 20%, white);
-    --chip-color: var(--mat-sys-secondary);
+    --chip-bg: var(--mat-sys-secondary-container);
+    --chip-color: var(--mat-sys-on-secondary-container);
 }
 
 .item-type-chip--movie {
-    --chip-bg: color-mix(in srgb, var(--mat-sys-tertiary) 24%, white);
-    --chip-color: var(--mat-sys-tertiary);
+    --chip-bg: var(--mat-sys-tertiary-container);
+    --chip-color: var(--mat-sys-on-tertiary-container);
 }
 
 .item-type-chip--music {
-    --chip-bg: color-mix(in srgb, var(--mat-sys-error) 22%, white);
-    --chip-color: var(--mat-sys-error);
+    --chip-bg: var(--mat-sys-error-container);
+    --chip-color: var(--mat-sys-on-error-container);
 }
 
 // Screen reader only class for hidden table headers

@@ -6,7 +6,7 @@
     cursor: pointer;
     display: flex;
     flex-direction: column;
-    background: white;
+    background: var(--mat-sys-surface);
     transition:
         transform 180ms ease,
         box-shadow 180ms ease,
@@ -25,7 +25,11 @@
     position: relative;
     width: 100%;
     padding-top: 70%;
-    background: color-mix(in srgb, var(--mat-sys-primary) 10%, #f8fafc);
+    background: color-mix(
+        in srgb,
+        var(--mat-sys-primary) 10%,
+        var(--mat-sys-surface-container-low)
+    );
 
     img {
         position: absolute;
@@ -40,7 +44,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: color-mix(in srgb, var(--mat-sys-primary) 70%, #475569);
+    color: var(--mat-sys-on-surface-variant);
 }
 
 .card-cover-placeholder {
@@ -93,7 +97,7 @@
 
 .card-sub {
     margin: 0;
-    color: color-mix(in srgb, var(--mat-sys-primary) 80%, #0f172a);
+    color: var(--mat-sys-on-surface);
     font-size: 0.8rem;
 }
 
@@ -103,8 +107,8 @@
     gap: 0.35rem;
     padding: 0.1rem 0.65rem;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--mat-sys-secondary) 18%, white);
-    color: color-mix(in srgb, var(--mat-sys-secondary) 85%, black);
+    background: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -124,21 +128,21 @@
 }
 
 .item-type-chip--book {
-    --chip-bg: color-mix(in srgb, var(--mat-sys-primary) 18%, white);
-    --chip-color: var(--mat-sys-primary);
+    --chip-bg: var(--mat-sys-primary-container);
+    --chip-color: var(--mat-sys-on-primary-container);
 }
 
 .item-type-chip--game {
-    --chip-bg: color-mix(in srgb, var(--mat-sys-secondary) 20%, white);
-    --chip-color: var(--mat-sys-secondary);
+    --chip-bg: var(--mat-sys-secondary-container);
+    --chip-color: var(--mat-sys-on-secondary-container);
 }
 
 .item-type-chip--movie {
-    --chip-bg: color-mix(in srgb, var(--mat-sys-tertiary) 24%, white);
-    --chip-color: var(--mat-sys-tertiary);
+    --chip-bg: var(--mat-sys-tertiary-container);
+    --chip-color: var(--mat-sys-on-tertiary-container);
 }
 
 .item-type-chip--music {
-    --chip-bg: color-mix(in srgb, var(--mat-sys-error) 22%, white);
-    --chip-color: var(--mat-sys-error);
+    --chip-bg: var(--mat-sys-error-container);
+    --chip-color: var(--mat-sys-on-error-container);
 }

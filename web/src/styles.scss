@@ -1,36 +1,70 @@
 @use '@angular/material' as mat;
-@import url('https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@400;500&family=Alegreya+Sans:wght@500;600;700&family=Alegreya:wght@400;500;600;700&display=swap');
-
-$anthology-theme: mat.define-theme(
-    (
-        color: (
-            theme-type: light,
-            primary: mat.$spring-green-palette,
-            tertiary: mat.$rose-palette,
-        ),
-        typography: (
-            plain-family: (
-                'Alegreya',
-                'Georgia',
-                'Times New Roman',
-                serif,
-            ),
-            brand-family: (
-                'Alegreya Sans',
-                'Alegreya',
-                'Segoe UI',
-                sans-serif,
-            ),
-            bold-weight: 700,
-            medium-weight: 600,
-            regular-weight: 400,
-        ),
-    )
-);
-
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 @include mat.core();
-@include mat.all-component-themes($anthology-theme);
-@include mat.all-component-typographies($anthology-theme);
+
+html {
+    @include mat.theme(
+        (
+            color: (
+                primary: mat.$spring-green-palette,
+                tertiary: mat.$violet-palette,
+                theme-type: light,
+            ),
+            typography: Roboto,
+            density: 0,
+        )
+    );
+
+    color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+    html:not([data-theme]) {
+        @include mat.theme(
+            (
+                color: (
+                    primary: mat.$spring-green-palette,
+                    tertiary: mat.$violet-palette,
+                    theme-type: dark,
+                ),
+                typography: Roboto,
+                density: 0,
+            )
+        );
+    }
+}
+
+html[data-theme='light'] {
+    @include mat.theme(
+        (
+            color: (
+                primary: mat.$spring-green-palette,
+                tertiary: mat.$violet-palette,
+                theme-type: light,
+            ),
+            typography: Roboto,
+            density: 0,
+        )
+    );
+
+    color-scheme: light;
+}
+
+html[data-theme='dark'] {
+    @include mat.theme(
+        (
+            color: (
+                primary: mat.$spring-green-palette,
+                tertiary: mat.$violet-palette,
+                theme-type: dark,
+            ),
+            typography: Roboto,
+            density: 0,
+        )
+    );
+
+    color-scheme: dark;
+}
 
 html,
 body {
@@ -39,58 +73,5 @@ body {
 
 body {
     margin: 0;
-    font-family: 'Alegreya', 'Georgia', 'Times New Roman', serif;
-    background: var(--mat-sys-surface-container);
-    color: var(--mat-sys-on-surface);
-}
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-.mat-h1,
-.mat-h2,
-.mat-h3,
-.mat-h4,
-.mat-h5,
-.mat-h6,
-.mat-subtitle-1,
-.mat-subtitle-2,
-.mat-title-large,
-.mat-title-medium,
-.mat-title-small {
-    font-family: 'Alegreya Sans', 'Alegreya', 'Segoe UI', sans-serif;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-}
-
-button {
-    text-transform: none;
-}
-
-:root {
-    --mat-sys-primary: #0e5b3c;
-    --mat-sys-on-primary: #fff;
-    --mat-sys-primary-container: #d5ede2;
-    --mat-sys-on-primary-container: #082e1b;
-    --mat-sys-secondary: #4d6354;
-    --mat-sys-on-secondary: #fff;
-    --mat-sys-secondary-container: #d0e8d4;
-    --mat-sys-on-secondary-container: #0c1f13;
-    --mat-sys-error: #ba1a1a;
-    --mat-sys-on-error: #fff;
-    --mdc-theme-primary: var(--mat-sys-primary);
-    --mdc-filled-button-container-color: var(--mat-sys-primary);
-    --mdc-filled-button-label-text-color: var(--mat-sys-on-primary);
-    --mdc-protected-button-container-color: color-mix(in srgb, var(--mat-sys-primary) 12%, white);
-    --mdc-protected-button-label-text-color: var(--mat-sys-primary);
-}
-
-.mat-mdc-button-base.mat-mdc-warn {
-    --mdc-filled-button-container-color: var(--mat-sys-error);
-    --mdc-filled-button-label-text-color: var(--mat-sys-on-error);
-    --mdc-outlined-button-outline-color: var(--mat-sys-error);
-    --mdc-text-button-label-text-color: var(--mat-sys-error);
+    font-family: Roboto, 'Helvetica Neue', sans-serif;
 }

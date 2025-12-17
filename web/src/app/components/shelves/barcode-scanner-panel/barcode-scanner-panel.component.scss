@@ -10,7 +10,7 @@
     margin-bottom: 16px;
 
     p {
-        color: #5f6368;
+        color: var(--mat-sys-on-surface-variant);
         margin: 0;
     }
 }
@@ -48,7 +48,7 @@
 }
 
 .scanner-overlay--flash {
-    background: rgb(0 157 255 / 42%);
+    background: color-mix(in srgb, var(--mat-sys-primary) 42%, transparent);
     z-index: 3;
     animation: scanner-flash 640ms ease-out;
 }
@@ -74,9 +74,9 @@
     width: 80%;
     max-width: 300px;
     height: 150px;
-    border: 3px dashed rgb(0 157 255 / 80%);
+    border: 3px dashed color-mix(in srgb, var(--mat-sys-primary) 80%, transparent);
     border-radius: 8px;
-    background: rgb(0 157 255 / 10%);
+    background: color-mix(in srgb, var(--mat-sys-primary) 10%, transparent);
 }
 
 .scanner-error {
@@ -86,7 +86,7 @@
 }
 
 .scanner-hint {
-    color: #5f6368;
+    color: var(--mat-sys-on-surface-variant);
     margin: 0;
     font-size: 0.9rem;
 }

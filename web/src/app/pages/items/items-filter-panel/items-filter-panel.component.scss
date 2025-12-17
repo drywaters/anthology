@@ -11,7 +11,7 @@
     align-items: center;
     justify-content: flex-start;
     padding: 0.5rem 0.75rem 0.6rem;
-    background: color-mix(in srgb, #e8f5ef 80%, white);
+    background: var(--mat-sys-surface-container);
     border-radius: 1rem;
     box-shadow: 0 8px 18px rgb(15 23 42 / 18%);
 }
@@ -26,8 +26,8 @@
         border: 1px solid transparent;
 
         &.active {
-            border-color: color-mix(in srgb, var(--mat-sys-primary) 60%, transparent);
-            background: color-mix(in srgb, var(--mat-sys-primary) 10%, white);
+            border-color: var(--mat-sys-primary);
+            background: var(--mat-sys-primary-container);
         }
     }
 }

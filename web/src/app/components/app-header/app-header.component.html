@@ -14,6 +14,16 @@
     </div>
 
     <div class="header-actions">
+        <button
+            mat-icon-button
+            type="button"
+            class="theme-toggle"
+            aria-label="Toggle light or dark theme"
+            [attr.aria-pressed]="isDarkTheme()"
+            (click)="toggleTheme()"
+        >
+            <mat-icon>{{ themeToggleIcon() }}</mat-icon>
+        </button>
         <ng-content select="[header-actions]"></ng-content>
     </div>
 </header>
