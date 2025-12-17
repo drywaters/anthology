@@ -1,0 +1,38 @@
+<div class="file-upload" [class.file-upload--error]="hasError || uploadError()">
+    <div class="file-upload__header">
+        <div>
+            <div class="file-upload__label">{{ label }}</div>
+            <p class="helper">{{ hint }}</p>
+        </div>
+        <button
+            mat-stroked-button
+            type="button"
+            (click)="openFilePicker(photoInput)"
+            [disabled]="disabled"
+        >
+            Choose file
+        </button>
+    </div>
+    <input
+        #photoInput
+        type="file"
+        accept="image/*"
+        (change)="handleFileChange(photoInput)"
+        hidden
+    />
+    <div class="file-meta" *ngIf="selectedFileName() as fileName">
+        <mat-icon inline aria-hidden="true">image</mat-icon>
+        <span>{{ fileName }}</span>
+        <button
+            mat-icon-button
+            type="button"
+            aria-label="Remove uploaded photo"
+            (click)="clearSelection(true, photoInput)"
+            [disabled]="disabled"
+        >
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+    <p class="error" *ngIf="uploadError()">{{ uploadError() }}</p>
+    <p class="error" *ngIf="showRequiredError">A photo is required.</p>
+</div>

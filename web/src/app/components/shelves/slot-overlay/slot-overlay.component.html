@@ -1,0 +1,50 @@
+<div
+    class="slot"
+    [ngClass]="{
+        'slot--draft': mode === 'edit',
+        'slot--selected': mode === 'view' && selected,
+        'slot--active': mode === 'edit' && active,
+    }"
+    [ngStyle]="slotStyle"
+    (click)="onClick()"
+>
+    <ng-container *ngIf="mode === 'edit'">
+        <button
+            type="button"
+            class="slot__label slot__label-button"
+            [class.slot__label-button--selected]="selected"
+            (click)="onClick(); $event.stopPropagation()"
+        >
+            {{ label }}
+        </button>
+        <ng-container *ngIf="selected">
+            <button
+                type="button"
+                class="slot__handle slot__handle--top-left slot__handle--start"
+                (pointerdown)="onCornerPointerDown('top-left', $event)"
+                [attr.aria-label]="'Adjust top-left corner of ' + ariaLabelPrefix"
+            ></button>
+            <button
+                type="button"
+                class="slot__handle slot__handle--top-right slot__handle--end"
+                (pointerdown)="onCornerPointerDown('top-right', $event)"
+                [attr.aria-label]="'Adjust top-right corner of ' + ariaLabelPrefix"
+            ></button>
+            <button
+                type="button"
+                class="slot__handle slot__handle--bottom-left slot__handle--start"
+                (pointerdown)="onCornerPointerDown('bottom-left', $event)"
+                [attr.aria-label]="'Adjust bottom-left corner of ' + ariaLabelPrefix"
+            ></button>
+            <button
+                type="button"
+                class="slot__handle slot__handle--bottom-right slot__handle--end"
+                (pointerdown)="onCornerPointerDown('bottom-right', $event)"
+                [attr.aria-label]="'Adjust bottom-right corner of ' + ariaLabelPrefix"
+            ></button>
+        </ng-container>
+    </ng-container>
+    <ng-container *ngIf="mode === 'view'">
+        <span class="slot__label" *ngIf="selected"> {{ rowIndex + 1 }}/{{ colIndex + 1 }} </span>
+    </ng-container>
+</div>

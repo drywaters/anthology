@@ -17,21 +17,21 @@ export const routes: Routes = [
             {
                 path: 'shelves',
                 loadComponent: () =>
-                    import('./pages/shelves/shelves-page.component').then(
+                    import('./pages/shelves/shelves-page/shelves-page.component').then(
                         (m) => m.ShelvesPageComponent,
                     ),
             },
             {
                 path: 'shelves/add',
                 loadComponent: () =>
-                    import('./pages/shelves/add-shelf-page.component').then(
+                    import('./pages/shelves/add-shelf-page/add-shelf-page.component').then(
                         (m) => m.AddShelfPageComponent,
                     ),
             },
             {
                 path: 'shelves/:id',
                 loadComponent: () =>
-                    import('./pages/shelves/shelf-detail-page.component').then(
+                    import('./pages/shelves/shelf-detail-page/shelf-detail-page.component').then(
                         (m) => m.ShelfDetailPageComponent,
                     ),
             },

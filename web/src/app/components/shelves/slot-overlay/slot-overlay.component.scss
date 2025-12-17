@@ -1,0 +1,135 @@
+:host {
+    display: contents;
+}
+
+.slot {
+    position: absolute;
+    box-sizing: border-box;
+    border: 2px dashed rgb(255 255 255 / 80%);
+    background: rgb(3 155 229 / 15%);
+    color: #fff;
+    font-size: 12px;
+    pointer-events: auto;
+    transition:
+        border-color 0.2s ease,
+        background-color 0.2s ease;
+    cursor: pointer;
+}
+
+.slot--selected {
+    border: 4px solid #009dff;
+    box-shadow:
+        0 0 0 1px rgb(0 0 0 / 20%),
+        0 4px 12px rgb(0 157 255 / 40%);
+    background: rgb(0 157 255 / 70%);
+    z-index: 10;
+}
+
+.slot--selected .slot__label {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgb(0 0 0 / 80%);
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: none;
+}
+
+.slot--draft {
+    border: 2px solid rgb(255 255 255 / 60%);
+    background: rgb(3 155 229 / 40%);
+    pointer-events: auto;
+}
+
+.slot--draft .slot__label {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgb(0 0 0 / 80%);
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+
+    &.slot__label-button--selected {
+        background: rgb(26 115 232 / 80%);
+    }
+}
+
+.slot--active {
+    border-color: rgb(255 255 255 / 95%);
+    background: rgb(0 157 255 / 70%);
+}
+
+.slot__label {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    background: rgb(0 0 0 / 40%);
+    padding: 2px 4px;
+    border-radius: 2px;
+    border: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.slot__label-button {
+    transition:
+        background-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.slot__label-button--selected {
+    background: rgb(26 115 232 / 80%);
+    box-shadow: 0 0 0 2px rgb(26 115 232 / 35%);
+}
+
+.slot__handle {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    padding: 0;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    background: #1a73e8;
+    pointer-events: auto;
+    cursor: grab;
+    box-shadow: 0 4px 12px rgb(15 23 42 / 25%);
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    touch-action: none;
+    z-index: 2;
+}
+
+.slot__handle:active {
+    cursor: grabbing;
+}
+
+.slot__handle--end {
+    background: #d93025;
+}
+
+.slot__handle--top-left {
+    top: -6px;
+    left: -6px;
+}
+
+.slot__handle--top-right {
+    top: -6px;
+    right: -6px;
+}
+
+.slot__handle--bottom-left {
+    bottom: -6px;
+    left: -6px;
+}
+
+.slot__handle--bottom-right {
+    bottom: -6px;
+    right: -6px;
+}

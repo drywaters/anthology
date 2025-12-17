@@ -8,8 +8,8 @@ import { RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 
-import { ShelfService } from '../../services/shelf.service';
-import { ShelfSummary } from '../../models/shelf';
+import { ShelfService } from '../../../services/shelf.service';
+import { ShelfSummary } from '../../../models/shelf';
 
 @Component({
     selector: 'app-shelves-page',

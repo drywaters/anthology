@@ -1,0 +1,47 @@
+<div class="search-controls">
+    <mat-form-field appearance="outline">
+        <mat-label>Item type</mat-label>
+        <mat-select [formControl]="typeControl" [disabled]="disabled">
+            <mat-option *ngFor="let option of typeOptions" [value]="option.value">
+                {{ option.label }}
+            </mat-option>
+        </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Add item</mat-label>
+        <input
+            matInput
+            type="text"
+            placeholder="Search by title"
+            [formControl]="searchControl"
+            [matAutocomplete]="itemSearchAutocomplete"
+            [disabled]="disabled"
+        />
+        <mat-autocomplete
+            #itemSearchAutocomplete="matAutocomplete"
+            (optionSelected)="handleSelection($event.option.value)"
+        >
+            <mat-option *ngIf="searching()" disabled>Searching...</mat-option>
+            <mat-option *ngFor="let item of searchResults()" [value]="item.id">
+                <span class="item-option__title">{{ item.title }}</span>
+                <span class="item-option__creator" *ngIf="item.creator">{{ item.creator }}</span>
+            </mat-option>
+            <mat-option
+                *ngIf="
+                    !searching() && !searchResults().length && searchQuery.length >= minSearchLength
+                "
+                disabled
+            >
+                No matches found
+            </mat-option>
+            <mat-option
+                *ngIf="
+                    !searching() && !searchResults().length && searchQuery.length < minSearchLength
+                "
+                disabled
+            >
+                Type at least {{ minSearchLength }} characters
+            </mat-option>
+        </mat-autocomplete>
+    </mat-form-field>
+</div>

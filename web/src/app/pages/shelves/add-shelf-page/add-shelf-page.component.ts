@@ -5,12 +5,15 @@ import { Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { ShelfService } from '../../services/shelf.service';
+import { ShelfService } from '../../../services/shelf.service';
+import {
+    PhotoUploadComponent,
+    PhotoUploadResult,
+} from '../../../components/shelves/photo-upload/photo-upload.component';
 
 @Component({
     selector: 'app-add-shelf-page',
@@ -22,31 +25,14 @@ import { ShelfService } from '../../services/shelf.service';
         MatButtonModule,
         MatCardModule,
         MatFormFieldModule,
-        MatIconModule,
         MatInputModule,
         MatSnackBarModule,
+        PhotoUploadComponent,
     ],
     templateUrl: './add-shelf-page.component.html',
     styleUrl: './add-shelf-page.component.scss',
 })
 export class AddShelfPageComponent {
-    private static readonly MAX_PHOTO_BYTES = 5 * 1024 * 1024;
-    private static readonly ALLOWED_IMAGE_TYPES = [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'image/webp',
-        'image/svg+xml',
-    ];
-    private static readonly ALLOWED_IMAGE_EXTENSIONS = [
-        '.jpg',
-        '.jpeg',
-        '.png',
-        '.gif',
-        '.webp',
-        '.svg',
-    ];
-
     private readonly shelfService = inject(ShelfService);
     private readonly snackBar = inject(MatSnackBar);
     private readonly router = inject(Router);
@@ -54,8 +40,7 @@ export class AddShelfPageComponent {
     private readonly destroyRef = inject(DestroyRef);
 
     readonly creating = signal(false);
-    readonly photoUploadError = signal<string | null>(null);
-    readonly selectedPhotoName = signal<string | null>(null);
+    readonly photoTouched = signal(false);
 
     readonly form = this.fb.group({
         name: ['', [Validators.required]],
@@ -64,6 +49,7 @@ export class AddShelfPageComponent {
     });
 
     createShelf(): void {
+        this.photoTouched.set(true);
         if (this.form.invalid) {
             this.form.markAllAsTouched();
             return;
@@ -88,68 +74,17 @@ export class AddShelfPageComponent {
             });
     }
 
-    openPhotoPicker(input: HTMLInputElement): void {
-        this.photoUploadError.set(null);
-        input.click();
+    handlePhotoSelected(result: PhotoUploadResult): void {
+        this.form.patchValue({ photoUrl: result.dataUrl });
+        this.photoTouched.set(true);
     }
 
-    handlePhotoFileChange(input: HTMLInputElement): void {
-        const file = input.files?.[0];
-        if (!file) {
-            return;
-        }
-
-        const validationError = this.validateImageFile(file);
-        if (validationError) {
-            this.clearPhotoSelection(false, input);
-            this.photoUploadError.set(validationError);
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = () => {
-            const result = reader.result as string;
-            this.form.patchValue({ photoUrl: result });
-            this.photoUploadError.set(null);
-            this.selectedPhotoName.set(file.name);
-        };
-        reader.readAsDataURL(file);
-    }
-
-    private validateImageFile(file: File): string | null {
-        const fileName = file.name.toLowerCase();
-        const hasValidExtension = AddShelfPageComponent.ALLOWED_IMAGE_EXTENSIONS.some((ext) =>
-            fileName.endsWith(ext),
-        );
-        if (!hasValidExtension) {
-            return 'Only image files (JPEG, PNG, GIF, WebP, SVG) are allowed.';
-        }
-
-        if (file.type && !AddShelfPageComponent.ALLOWED_IMAGE_TYPES.includes(file.type)) {
-            return 'Only image files (JPEG, PNG, GIF, WebP, SVG) are allowed.';
-        }
-
-        if (file.size > AddShelfPageComponent.MAX_PHOTO_BYTES) {
-            return 'Photos must be under 5MB.';
-        }
-
-        return null;
-    }
-
-    clearPhotoSelection(clearError = true, input?: HTMLInputElement): void {
+    handlePhotoCleared(): void {
         this.form.patchValue({ photoUrl: '' });
-        if (clearError) {
-            this.photoUploadError.set(null);
-        }
-        this.selectedPhotoName.set(null);
-        if (input) {
-            input.value = '';
-        }
     }
 
     private resetForm(): void {
         this.form.reset({ name: '', photoUrl: '', description: '' });
-        this.photoUploadError.set(null);
-        this.selectedPhotoName.set(null);
+        this.photoTouched.set(false);
     }
 }
