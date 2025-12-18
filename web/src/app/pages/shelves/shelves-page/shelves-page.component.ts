@@ -3,7 +3,6 @@ import { NgFor, NgIf } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
@@ -21,7 +20,6 @@ import { NotificationService } from '../../../services/notification.service';
         MatCardModule,
         MatIconModule,
         MatProgressBarModule,
-        MatSnackBarModule,
         RouterModule,
         MatButtonModule,
     ],

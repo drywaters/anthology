@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NgIf } from '@angular/common';
 
 import { SidebarComponent } from '../sidebar/sidebar.component';
@@ -13,7 +12,7 @@ import { NotificationService } from '../../services/notification.service';
 @Component({
     selector: 'app-shell',
     standalone: true,
-    imports: [RouterOutlet, SidebarComponent, AppHeaderComponent, NgIf, MatSnackBarModule],
+    imports: [RouterOutlet, SidebarComponent, AppHeaderComponent, NgIf],
     templateUrl: './app-shell.component.html',
     styleUrl: './app-shell.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

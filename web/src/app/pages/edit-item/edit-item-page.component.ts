@@ -4,7 +4,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -23,7 +22,6 @@ import { NotificationService } from '../../services/notification.service';
         MatCardModule,
         MatIconModule,
         MatProgressSpinnerModule,
-        MatSnackBarModule,
         RouterModule,
     ],
     templateUrl: './edit-item-page.component.html',

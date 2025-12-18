@@ -14,7 +14,6 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -66,7 +65,6 @@ interface SearchCategoryConfig {
         MatInputModule,
         MatProgressSpinnerModule,
         MatRadioModule,
-        MatSnackBarModule,
         MatTabsModule,
         ReactiveFormsModule,
         RouterModule,

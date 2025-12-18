@@ -14,7 +14,6 @@ import {
 } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { EMPTY, catchError, switchMap, tap } from 'rxjs';
@@ -56,7 +55,6 @@ export interface LetterGroup {
         NgIf,
         MatCardModule,
         MatProgressBarModule,
-        MatSnackBarModule,
         AlphaRailComponent,
         ItemsFilterPanelComponent,
         ItemsGridViewComponent,

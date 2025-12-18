@@ -6,7 +6,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 
@@ -58,7 +57,6 @@ interface LayoutColumnGroup {
         MatCardModule,
         MatIconModule,
         MatProgressBarModule,
-        MatSnackBarModule,
         ShelfCanvasComponent,
         SlotSidebarComponent,
         LayoutEditorComponent,

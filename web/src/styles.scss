@@ -137,16 +137,19 @@ app-slot-sidebar .mat-mdc-tab-body-content {
 
 // Delete button in item form - uses error color for destructive action.
 // Material Design 3 doesn't support color="warn" the same as M2, so we
-// override the button tokens directly. Scoped to component selector.
-app-item-form .form-actions__delete {
-    &,
-    &.mat-mdc-button-base,
-    &.mdc-button {
-        --mdc-filled-button-container-color: var(--mat-sys-error);
-        --mdc-filled-button-label-text-color: var(--mat-sys-on-error);
-        background-color: var(--mat-sys-error) !important;
-        color: var(--mat-sys-on-error) !important;
-    }
+// override directly. High specificity selector matches Material's internal styles.
+app-item-form button.form-actions__delete.mat-mdc-unelevated-button:not(:disabled) {
+    background-color: var(--mat-sys-error);
+    color: var(--mat-sys-on-error);
+}
+
+app-item-form button.form-actions__delete.mat-mdc-unelevated-button:not(:disabled):hover {
+    background-color: color-mix(in srgb, var(--mat-sys-error) 88%, var(--mat-sys-surface));
+}
+
+app-item-form button.form-actions__delete.mat-mdc-unelevated-button:disabled {
+    background-color: color-mix(in srgb, var(--mat-sys-on-surface) 12%, transparent);
+    color: color-mix(in srgb, var(--mat-sys-on-surface) 38%, transparent);
 }
 
 // =============================================================================
@@ -240,4 +243,45 @@ app-items-table-view .items-table {
             display: none;
         }
     }
+}
+
+// =============================================================================
+// NOTIFICATION SNACKBAR STYLING
+// Custom styling for NotificationService semantic notification types.
+// Uses Material Design 3 system tokens for consistent theming.
+// =============================================================================
+.notification-success .mdc-snackbar__surface {
+    background-color: color-mix(in srgb, var(--mat-sys-primary) 90%, var(--mat-sys-surface));
+}
+
+.notification-success .mdc-snackbar__label {
+    color: var(--mat-sys-on-primary);
+}
+
+.notification-success .mat-mdc-button.mat-mdc-snack-bar-action {
+    color: var(--mat-sys-on-primary);
+}
+
+.notification-error .mdc-snackbar__surface {
+    background-color: var(--mat-sys-error-container);
+}
+
+.notification-error .mdc-snackbar__label {
+    color: var(--mat-sys-on-error-container);
+}
+
+.notification-error .mat-mdc-button.mat-mdc-snack-bar-action {
+    color: var(--mat-sys-on-error-container);
+}
+
+.notification-warn .mdc-snackbar__surface {
+    background-color: color-mix(in srgb, var(--mat-sys-tertiary) 85%, var(--mat-sys-surface));
+}
+
+.notification-warn .mdc-snackbar__label {
+    color: var(--mat-sys-on-tertiary);
+}
+
+.notification-warn .mat-mdc-button.mat-mdc-snack-bar-action {
+    color: var(--mat-sys-on-tertiary);
 }
