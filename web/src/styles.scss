@@ -9,7 +9,10 @@ $light-theme-config: (
         tertiary: mat.$violet-palette,
         theme-type: light,
     ),
-    typography: roboto,
+    typography: (
+        'Roboto',
+        sans-serif,
+    ),
     density: 0,
 );
 $dark-theme-config: (
@@ -19,6 +22,11 @@ $dark-theme-config: (
         tertiary: mat.$violet-palette,
         theme-type: dark,
     ),
+    typography: (
+        'Roboto',
+        sans-serif,
+    ),
+    density: 0,
 );
 
 html {
@@ -53,6 +61,11 @@ body {
 body {
     margin: 0;
     font-family: Roboto, 'Helvetica Neue', sans-serif;
+}
+
+// Slot sidebar tab content spacing
+.sidebar__tabs .mat-mdc-tab-body-content {
+    padding-top: 16px;
 }
 
 // Material table layout overrides for items-table-view
