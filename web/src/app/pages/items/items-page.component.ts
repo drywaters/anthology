@@ -14,7 +14,6 @@ import {
 } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { EMPTY, catchError, switchMap, tap } from 'rxjs';
@@ -42,6 +41,7 @@ import {
 import { ItemsGridViewComponent } from './items-grid-view/items-grid-view.component';
 import { ItemsTableViewComponent } from './items-table-view/items-table-view.component';
 import { ItemsEmptyStateComponent } from './items-empty-state/items-empty-state.component';
+import { NotificationService } from '../../services/notification.service';
 
 export interface LetterGroup {
     letter: string;
@@ -55,7 +55,6 @@ export interface LetterGroup {
         NgIf,
         MatCardModule,
         MatProgressBarModule,
-        MatSnackBarModule,
         AlphaRailComponent,
         ItemsFilterPanelComponent,
         ItemsGridViewComponent,
@@ -67,7 +66,7 @@ export interface LetterGroup {
 })
 export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     private readonly itemService = inject(ItemService);
-    private readonly snackBar = inject(MatSnackBar);
+    private readonly notification = inject(NotificationService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly router = inject(Router);
     private readonly injector = inject(Injector);
@@ -172,11 +171,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
                         }),
                         catchError(() => {
                             this.loading.set(false);
-                            this.snackBar.open(
-                                'Unable to load your anthology right now.',
-                                'Dismiss',
-                                { duration: 5000 },
-                            );
+                            this.notification.error('Unable to load your anthology right now.');
                             return EMPTY;
                         }),
                     );

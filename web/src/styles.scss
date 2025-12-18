@@ -29,8 +29,37 @@ $dark-theme-config: (
     density: 0,
 );
 
+// Compact density configurations for tighter UI
+$light-theme-compact: (
+    color: (
+        primary: mat.$spring-green-palette,
+        secondary: mat.$orange-palette,
+        tertiary: mat.$violet-palette,
+        theme-type: light,
+    ),
+    typography: (
+        'Roboto',
+        sans-serif,
+    ),
+    density: -1,
+);
+$dark-theme-compact: (
+    color: (
+        primary: mat.$spring-green-palette,
+        secondary: mat.$orange-palette,
+        tertiary: mat.$violet-palette,
+        theme-type: dark,
+    ),
+    typography: (
+        'Roboto',
+        sans-serif,
+    ),
+    density: -1,
+);
+
 html {
     @include mat.theme($light-theme-config);
+    @include mat.elevation-classes();
 
     color-scheme: light dark;
 }
@@ -53,6 +82,25 @@ html[data-theme='dark'] {
     color-scheme: dark;
 }
 
+// Compact density mode - toggled via data-density attribute
+html[data-density='compact'] {
+    @include mat.theme($light-theme-compact);
+}
+
+@media (prefers-color-scheme: dark) {
+    html[data-density='compact']:not([data-theme]) {
+        @include mat.theme($dark-theme-compact);
+    }
+}
+
+html[data-theme='light'][data-density='compact'] {
+    @include mat.theme($light-theme-compact);
+}
+
+html[data-theme='dark'][data-density='compact'] {
+    @include mat.theme($dark-theme-compact);
+}
+
 html,
 body {
     height: 100%;
@@ -63,17 +111,59 @@ body {
     font-family: Roboto, 'Helvetica Neue', sans-serif;
 }
 
-// Slot sidebar tab content spacing
-.sidebar__tabs .mat-mdc-tab-body-content {
+// =============================================================================
+// APPLICATION DESIGN TOKENS
+// =============================================================================
+// Form field appearance pattern:
+// - Primary forms (add-item, edit-item, login): appearance="fill"
+// - Secondary/filter UI (filter panels): appearance="outline"
+:root {
+    --app-form-field-appearance: fill;
+    --app-form-field-appearance-secondary: outline;
+}
+
+// =============================================================================
+// COMPONENT-SPECIFIC GLOBAL OVERRIDES
+// These styles target Angular Material internals that cannot be styled from
+// component stylesheets due to view encapsulation. Scoped to component selectors
+// to minimize global impact.
+// =============================================================================
+
+// Sidebar tab content spacing (slot-sidebar component)
+// This targets mat-tab-body-content which is rendered outside component scope.
+app-slot-sidebar .mat-mdc-tab-body-content {
     padding-top: 16px;
 }
 
-// Material table layout overrides for items-table-view
-// Scoped to component selector to avoid ::ng-deep
+// Delete button in item form - uses error color for destructive action.
+// Material Design 3 doesn't support color="warn" the same as M2, so we
+// override directly. High specificity selector matches Material's internal styles.
+app-item-form button.form-actions__delete.mat-mdc-unelevated-button:not(:disabled) {
+    background-color: var(--mat-sys-error);
+    color: var(--mat-sys-on-error);
+}
+
+app-item-form button.form-actions__delete.mat-mdc-unelevated-button:not(:disabled):hover {
+    background-color: color-mix(in srgb, var(--mat-sys-error) 88%, var(--mat-sys-surface));
+}
+
+app-item-form button.form-actions__delete.mat-mdc-unelevated-button:disabled {
+    background-color: color-mix(in srgb, var(--mat-sys-on-surface) 12%, transparent);
+    color: color-mix(in srgb, var(--mat-sys-on-surface) 38%, transparent);
+}
+
+// =============================================================================
+// ITEMS TABLE LAYOUT
+// Material Table uses flexbox by default which doesn't support proper column
+// resizing. These overrides convert to table layout with CSS custom properties
+// for column widths, enabling responsive column sizing.
+// =============================================================================
 app-items-table-view .items-table {
+    // Use native table layout for proper column sizing
     display: table;
     table-layout: fixed;
 
+    // Column group definitions using CSS custom properties set by component
     col.col-title {
         width: var(--col-title);
         min-width: 260px;
@@ -99,11 +189,13 @@ app-items-table-view .items-table {
         min-width: 150px;
     }
 
+    // Override Material's flex rows with table rows
     .mat-mdc-header-row,
     .mat-mdc-row {
         display: table-row;
     }
 
+    // Override Material's flex cells with table cells
     .mat-mdc-header-cell,
     .mat-mdc-cell {
         display: table-cell;
@@ -114,6 +206,7 @@ app-items-table-view .items-table {
         line-height: 1.4;
     }
 
+    // Column width assignments
     .mat-column-title {
         width: var(--col-title);
     }
@@ -135,6 +228,7 @@ app-items-table-view .items-table {
     }
 }
 
+// Hide less critical columns on mobile viewports
 @media (width <= 680px) {
     app-items-table-view .items-table {
         col.col-releaseYear,
@@ -149,4 +243,45 @@ app-items-table-view .items-table {
             display: none;
         }
     }
+}
+
+// =============================================================================
+// NOTIFICATION SNACKBAR STYLING
+// Custom styling for NotificationService semantic notification types.
+// Uses Material Design 3 system tokens for consistent theming.
+// =============================================================================
+.notification-success .mdc-snackbar__surface {
+    background-color: color-mix(in srgb, var(--mat-sys-primary) 90%, var(--mat-sys-surface));
+}
+
+.notification-success .mdc-snackbar__label {
+    color: var(--mat-sys-on-primary);
+}
+
+.notification-success .mat-mdc-button.mat-mdc-snack-bar-action {
+    color: var(--mat-sys-on-primary);
+}
+
+.notification-error .mdc-snackbar__surface {
+    background-color: var(--mat-sys-error-container);
+}
+
+.notification-error .mdc-snackbar__label {
+    color: var(--mat-sys-on-error-container);
+}
+
+.notification-error .mat-mdc-button.mat-mdc-snack-bar-action {
+    color: var(--mat-sys-on-error-container);
+}
+
+.notification-warn .mdc-snackbar__surface {
+    background-color: color-mix(in srgb, var(--mat-sys-tertiary) 85%, var(--mat-sys-surface));
+}
+
+.notification-warn .mdc-snackbar__label {
+    color: var(--mat-sys-on-tertiary);
+}
+
+.notification-warn .mat-mdc-button.mat-mdc-snack-bar-action {
+    color: var(--mat-sys-on-tertiary);
 }

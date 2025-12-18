@@ -1,7 +1,7 @@
 <h2 mat-dialog-title>Possible Duplicate Found</h2>
 
-<mat-dialog-content>
-    <p class="dialog-description">
+<mat-dialog-content aria-describedby="duplicate-dialog-description">
+    <p id="duplicate-dialog-description" class="dialog-description">
         Items with this title, ISBN, or UPC already exist in your catalog.
     </p>
 
@@ -55,5 +55,7 @@
 
 <mat-dialog-actions align="end">
     <button mat-stroked-button (click)="handleCancel()">Cancel</button>
-    <button mat-flat-button color="primary" (click)="handleAddAnyway()">Add Anyway</button>
+    <button mat-flat-button color="primary" (click)="handleAddAnyway()" cdkFocusInitial>
+        Add Anyway
+    </button>
 </mat-dialog-actions>

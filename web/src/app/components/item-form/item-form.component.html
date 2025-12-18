@@ -63,10 +63,9 @@
     <div class="form-actions">
         <button
             mat-flat-button
-            color="warn"
             type="button"
-            *ngIf="mode === 'edit'"
             class="form-actions__delete"
+            *ngIf="mode === 'edit'"
             (click)="deleteRequested.emit()"
             [disabled]="busy || resyncing"
         >

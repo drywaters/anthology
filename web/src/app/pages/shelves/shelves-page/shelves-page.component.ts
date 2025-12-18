@@ -3,13 +3,13 @@ import { NgFor, NgIf } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 
 import { ShelfService } from '../../../services/shelf.service';
 import { ShelfSummary } from '../../../models/shelf';
+import { NotificationService } from '../../../services/notification.service';
 
 @Component({
     selector: 'app-shelves-page',
@@ -20,7 +20,6 @@ import { ShelfSummary } from '../../../models/shelf';
         MatCardModule,
         MatIconModule,
         MatProgressBarModule,
-        MatSnackBarModule,
         RouterModule,
         MatButtonModule,
     ],
@@ -29,7 +28,7 @@ import { ShelfSummary } from '../../../models/shelf';
 })
 export class ShelvesPageComponent {
     private readonly shelfService = inject(ShelfService);
-    private readonly snackBar = inject(MatSnackBar);
+    private readonly notification = inject(NotificationService);
     private readonly destroyRef = inject(DestroyRef);
 
     readonly loading = signal(false);
@@ -52,9 +51,7 @@ export class ShelvesPageComponent {
                 },
                 error: () => {
                     this.loading.set(false);
-                    this.snackBar.open('Unable to load shelves right now.', 'Dismiss', {
-                        duration: 4000,
-                    });
+                    this.notification.error('Unable to load shelves right now.');
                 },
             });
     }
