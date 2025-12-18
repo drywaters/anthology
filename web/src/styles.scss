@@ -2,66 +2,45 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 @include mat.core();
 
+$light-theme-config: (
+    color: (
+        primary: mat.$spring-green-palette,
+        secondary: mat.$orange-palette,
+        tertiary: mat.$violet-palette,
+        theme-type: light,
+    ),
+    typography: roboto,
+    density: 0,
+);
+$dark-theme-config: (
+    color: (
+        primary: mat.$spring-green-palette,
+        secondary: mat.$orange-palette,
+        tertiary: mat.$violet-palette,
+        theme-type: dark,
+    ),
+);
+
 html {
-    @include mat.theme(
-        (
-            color: (
-                primary: mat.$spring-green-palette,
-                tertiary: mat.$violet-palette,
-                theme-type: light,
-            ),
-            typography: Roboto,
-            density: 0,
-        )
-    );
+    @include mat.theme($light-theme-config);
 
     color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {
     html:not([data-theme]) {
-        @include mat.theme(
-            (
-                color: (
-                    primary: mat.$spring-green-palette,
-                    tertiary: mat.$violet-palette,
-                    theme-type: dark,
-                ),
-                typography: Roboto,
-                density: 0,
-            )
-        );
+        @include mat.theme($dark-theme-config);
     }
 }
 
 html[data-theme='light'] {
-    @include mat.theme(
-        (
-            color: (
-                primary: mat.$spring-green-palette,
-                tertiary: mat.$violet-palette,
-                theme-type: light,
-            ),
-            typography: Roboto,
-            density: 0,
-        )
-    );
+    @include mat.theme($light-theme-config);
 
     color-scheme: light;
 }
 
 html[data-theme='dark'] {
-    @include mat.theme(
-        (
-            color: (
-                primary: mat.$spring-green-palette,
-                tertiary: mat.$violet-palette,
-                theme-type: dark,
-            ),
-            typography: Roboto,
-            density: 0,
-        )
-    );
+    @include mat.theme($dark-theme-config);
 
     color-scheme: dark;
 }
@@ -74,4 +53,87 @@ body {
 body {
     margin: 0;
     font-family: Roboto, 'Helvetica Neue', sans-serif;
+}
+
+// Material table layout overrides for items-table-view
+// Scoped to component selector to avoid ::ng-deep
+app-items-table-view .items-table {
+    display: table;
+    table-layout: fixed;
+
+    col.col-title {
+        width: var(--col-title);
+        min-width: 260px;
+    }
+
+    col.col-creator {
+        width: var(--col-creator);
+        min-width: 200px;
+    }
+
+    col.col-itemType {
+        width: var(--col-itemType);
+        min-width: 140px;
+    }
+
+    col.col-releaseYear {
+        width: var(--col-releaseYear);
+        min-width: 90px;
+    }
+
+    col.col-updatedAt {
+        width: var(--col-updatedAt);
+        min-width: 150px;
+    }
+
+    .mat-mdc-header-row,
+    .mat-mdc-row {
+        display: table-row;
+    }
+
+    .mat-mdc-header-cell,
+    .mat-mdc-cell {
+        display: table-cell;
+        vertical-align: top;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        line-height: 1.4;
+    }
+
+    .mat-column-title {
+        width: var(--col-title);
+    }
+
+    .mat-column-creator {
+        width: var(--col-creator);
+    }
+
+    .mat-column-itemType {
+        width: var(--col-itemType);
+    }
+
+    .mat-column-releaseYear {
+        width: var(--col-releaseYear);
+    }
+
+    .mat-column-updatedAt {
+        width: var(--col-updatedAt);
+    }
+}
+
+@media (width <= 680px) {
+    app-items-table-view .items-table {
+        col.col-releaseYear,
+        col.col-updatedAt {
+            display: none;
+            width: 0;
+            min-width: 0;
+        }
+
+        .mat-column-releaseYear,
+        .mat-column-updatedAt {
+            display: none;
+        }
+    }
 }

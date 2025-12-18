@@ -40,7 +40,7 @@ app-alpha-rail {
 
 mat-card {
     border-radius: 20px;
-    box-shadow: 0 12px 24px rgb(15 23 42 / 12%);
+    box-shadow: var(--mat-app-elevation-shadow-level-4);
     position: relative;
     overflow: hidden;
     flex: 0 0 auto; // prevent flex shrink so card content can overflow and be scrollable

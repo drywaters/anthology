@@ -11,7 +11,7 @@
     background: color-mix(in srgb, var(--mat-sys-surface) 90%, transparent);
     backdrop-filter: blur(4px);
     border-radius: 1rem;
-    box-shadow: 0 4px 12px rgb(15 23 42 / 12%);
+    box-shadow: var(--mat-app-elevation-shadow-level-2);
     max-height: var(--alpha-rail-max-height, 100%);
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -69,7 +69,7 @@
         overflow-y: auto;
         z-index: 10;
         border-radius: 1.5rem;
-        box-shadow: 0 8px 24px rgb(15 23 42 / 20%);
+        box-shadow: var(--mat-app-elevation-shadow-level-4);
     }
 
     .rail-letter {

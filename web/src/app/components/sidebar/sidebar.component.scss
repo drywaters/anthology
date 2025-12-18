@@ -8,7 +8,7 @@
     width: clamp(280px, 32vw, 340px);
     background: var(--mat-sys-surface-container);
     border-right: 1px solid var(--mat-sys-outline-variant);
-    box-shadow: 12px 0 28px rgb(15 23 42 / 8%);
+    box-shadow: var(--mat-app-elevation-shadow-level-4);
     padding: 1.5rem 1.25rem 2rem 1.15rem;
     display: flex;
     flex-direction: column;
@@ -25,7 +25,7 @@
 
 .sidebar--open {
     transform: translateX(0);
-    box-shadow: 16px 0 30px rgb(15 23 42 / 16%);
+    box-shadow: var(--mat-app-elevation-shadow-level-8);
     pointer-events: auto;
     visibility: visible;
 }
@@ -57,7 +57,6 @@
 }
 
 .brand-title {
-    font-family: 'Alegreya', 'Alegreya Sans', 'Segoe UI', sans-serif;
     font-weight: 700;
     font-size: 1.35rem;
     letter-spacing: 0.04em;
@@ -97,7 +96,6 @@ button[mat-icon-button] {
     border-radius: 0.85rem;
     color: inherit;
     text-decoration: none;
-    font-family: 'Alegreya Sans', 'Alegreya', 'Segoe UI', sans-serif;
     font-weight: 600;
     letter-spacing: 0.01em;
     transition:

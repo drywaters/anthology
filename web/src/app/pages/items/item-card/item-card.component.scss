@@ -2,7 +2,7 @@
     border: 1px solid color-mix(in srgb, var(--mat-sys-primary) 20%, transparent);
     border-radius: 1rem;
     overflow: hidden;
-    box-shadow: 0 10px 20px rgb(15 23 42 / 12%);
+    box-shadow: var(--mat-app-elevation-shadow-level-3);
     cursor: pointer;
     display: flex;
     flex-direction: column;
@@ -16,7 +16,7 @@
     &:focus-visible {
         transform: translateY(-3px);
         border-color: color-mix(in srgb, var(--mat-sys-primary) 65%, transparent);
-        box-shadow: 0 14px 24px rgb(15 23 42 / 18%);
+        box-shadow: var(--mat-app-elevation-shadow-level-6);
         outline: none;
     }
 }
