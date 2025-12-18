@@ -13,7 +13,7 @@
     padding: 0.5rem 0.75rem 0.6rem;
     background: var(--mat-sys-surface-container);
     border-radius: 1rem;
-    box-shadow: 0 8px 18px rgb(15 23 42 / 18%);
+    box-shadow: var(--mat-app-elevation-shadow-level-3);
 }
 
 .view-toggle {

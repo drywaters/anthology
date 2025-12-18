@@ -13,7 +13,7 @@
     padding: 0.65rem 1.25rem;
     background: var(--mat-sys-surface-container);
     border-bottom: 1px solid var(--mat-sys-outline-variant);
-    box-shadow: 0 8px 24px rgb(15 23 42 / 8%);
+    box-shadow: var(--mat-app-elevation-shadow-level-2);
 }
 
 button[mat-icon-button] {
@@ -37,7 +37,6 @@ button[mat-icon-button] {
 }
 
 .brand-title {
-    font-family: 'Alegreya', 'Alegreya Sans', 'Segoe UI', sans-serif;
     font-size: 1.25rem;
     font-weight: 700;
     letter-spacing: 0.03em;

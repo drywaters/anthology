@@ -98,7 +98,7 @@
     background: var(--mat-sys-primary);
     pointer-events: auto;
     cursor: grab;
-    box-shadow: 0 4px 12px rgb(15 23 42 / 25%);
+    box-shadow: var(--mat-app-elevation-shadow-level-2);
     display: inline-flex;
     justify-content: center;
     align-items: center;
