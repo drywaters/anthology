@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { NgIf } from '@angular/common';
 
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AppHeaderComponent } from '../app-header/app-header.component';
 import { NavigationItem, ActionButton } from '../../models/navigation';
 import { AuthService } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
     selector: 'app-shell',
@@ -20,7 +21,7 @@ import { AuthService } from '../../services/auth.service';
 export class AppShellComponent {
     private readonly router = inject(Router);
     private readonly authService = inject(AuthService);
-    private readonly snackBar = inject(MatSnackBar);
+    private readonly notification = inject(NotificationService);
     private readonly destroyRef = inject(DestroyRef);
 
     readonly sidebarOpen = signal(false);
@@ -101,11 +102,7 @@ export class AppShellComponent {
                     this.router.navigate(['/login']);
                 },
                 error: () => {
-                    this.snackBar.open(
-                        'We could not clear your session; please try again.',
-                        'Dismiss',
-                        { duration: 5000 },
-                    );
+                    this.notification.error('We could not clear your session; please try again.');
                     this.closeSidebar();
                     this.router.navigate(['/login']);
                 },

@@ -4,13 +4,14 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { Item, ItemForm } from '../../models';
 import { ItemService } from '../../services/item.service';
 import { ItemFormComponent } from '../../components/item-form/item-form.component';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
     selector: 'app-edit-item-page',
@@ -32,7 +33,7 @@ export class EditItemPageComponent {
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
     private readonly itemService = inject(ItemService);
-    private readonly snackBar = inject(MatSnackBar);
+    private readonly notification = inject(NotificationService);
     private readonly destroyRef = inject(DestroyRef);
 
     readonly loading = signal(true);
@@ -66,17 +67,13 @@ export class EditItemPageComponent {
             .subscribe({
                 next: (item) => {
                     this.busy.set(false);
-                    this.snackBar.open(`Updated “${item.title}”`, 'Dismiss', { duration: 4000 });
+                    this.notification.success(`Updated "${item.title}"`);
                     this.navigateBack();
                 },
                 error: () => {
                     this.busy.set(false);
-                    this.snackBar.open(
+                    this.notification.error(
                         'We could not save the item. Double-check required fields.',
-                        'Dismiss',
-                        {
-                            duration: 5000,
-                        },
                     );
                 },
             });
@@ -95,14 +92,12 @@ export class EditItemPageComponent {
             .subscribe({
                 next: () => {
                     this.busy.set(false);
-                    this.snackBar.open('Item deleted.', 'Dismiss', { duration: 4000 });
+                    this.notification.success('Item deleted.');
                     this.navigateBack();
                 },
                 error: () => {
                     this.busy.set(false);
-                    this.snackBar.open('Unable to delete this entry right now.', 'Dismiss', {
-                        duration: 5000,
-                    });
+                    this.notification.error('Unable to delete this entry right now.');
                 },
             });
     }
@@ -127,18 +122,12 @@ export class EditItemPageComponent {
                 next: (updatedItem) => {
                     this.resyncing.set(false);
                     this.item.set(updatedItem);
-                    this.snackBar.open('Metadata refreshed from Google Books.', 'Dismiss', {
-                        duration: 4000,
-                    });
+                    this.notification.success('Metadata refreshed from Google Books.');
                 },
                 error: () => {
                     this.resyncing.set(false);
-                    this.snackBar.open(
+                    this.notification.error(
                         'Unable to refresh metadata. The book may not be found in Google Books.',
-                        'Dismiss',
-                        {
-                            duration: 5000,
-                        },
                     );
                 },
             });

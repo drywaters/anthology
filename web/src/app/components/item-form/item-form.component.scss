@@ -10,45 +10,5 @@
     gap: 0.75rem;
 }
 
-.form-actions__delete {
-    // Force danger colors, overriding default material theme
-    background-color: var(--mat-sys-error) !important;
-    color: var(--mat-sys-on-error) !important;
-
-    // Ensure variables are also set for ripples/internals
-    --mdc-filled-button-container-color: var(--mat-sys-error);
-    --mdc-filled-button-label-text-color: var(--mat-sys-on-error);
-    --mat-mdc-button-persistent-ripple-color: var(--mat-sys-on-error);
-    --mat-mdc-button-ripple-color: var(--mat-sys-on-error);
-
-    &:hover,
-    &:focus-visible {
-        background-color: color-mix(
-            in srgb,
-            var(--mat-sys-error) 88%,
-            var(--mat-sys-surface)
-        ) !important;
-
-        --mdc-filled-button-container-color: color-mix(
-            in srgb,
-            var(--mat-sys-error) 88%,
-            var(--mat-sys-surface)
-        );
-    }
-
-    &:disabled {
-        background-color: color-mix(
-            in srgb,
-            var(--mat-sys-error) 35%,
-            var(--mat-sys-surface)
-        ) !important;
-        color: var(--mat-sys-on-surface-variant) !important;
-
-        --mdc-filled-button-container-color: color-mix(
-            in srgb,
-            var(--mat-sys-error) 35%,
-            var(--mat-sys-surface)
-        );
-        --mdc-filled-button-label-text-color: var(--mat-sys-on-surface-variant);
-    }
-}
+// Delete button error styling is defined in global styles.scss
+// (scoped to app-item-form) due to Material button encapsulation.

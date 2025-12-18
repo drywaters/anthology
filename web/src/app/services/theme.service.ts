@@ -2,20 +2,25 @@ import { DOCUMENT } from '@angular/common';
 import { Injectable, computed, inject, signal } from '@angular/core';
 
 export type ThemePreference = 'light' | 'dark' | null;
+export type DensityPreference = 'default' | 'compact';
 
-const STORAGE_KEY = 'anthology.theme';
+const THEME_STORAGE_KEY = 'anthology.theme';
+const DENSITY_STORAGE_KEY = 'anthology.density';
 
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
     private readonly document = inject(DOCUMENT);
     private readonly preference = signal<ThemePreference>(null);
     private readonly systemPrefersDark = signal(false);
+    private readonly densityPreference = signal<DensityPreference>('default');
 
     readonly effectiveTheme = computed<'light' | 'dark'>(() => {
         const preference = this.preference();
         if (preference) return preference;
         return this.systemPrefersDark() ? 'dark' : 'light';
     });
+
+    readonly density = computed(() => this.densityPreference());
 
     constructor() {
         this.systemPrefersDark.set(this.querySystemPrefersDark());
@@ -25,7 +30,7 @@ export class ThemeService {
             this.systemPrefersDark.set(event.matches),
         );
 
-        this.applySavedPreference();
+        this.applySavedPreferences();
     }
 
     setPreference(preference: ThemePreference): void {
@@ -33,10 +38,22 @@ export class ThemeService {
 
         if (preference) {
             this.document.documentElement.dataset['theme'] = preference;
-            localStorage.setItem(STORAGE_KEY, preference);
+            localStorage.setItem(THEME_STORAGE_KEY, preference);
         } else {
             delete this.document.documentElement.dataset['theme'];
-            localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem(THEME_STORAGE_KEY);
+        }
+    }
+
+    setDensity(density: DensityPreference): void {
+        this.densityPreference.set(density);
+
+        if (density === 'compact') {
+            this.document.documentElement.dataset['density'] = density;
+            localStorage.setItem(DENSITY_STORAGE_KEY, density);
+        } else {
+            delete this.document.documentElement.dataset['density'];
+            localStorage.removeItem(DENSITY_STORAGE_KEY);
         }
     }
 
@@ -45,11 +62,21 @@ export class ThemeService {
         this.setPreference(next);
     }
 
-    private applySavedPreference(): void {
+    toggleDensity(): void {
+        const next = this.densityPreference() === 'compact' ? 'default' : 'compact';
+        this.setDensity(next);
+    }
+
+    private applySavedPreferences(): void {
         try {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved === 'light' || saved === 'dark') {
-                this.setPreference(saved);
+            const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+            if (savedTheme === 'light' || savedTheme === 'dark') {
+                this.setPreference(savedTheme);
+            }
+
+            const savedDensity = localStorage.getItem(DENSITY_STORAGE_KEY);
+            if (savedDensity === 'compact') {
+                this.setDensity(savedDensity);
             }
         } catch {
             // Ignore storage errors (private mode, blocked storage, etc).

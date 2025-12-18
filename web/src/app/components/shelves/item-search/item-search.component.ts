@@ -5,7 +5,7 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
     catchError,
@@ -21,6 +21,7 @@ import {
 
 import { Item, ItemType, ITEM_TYPE_LABELS } from '../../../models';
 import { ItemService } from '../../../services/item.service';
+import { NotificationService } from '../../../services/notification.service';
 
 type ItemTypeFilter = ItemType | 'all';
 
@@ -45,7 +46,7 @@ export class ItemSearchComponent {
     private static readonly SEARCH_RESULT_LIMIT = 10;
 
     private readonly itemService = inject(ItemService);
-    private readonly snackBar = inject(MatSnackBar);
+    private readonly notification = inject(NotificationService);
     private readonly fb = inject(FormBuilder);
     private readonly destroyRef = inject(DestroyRef);
 
@@ -117,7 +118,7 @@ export class ItemSearchComponent {
 
         return this.itemService.list(filters).pipe(
             catchError(() => {
-                this.snackBar.open('Unable to search your library', 'Dismiss', { duration: 4000 });
+                this.notification.error('Unable to search your library');
                 return of<Item[]>([]);
             }),
             finalize(() => this.searching.set(false)),

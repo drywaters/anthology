@@ -6,7 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { ShelfService } from '../../../services/shelf.service';
@@ -14,6 +14,7 @@ import {
     PhotoUploadComponent,
     PhotoUploadResult,
 } from '../../../components/shelves/photo-upload/photo-upload.component';
+import { NotificationService } from '../../../services/notification.service';
 
 @Component({
     selector: 'app-add-shelf-page',
@@ -34,7 +35,7 @@ import {
 })
 export class AddShelfPageComponent {
     private readonly shelfService = inject(ShelfService);
-    private readonly snackBar = inject(MatSnackBar);
+    private readonly notification = inject(NotificationService);
     private readonly router = inject(Router);
     private readonly fb = inject(FormBuilder);
     private readonly destroyRef = inject(DestroyRef);
@@ -63,13 +64,13 @@ export class AddShelfPageComponent {
             .subscribe({
                 next: (shelf) => {
                     this.creating.set(false);
-                    this.snackBar.open('Shelf created', undefined, { duration: 2000 });
+                    this.notification.success('Shelf created');
                     this.resetForm();
                     this.router.navigate(['/shelves', shelf.shelf.id]);
                 },
                 error: () => {
                     this.creating.set(false);
-                    this.snackBar.open('Could not create shelf', 'Dismiss', { duration: 4000 });
+                    this.notification.error('Could not create shelf');
                 },
             });
     }

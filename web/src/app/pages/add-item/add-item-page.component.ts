@@ -14,7 +14,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -39,6 +39,7 @@ import { BarcodeScannerService } from '../../services/barcode-scanner.service';
 import { CsvImportComponent } from './csv-import/csv-import.component';
 import { BarcodeScannerComponent } from './barcode-scanner/barcode-scanner.component';
 import { LookupResultsComponent } from './lookup-results/lookup-results.component';
+import { NotificationService } from '../../services/notification.service';
 
 type SearchCategoryValue = ItemLookupCategory;
 
@@ -137,7 +138,7 @@ export class AddItemPageComponent {
     private readonly itemService = inject(ItemService);
     private readonly itemLookupService = inject(ItemLookupService);
     private readonly router = inject(Router);
-    private readonly snackBar = inject(MatSnackBar);
+    private readonly notification = inject(NotificationService);
     private readonly dialog = inject(MatDialog);
     private readonly destroyRef = inject(DestroyRef);
     private readonly fb = inject(FormBuilder);
@@ -302,12 +303,8 @@ export class AddItemPageComponent {
                         takeUntilDestroyed(this.destroyRef),
                         catchError((error) => {
                             console.warn('Duplicate check failed', error);
-                            this.snackBar.open(
+                            this.notification.warn(
                                 'Duplicate check failed; proceeding may create duplicates.',
-                                'Dismiss',
-                                {
-                                    duration: 4000,
-                                },
                             );
                             return of([] as DuplicateMatch[]);
                         }),
@@ -338,18 +335,12 @@ export class AddItemPageComponent {
                 this.itemService.create(formValue).pipe(takeUntilDestroyed(this.destroyRef)),
             );
             if (item) {
-                this.snackBar.open(`Saved "${item.title}"`, 'Dismiss', { duration: 4000 });
+                this.notification.success(`Saved "${item.title}"`);
                 await this.router.navigate(['/']);
             }
         } catch (error) {
             console.error('Failed to save item', error);
-            this.snackBar.open(
-                'We could not save the item. Double-check required fields.',
-                'Dismiss',
-                {
-                    duration: 5000,
-                },
-            );
+            this.notification.error('We could not save the item. Double-check required fields.');
         } finally {
             this.busy.set(false);
         }

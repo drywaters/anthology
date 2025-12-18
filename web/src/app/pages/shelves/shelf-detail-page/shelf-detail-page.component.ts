@@ -6,7 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 
@@ -29,6 +29,7 @@ import {
     LayoutEditorComponent,
     LayoutRow,
 } from '../../../components/shelves/layout-editor/layout-editor.component';
+import { NotificationService } from '../../../services/notification.service';
 
 interface LayoutRowGroup {
     rowId: FormControl<string | null>;
@@ -71,7 +72,7 @@ export class ShelfDetailPageComponent {
 
     private readonly route = inject(ActivatedRoute);
     private readonly shelfService = inject(ShelfService);
-    private readonly snackBar = inject(MatSnackBar);
+    private readonly notification = inject(NotificationService);
     private readonly fb = inject(FormBuilder);
     private readonly destroyRef = inject(DestroyRef);
 
@@ -163,7 +164,7 @@ export class ShelfDetailPageComponent {
                 },
                 error: () => {
                     this.loading.set(false);
-                    this.snackBar.open('Could not load shelf.', 'Dismiss', { duration: 4000 });
+                    this.notification.error('Could not load shelf.');
                 },
             });
     }
@@ -356,12 +357,12 @@ export class ShelfDetailPageComponent {
                     this.savingLayout.set(false);
                     this.mode.set('view');
                     this.resetLayoutForm();
-                    this.snackBar.open('Layout updated', undefined, { duration: 2000 });
+                    this.notification.success('Layout updated');
                 },
                 error: (err) => {
                     this.savingLayout.set(false);
                     const message = err?.error?.error ?? 'Could not save layout';
-                    this.snackBar.open(message, 'Dismiss', { duration: 5000 });
+                    this.notification.error(message);
                 },
             });
     }
@@ -405,8 +406,7 @@ export class ShelfDetailPageComponent {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (updated) => this.shelf.set(updated),
-                error: () =>
-                    this.snackBar.open('Unable to remove item', 'Dismiss', { duration: 4000 }),
+                error: () => this.notification.error('Unable to remove item'),
             });
     }
 
@@ -421,8 +421,7 @@ export class ShelfDetailPageComponent {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (updated) => this.shelf.set(updated),
-                error: () =>
-                    this.snackBar.open('Unable to assign item', 'Dismiss', { duration: 4000 }),
+                error: () => this.notification.error('Unable to assign item'),
             });
     }
 
@@ -433,11 +432,9 @@ export class ShelfDetailPageComponent {
             isbn === this.lastScannedISBN &&
             now - this.lastScanTime < ShelfDetailPageComponent.SCAN_DEBOUNCE_MS
         ) {
-            this.snackBar.open(
-                'Item already scanned. Wait a moment before scanning again.',
-                'Dismiss',
-                { duration: 2000 },
-            );
+            this.notification.info('Item already scanned. Wait a moment before scanning again.', {
+                duration: 2000,
+            });
             this.sidebarComponent?.reportScanComplete();
             return;
         }
@@ -449,7 +446,7 @@ export class ShelfDetailPageComponent {
         const slot = this.selectedSlot();
 
         if (!shelf || !slot) {
-            this.snackBar.open('No slot selected', 'Dismiss', { duration: 3000 });
+            this.notification.warn('No slot selected', { duration: 3000 });
             this.sidebarComponent?.reportScanComplete();
             return;
         }
@@ -468,7 +465,7 @@ export class ShelfDetailPageComponent {
                 error: (err) => {
                     console.error('Scan failed', err);
                     const message = err.error?.error || 'Could not scan item. Please try again.';
-                    this.snackBar.open(message, 'Dismiss', { duration: 5000 });
+                    this.notification.error(message);
                 },
             });
     }
@@ -486,15 +483,13 @@ export class ShelfDetailPageComponent {
         }
 
         if (status === 'created') {
-            this.snackBar.open(`Added: ${title}`, 'Dismiss', { duration: 5000 });
+            this.notification.success(`Added: ${title}`);
         } else if (status === 'moved') {
-            this.snackBar.open(
+            this.notification.success(
                 `Moved: ${title} → Slot ${slot.rowIndex + 1}·${slot.colIndex + 1}`,
-                'Dismiss',
-                { duration: 5000 },
             );
         } else if (status === 'present') {
-            this.snackBar.open(`Already here: ${title}`, 'Dismiss', { duration: 4000 });
+            this.notification.info(`Already here: ${title}`);
         }
     }
 
