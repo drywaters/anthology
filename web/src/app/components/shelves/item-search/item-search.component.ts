@@ -1,4 +1,14 @@
-import { Component, DestroyRef, EventEmitter, inject, Input, Output, signal } from '@angular/core';
+import {
+    Component,
+    DestroyRef,
+    EventEmitter,
+    inject,
+    Input,
+    OnChanges,
+    Output,
+    signal,
+    SimpleChanges,
+} from '@angular/core';
 import { NgFor, NgIf } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -39,7 +49,7 @@ type ItemTypeFilter = ItemType | 'all';
     templateUrl: './item-search.component.html',
     styleUrl: './item-search.component.scss',
 })
-export class ItemSearchComponent {
+export class ItemSearchComponent implements OnChanges {
     private static readonly MIN_SEARCH_LENGTH = 2;
     private static readonly SEARCH_RESULT_LIMIT = 10;
 
@@ -67,6 +77,22 @@ export class ItemSearchComponent {
 
     constructor() {
         this.initializeSearch();
+    }
+
+    ngOnChanges(changes: SimpleChanges): void {
+        if (changes['disabled']) {
+            this.updateControlsDisabledState();
+        }
+    }
+
+    private updateControlsDisabledState(): void {
+        if (this.disabled) {
+            this.searchControl.disable({ emitEvent: false });
+            this.typeControl.disable({ emitEvent: false });
+        } else {
+            this.searchControl.enable({ emitEvent: false });
+            this.typeControl.enable({ emitEvent: false });
+        }
     }
 
     get searchQuery(): string {

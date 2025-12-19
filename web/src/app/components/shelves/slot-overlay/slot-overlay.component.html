@@ -6,14 +6,14 @@
         'slot--active': mode === 'edit' && active,
     }"
     [ngStyle]="slotStyle"
-    (click)="onClick()"
+    (click)="mode === 'view' ? onClick() : null"
 >
     <ng-container *ngIf="mode === 'edit'">
         <button
             type="button"
             class="slot__label slot__label-button"
             [class.slot__label-button--selected]="selected"
-            (click)="onClick(); $event.stopPropagation()"
+            (click)="onClick()"
         >
             {{ label }}
         </button>
