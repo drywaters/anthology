@@ -22,7 +22,7 @@
     height: clamp(240px, 55vw, 420px);
     border-radius: 8px;
     overflow: hidden;
-    background: #000;
+    background: var(--mat-sys-scrim);
     margin-bottom: 16px;
 }
 
@@ -43,7 +43,7 @@
 }
 
 .scanner-overlay--busy {
-    background: rgb(0 0 0 / 55%);
+    background: color-mix(in srgb, var(--mat-sys-scrim) 55%, transparent);
     z-index: 2;
 }
 
@@ -60,13 +60,13 @@
     gap: 0.75rem;
     padding: 1rem 1.25rem;
     border-radius: 16px;
-    background: rgb(0 0 0 / 35%);
+    background: color-mix(in srgb, var(--mat-sys-scrim) 35%, transparent);
     text-align: center;
     max-width: min(90%, 360px);
 }
 
 .busy-text {
-    color: rgb(255 255 255 / 92%);
+    color: var(--mat-sys-inverse-on-surface);
     font-weight: 500;
 }
 
@@ -80,7 +80,7 @@
 }
 
 .scanner-error {
-    color: var(--mat-sys-error, #d93025);
+    color: var(--mat-sys-error);
     margin: 0;
     font-size: 0.9rem;
 }

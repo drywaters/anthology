@@ -28,7 +28,7 @@
     position: relative;
     overflow: hidden;
     border-radius: 16px;
-    background: black;
+    background: var(--mat-sys-scrim);
 }
 
 .scanner-preview .scanner-video {
@@ -51,7 +51,7 @@
 }
 
 .scanner-preview .scanner-overlay--busy {
-    background: rgb(0 0 0 / 55%);
+    background: color-mix(in srgb, var(--mat-sys-scrim) 55%, transparent);
     z-index: 4;
 }
 
@@ -69,12 +69,12 @@
     text-align: center;
     padding: 1rem 1.25rem;
     border-radius: 16px;
-    background: rgb(0 0 0 / 35%);
+    background: color-mix(in srgb, var(--mat-sys-scrim) 35%, transparent);
     max-width: min(90%, 340px);
 }
 
 .scanner-preview .busy-text {
-    color: rgb(255 255 255 / 92%);
+    color: var(--mat-sys-inverse-on-surface);
     font-weight: 500;
 }
 
