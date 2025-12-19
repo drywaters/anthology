@@ -6,7 +6,7 @@
     scroll-margin-top: 1rem;
 
     .items-table {
-        background: var(--mat-sys-surface, #fff);
+        background: var(--mat-sys-surface);
     }
 }
 
@@ -61,7 +61,7 @@
 
 .items-table tr.mat-mdc-row {
     cursor: pointer;
-    background: var(--mat-sys-surface, #fff);
+    background: var(--mat-sys-surface);
 }
 
 .items-table tr.mat-mdc-row:hover {

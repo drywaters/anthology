@@ -5,9 +5,9 @@
 .slot {
     position: absolute;
     box-sizing: border-box;
-    border: 2px dashed rgb(255 255 255 / 80%);
+    border: 2px dashed color-mix(in srgb, var(--mat-sys-inverse-on-surface) 80%, transparent);
     background: color-mix(in srgb, var(--mat-sys-primary) 15%, transparent);
-    color: #fff;
+    color: var(--mat-sys-inverse-on-surface);
     font-size: 12px;
     pointer-events: auto;
     transition:
@@ -19,7 +19,7 @@
 .slot--selected {
     border: 4px solid var(--mat-sys-primary);
     box-shadow:
-        0 0 0 1px rgb(0 0 0 / 20%),
+        0 0 0 1px color-mix(in srgb, var(--mat-sys-scrim) 20%, transparent),
         0 4px 12px color-mix(in srgb, var(--mat-sys-primary) 40%, transparent);
     background: color-mix(in srgb, var(--mat-sys-primary) 70%, transparent);
     z-index: 10;
@@ -29,7 +29,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: rgb(0 0 0 / 80%);
+    background: color-mix(in srgb, var(--mat-sys-scrim) 80%, transparent);
     border-radius: 4px;
     font-size: 14px;
     font-weight: 600;
@@ -38,7 +38,7 @@
 }
 
 .slot--draft {
-    border: 2px solid rgb(255 255 255 / 60%);
+    border: 2px solid color-mix(in srgb, var(--mat-sys-inverse-on-surface) 60%, transparent);
     background: color-mix(in srgb, var(--mat-sys-primary) 40%, transparent);
     pointer-events: auto;
 }
@@ -47,7 +47,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: rgb(0 0 0 / 80%);
+    background: color-mix(in srgb, var(--mat-sys-scrim) 80%, transparent);
     border-radius: 4px;
     font-size: 14px;
     font-weight: 600;
@@ -59,7 +59,7 @@
 }
 
 .slot--active {
-    border-color: rgb(255 255 255 / 95%);
+    border-color: color-mix(in srgb, var(--mat-sys-inverse-on-surface) 95%, transparent);
     background: color-mix(in srgb, var(--mat-sys-primary) 70%, transparent);
 }
 
@@ -67,7 +67,7 @@
     position: absolute;
     top: 4px;
     left: 4px;
-    background: rgb(0 0 0 / 40%);
+    background: color-mix(in srgb, var(--mat-sys-scrim) 40%, transparent);
     padding: 2px 4px;
     border-radius: 2px;
     border: none;
@@ -94,7 +94,7 @@
     padding: 0;
     aspect-ratio: 1 / 1;
     border-radius: 50%;
-    border: 2px solid #fff;
+    border: 2px solid var(--mat-sys-inverse-on-surface);
     background: var(--mat-sys-primary);
     pointer-events: auto;
     cursor: grab;
