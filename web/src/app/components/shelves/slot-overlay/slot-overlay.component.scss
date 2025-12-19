@@ -5,15 +5,19 @@
 .slot {
     position: absolute;
     box-sizing: border-box;
-    border: 2px dashed color-mix(in srgb, var(--mat-sys-inverse-on-surface) 80%, transparent);
-    background: color-mix(in srgb, var(--mat-sys-primary) 15%, transparent);
-    color: var(--mat-sys-inverse-on-surface);
+    border: 2px dashed rgb(255 255 255 / 80%);
+    background: color-mix(in srgb, var(--mat-sys-primary) 35%, transparent);
+    color: #fff;
     font-size: 12px;
     pointer-events: auto;
     transition:
         border-color 0.2s ease,
         background-color 0.2s ease;
     cursor: pointer;
+
+    &.slot--draft {
+        cursor: default;
+    }
 }
 
 .slot--selected {
@@ -38,7 +42,7 @@
 }
 
 .slot--draft {
-    border: 2px solid color-mix(in srgb, var(--mat-sys-inverse-on-surface) 60%, transparent);
+    border: 2px solid rgb(255 255 255 / 60%);
     background: color-mix(in srgb, var(--mat-sys-primary) 40%, transparent);
     pointer-events: auto;
 }
@@ -59,7 +63,7 @@
 }
 
 .slot--active {
-    border-color: color-mix(in srgb, var(--mat-sys-inverse-on-surface) 95%, transparent);
+    border-color: rgb(255 255 255 / 95%);
     background: color-mix(in srgb, var(--mat-sys-primary) 70%, transparent);
 }
 
@@ -94,7 +98,7 @@
     padding: 0;
     aspect-ratio: 1 / 1;
     border-radius: 50%;
-    border: 2px solid var(--mat-sys-inverse-on-surface);
+    border: 2px solid #fff;
     background: var(--mat-sys-primary);
     pointer-events: auto;
     cursor: grab;

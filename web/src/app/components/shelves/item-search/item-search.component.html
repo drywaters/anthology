@@ -1,7 +1,7 @@
 <div class="search-controls">
     <mat-form-field appearance="outline">
         <mat-label>Item type</mat-label>
-        <mat-select [formControl]="typeControl" [disabled]="disabled">
+        <mat-select [formControl]="typeControl">
             <mat-option *ngFor="let option of typeOptions" [value]="option.value">
                 {{ option.label }}
             </mat-option>
@@ -15,7 +15,6 @@
             placeholder="Search by title"
             [formControl]="searchControl"
             [matAutocomplete]="itemSearchAutocomplete"
-            [disabled]="disabled"
         />
         <mat-autocomplete
             #itemSearchAutocomplete="matAutocomplete"

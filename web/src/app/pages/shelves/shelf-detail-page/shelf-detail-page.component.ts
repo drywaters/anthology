@@ -93,26 +93,8 @@ export class ShelfDetailPageComponent {
     readonly unplacedItems = computed(() => this.shelf()?.unplaced ?? []);
     readonly recentlyScannedIds = computed(() => this.recentlyScannedItems);
 
-    // Computed properties for canvas
-    readonly layoutSlots = computed<LayoutSlotData[]>(() => {
-        const slots: LayoutSlotData[] = [];
-        this.rows.controls.forEach((row) => {
-            row.controls.columns.controls.forEach((col) => {
-                slots.push({
-                    rowIndex: row.controls.rowIndex.value,
-                    colIndex: col.controls.colIndex.value,
-                    position: {
-                        xStartNorm: col.controls.xStartNorm.value,
-                        xEndNorm: col.controls.xEndNorm.value,
-                        yStartNorm: col.controls.yStartNorm.value,
-                        yEndNorm: col.controls.yEndNorm.value,
-                    },
-                    slotId: col.controls.slotId.value ?? undefined,
-                });
-            });
-        });
-        return slots;
-    });
+    // Writable signal for canvas slots - must be explicitly updated when form changes
+    readonly layoutSlots = signal<LayoutSlotData[]>([]);
 
     // Computed property for layout editor
     readonly layoutRows = computed<LayoutRow[]>(() => {
@@ -171,6 +153,7 @@ export class ShelfDetailPageComponent {
         this.layoutForm.clear();
         const shelf = this.shelf();
         if (!shelf) {
+            this.updateLayoutSlots();
             return;
         }
         const slotMap = new Map<string, ShelfSlot>();
@@ -200,6 +183,7 @@ export class ShelfDetailPageComponent {
             });
             this.rows.push(group);
         });
+        this.updateLayoutSlots();
     }
 
     private highlightSlotFromQuery(): boolean {
@@ -322,6 +306,27 @@ export class ShelfDetailPageComponent {
             });
         });
         this.ensureActiveLayoutSelection();
+        this.updateLayoutSlots();
+    }
+
+    private updateLayoutSlots(): void {
+        const slots: LayoutSlotData[] = [];
+        this.rows.controls.forEach((row) => {
+            row.controls.columns.controls.forEach((col) => {
+                slots.push({
+                    rowIndex: row.controls.rowIndex.value,
+                    colIndex: col.controls.colIndex.value,
+                    position: {
+                        xStartNorm: col.controls.xStartNorm.value,
+                        xEndNorm: col.controls.xEndNorm.value,
+                        yStartNorm: col.controls.yStartNorm.value,
+                        yEndNorm: col.controls.yEndNorm.value,
+                    },
+                    slotId: col.controls.slotId.value ?? undefined,
+                });
+            });
+        });
+        this.layoutSlots.set(slots);
     }
 
     saveLayout(): void {
@@ -382,6 +387,7 @@ export class ShelfDetailPageComponent {
         column.controls.xEndNorm.setValue(update.position.xEndNorm);
         column.controls.yStartNorm.setValue(update.position.yStartNorm);
         column.controls.yEndNorm.setValue(update.position.yEndNorm);
+        this.updateLayoutSlots();
     }
 
     // Sidebar event handlers

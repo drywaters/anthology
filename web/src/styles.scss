@@ -250,38 +250,33 @@ app-items-table-view .items-table {
 // Custom styling for NotificationService semantic notification types.
 // Uses Material Design 3 system tokens for consistent theming.
 // =============================================================================
-.notification-success .mdc-snackbar__surface {
-    background-color: color-mix(in srgb, var(--mat-sys-primary) 90%, var(--mat-sys-surface));
+.notification-success {
+    --mdc-snackbar-container-color: var(--mat-sys-primary-container);
+    --mdc-snackbar-supporting-text-color: var(--mat-sys-on-primary-container);
+
+    .mat-mdc-button.mat-mdc-snack-bar-action {
+        color: var(--mat-sys-on-primary-container);
+    }
 }
 
-.notification-success .mdc-snackbar__label {
-    color: var(--mat-sys-on-primary);
+.notification-error {
+    --mdc-snackbar-container-color: var(--mat-sys-error-container);
+    --mdc-snackbar-supporting-text-color: var(--mat-sys-on-error-container);
+
+    .mat-mdc-button.mat-mdc-snack-bar-action {
+        color: var(--mat-sys-on-error-container);
+    }
 }
 
-.notification-success .mat-mdc-button.mat-mdc-snack-bar-action {
-    color: var(--mat-sys-on-primary);
-}
+.notification-warn {
+    --mdc-snackbar-container-color: color-mix(
+        in srgb,
+        var(--mat-sys-tertiary-container) 90%,
+        var(--mat-sys-surface)
+    );
+    --mdc-snackbar-supporting-text-color: var(--mat-sys-on-tertiary-container);
 
-.notification-error .mdc-snackbar__surface {
-    background-color: var(--mat-sys-error-container);
-}
-
-.notification-error .mdc-snackbar__label {
-    color: var(--mat-sys-on-error-container);
-}
-
-.notification-error .mat-mdc-button.mat-mdc-snack-bar-action {
-    color: var(--mat-sys-on-error-container);
-}
-
-.notification-warn .mdc-snackbar__surface {
-    background-color: color-mix(in srgb, var(--mat-sys-tertiary) 85%, var(--mat-sys-surface));
-}
-
-.notification-warn .mdc-snackbar__label {
-    color: var(--mat-sys-on-tertiary);
-}
-
-.notification-warn .mat-mdc-button.mat-mdc-snack-bar-action {
-    color: var(--mat-sys-on-tertiary);
+    .mat-mdc-button.mat-mdc-snack-bar-action {
+        color: var(--mat-sys-on-tertiary-container);
+    }
 }
