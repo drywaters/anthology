@@ -63,7 +63,11 @@ func NewGoogleAuthenticator(ctx context.Context, clientID, clientSecret, redirec
 
 // AuthURL generates the Google OAuth consent URL with the given state.
 func (g *GoogleAuthenticator) AuthURL(state string) string {
-	return g.config.AuthCodeURL(state, oauth2.AccessTypeOffline)
+	return g.config.AuthCodeURL(
+		state,
+		oauth2.AccessTypeOffline,
+		oauth2.SetAuthURLParam("prompt", "select_account"),
+	)
 }
 
 // Exchange exchanges the authorization code for tokens and returns the user claims.

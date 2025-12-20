@@ -1,6 +1,11 @@
 package auth
 
-import "testing"
+import (
+	"net/url"
+	"testing"
+
+	"golang.org/x/oauth2"
+)
 
 func TestIsEmailAllowedByEmailAllowlist(t *testing.T) {
 	authenticator := &GoogleAuthenticator{
@@ -82,5 +87,27 @@ func TestGenerateState(t *testing.T) {
 	}
 	if state1 == state2 {
 		t.Fatal("expected unique state values")
+	}
+}
+
+func TestAuthURLIncludesPromptSelectAccount(t *testing.T) {
+	authenticator := &GoogleAuthenticator{
+		config: &oauth2.Config{
+			ClientID:     "client-id",
+			RedirectURL:  "http://localhost/callback",
+			Endpoint:     oauth2.Endpoint{AuthURL: "https://auth.test/oauth"},
+			Scopes:       []string{"openid"},
+			ClientSecret: "secret",
+		},
+	}
+
+	authURL := authenticator.AuthURL("state123")
+	parsed, err := url.Parse(authURL)
+	if err != nil {
+		t.Fatalf("failed to parse auth URL: %v", err)
+	}
+
+	if prompt := parsed.Query().Get("prompt"); prompt != "select_account" {
+		t.Fatalf("expected prompt=select_account, got %q", prompt)
 	}
 }
