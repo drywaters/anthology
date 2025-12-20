@@ -27,11 +27,11 @@ UI_IMAGE_REPO ?= anthology-ui
 LOG_LEVEL ?= info
 PLATFORMS ?= linux/amd64,linux/arm64/v8
 
-.PHONY: help configure-image ensure-image-tag api-run api-test api-build api-clean fmt tidy web-install web-start web-test web-lint web-build docker-build docker-build-api docker-build-ui docker-push docker-push-api docker-push-ui docker-publish docker-buildx docker-buildx-api docker-buildx-ui build run local clean
+.PHONY: help configure-image ensure-image-tag api-run api-test api-lint api-build api-clean fmt tidy web-install web-start web-test web-lint web-build lint docker-build docker-build-api docker-build-ui docker-push docker-push-api docker-push-ui docker-publish docker-buildx docker-buildx-api docker-buildx-ui build run local clean
 
 help: ## Show all available targets.
 	@echo "Anthology targets"
-	@grep -E '^[a-zA-Z0-9_-]+:.*?##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@grep -h -E '^[a-zA-Z0-9_-]+:.*##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 configure-image: ## Evaluate container image metadata defaults.
 	$(eval SHORT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null))
@@ -63,6 +63,9 @@ run: api-run ## Alias for api-run to match common tooling expectations.
 api-test: ## Execute all Go unit tests.
 	GOOGLE_BOOKS_API_KEY=$(GOOGLE_BOOKS_API_KEY) go test ./...
 
+api-lint: ## Run Go lint checks (golangci-lint).
+	golangci-lint run ./...
+
 api-build: ## Compile the Go API into ./bin/anthology.
 	mkdir -p $(BIN_DIR)
 	go build -o $(BIN_DIR)/anthology ./cmd/api
@@ -90,6 +93,8 @@ web-lint: ## Run Angular lint checks.
 
 web-build: ## Build the Angular production bundle.
 	cd $(WEB_DIR) && npm run build
+
+lint: api-lint web-lint ## Run Go and Angular lint checks.
 
 docker-build-api: IMAGE_REPO=$(API_IMAGE_REPO)
 docker-build-api: configure-image ## Build the API container image.
