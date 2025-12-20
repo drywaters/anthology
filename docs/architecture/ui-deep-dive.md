@@ -39,24 +39,26 @@ Priority: `globalThis.NG_APP_API_URL` (from `assets/runtime-config.js` replaceme
 ## Auth flow
 
 * `AuthService`:
-  * `login(token)` → `POST /api/session` with `{token}`, `withCredentials: true`, marks session true.
+  * `loginWithGoogle(redirectTo?)` → redirects to `/api/auth/google`.
   * `ensureSession()` → caches state; otherwise `GET /api/session` to validate cookie.
   * `logout()` → `DELETE /api/session` (best-effort, treats 401 as logged out).
 * `authGuard`:
   * Calls `ensureSession`; if false, redirects to `/login?redirectTo=<previous>`.
 * Login page:
-  * Form for bearer token; on success, route to `redirectTo` or `/`; shows error on 401/400.
+  * Google sign-in button; renders OAuth errors from callback query params and offers a "Clear session" action.
 
 ```mermaid
 sequenceDiagram
     participant UI
     participant Auth as AuthService
     participant API
-    UI->>Auth: login(token)
-    Auth->>API: POST /api/session {token} (withCredentials)
-    API-->>Auth: 204 + Set-Cookie
+    UI->>Auth: loginWithGoogle(redirectTo)
+    Auth->>API: GET /api/auth/google
+    API-->>UI: 302 Redirect to Google
+    UI->>API: GET /api/auth/google/callback?code=...
+    API-->>UI: 302 Redirect + Set-Cookie
+    UI->>Auth: ensureSession()
     Auth-->>UI: session=true
-    UI->>Route: navigate to redirect
 ```
 
 ## Services (API clients)
@@ -169,4 +171,4 @@ npm install
 npm start   # dev server on http://localhost:4200
 ```
 
-Ensure the API is running (default at `http://localhost:8080/api`) and `API_TOKEN` matches what you enter on the login page. To point at a different backend, set `NG_APP_API_URL` in `web/src/assets/runtime-config.js` at build/start time or update the meta tag in `web/src/index.html`.
+Ensure the API is running (default at `http://localhost:8080/api`). In non-dev environments, configure the Google OAuth env vars so the login flow works. In development without OAuth configured, `/api/session` reports authenticated and the guard allows access without logging in. To point at a different backend, set `NG_APP_API_URL` in `web/src/assets/runtime-config.js` at build/start time or update the meta tag in `web/src/index.html`.

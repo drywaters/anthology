@@ -1,13 +1,13 @@
 package http
 
 import (
-	"crypto/sha256"
-	"crypto/subtle"
-	"encoding/hex"
+	"context"
 	"log/slog"
 	"net/http"
 	"strings"
 	"time"
+
+	"anthology/internal/auth"
 )
 
 type statusRecorder struct {
@@ -32,33 +32,50 @@ func newSlogMiddleware(logger *slog.Logger) func(http.Handler) http.Handler {
 	}
 }
 
-func newTokenAuthMiddleware(expectedToken string) func(http.Handler) http.Handler {
-	expectedToken = strings.TrimSpace(expectedToken)
-	expectedCookieValue := sessionCookieValue(expectedToken)
+// contextKey is a custom type for context keys to avoid collisions.
+type contextKey string
 
+const userContextKey contextKey = "user"
+
+// UserFromContext extracts the authenticated user from the request context.
+// Returns nil if using legacy token auth or if not authenticated.
+func UserFromContext(ctx context.Context) *auth.User {
+	user, _ := ctx.Value(userContextKey).(*auth.User)
+	return user
+}
+
+func newAuthMiddleware(authService *auth.Service, logger *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if expectedToken == "" {
+			// If auth service is not configured, allow all requests (dev mode)
+			if authService == nil {
 				next.ServeHTTP(w, r)
 				return
 			}
 
-			const prefix = "Bearer "
-			authHeader := r.Header.Get("Authorization")
-			if strings.HasPrefix(authHeader, prefix) {
-				token := strings.TrimSpace(authHeader[len(prefix):])
-				if token != "" && subtle.ConstantTimeCompare([]byte(token), []byte(expectedToken)) == 1 {
-					next.ServeHTTP(w, r)
-					return
-				}
-			}
-
-			if hasValidSessionCookie(r, expectedCookieValue) {
-				next.ServeHTTP(w, r)
+			// Check session cookie
+			cookie, err := r.Cookie(sessionCookieName)
+			if err != nil || cookie.Value == "" {
+				unauthorized(w)
 				return
 			}
 
-			unauthorized(w)
+			// Validate session
+			user, err := authService.ValidateSession(r.Context(), cookie.Value)
+			if err != nil {
+				logger.Error("session validation error", "error", err)
+				unauthorized(w)
+				return
+			}
+
+			if user == nil {
+				unauthorized(w)
+				return
+			}
+
+			// Inject user into context
+			ctx := context.WithValue(r.Context(), userContextKey, user)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
@@ -66,28 +83,6 @@ func newTokenAuthMiddleware(expectedToken string) func(http.Handler) http.Handle
 func unauthorized(w http.ResponseWriter) {
 	w.Header().Set("WWW-Authenticate", "Bearer")
 	writeError(w, http.StatusUnauthorized, "authentication required")
-}
-
-func sessionCookieValue(token string) string {
-	token = strings.TrimSpace(token)
-	if token == "" {
-		return ""
-	}
-	sum := sha256.Sum256([]byte(token))
-	return hex.EncodeToString(sum[:])
-}
-
-func hasValidSessionCookie(r *http.Request, expected string) bool {
-	if expected == "" {
-		return false
-	}
-
-	cookie, err := r.Cookie(sessionCookieName)
-	if err != nil {
-		return false
-	}
-
-	return subtle.ConstantTimeCompare([]byte(cookie.Value), []byte(expected)) == 1
 }
 
 func newSecurityHeadersMiddleware(environment string) func(http.Handler) http.Handler {

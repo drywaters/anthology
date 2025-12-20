@@ -1,11 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { Router, ActivatedRoute, RouterModule } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { AuthService } from '../../services/auth.service';
@@ -13,95 +11,65 @@ import { AuthService } from '../../services/auth.service';
 @Component({
     selector: 'app-login-page',
     standalone: true,
-    imports: [
-        CommonModule,
-        ReactiveFormsModule,
-        RouterModule,
-        MatButtonModule,
-        MatCardModule,
-        MatFormFieldModule,
-        MatInputModule,
-    ],
+    imports: [CommonModule, RouterModule, MatButtonModule, MatCardModule, MatIconModule],
     templateUrl: './login-page.component.html',
     styleUrl: './login-page.component.scss',
 })
-export class LoginPageComponent {
+export class LoginPageComponent implements OnInit {
     private readonly authService = inject(AuthService);
-    private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
-    private readonly formBuilder = inject(FormBuilder);
     private readonly destroyRef = inject(DestroyRef);
 
-    readonly form = this.formBuilder.group({
-        token: ['', [Validators.required]],
-    });
     readonly submitting = signal(false);
     readonly errorMessage = signal<string | null>(null);
 
-    get tokenControl() {
-        return this.form.controls.token;
-    }
-
-    private setSubmitting(isSubmitting: boolean): void {
-        this.submitting.set(isSubmitting);
-        if (isSubmitting) {
-            this.form.disable({ emitEvent: false });
-        } else {
-            this.form.enable({ emitEvent: false });
+    ngOnInit(): void {
+        // Check for OAuth callback errors
+        const error = this.route.snapshot.queryParamMap.get('error');
+        const message = this.route.snapshot.queryParamMap.get('message');
+        if (error) {
+            this.errorMessage.set(message || this.getErrorMessage(error));
         }
     }
 
-    submit(): void {
-        if (this.form.invalid) {
-            this.form.markAllAsTouched();
-            return;
-        }
-
-        const token = this.tokenControl.value?.trim();
-        if (!token) {
-            this.tokenControl.setErrors({ required: true });
-            return;
-        }
-
-        this.setSubmitting(true);
+    loginWithGoogle(): void {
+        this.submitting.set(true);
         this.errorMessage.set(null);
-
-        this.authService
-            .login(token)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: () => {
-                    this.setSubmitting(false);
-                    const redirectTo = this.route.snapshot.queryParamMap.get('redirectTo');
-                    this.router.navigateByUrl(redirectTo || '/');
-                },
-                error: (error) => {
-                    this.setSubmitting(false);
-                    if (error.status === 401) {
-                        this.errorMessage.set('Invalid token. Please try again.');
-                        this.tokenControl.setErrors({ invalid: true });
-                    } else {
-                        this.errorMessage.set('Unable to establish a session right now.');
-                    }
-                },
-            });
+        const redirectTo = this.route.snapshot.queryParamMap.get('redirectTo');
+        this.authService.loginWithGoogle(redirectTo || undefined);
     }
 
     clearSession(): void {
-        this.setSubmitting(true);
+        this.submitting.set(true);
         this.errorMessage.set(null);
         this.authService
             .logout()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => {
-                    this.setSubmitting(false);
-                    this.form.reset({ token: '' });
+                    this.submitting.set(false);
                 },
                 error: () => {
-                    this.setSubmitting(false);
+                    this.submitting.set(false);
                     this.errorMessage.set('We could not clear your session.');
                 },
             });
+    }
+
+    private getErrorMessage(code: string): string {
+        switch (code) {
+            case 'access_denied':
+                return 'Your account is not authorized to access this application.';
+            case 'email_not_verified':
+                return 'Please verify your Google email address first.';
+            case 'invalid_request':
+                return 'The login request was invalid. Please try again.';
+            case 'exchange_error':
+                return 'Failed to complete authentication. Please try again.';
+            case 'internal_error':
+                return 'An internal error occurred. Please try again later.';
+            default:
+                return 'An error occurred during login. Please try again.';
+        }
     }
 }

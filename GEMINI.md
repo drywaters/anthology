@@ -1,7 +1,7 @@
 # Gemini Context: Anthology
 
 ## Project Overview
-Anthology is a two-tier catalogue application designed to manage personal libraries of books, games, movies, and music. It features a Go (1.22+) API backend and an Angular (20) Material frontend. The architecture allows for independent deployment of the API and UI.
+Anthology is a two-tier catalogue application designed to manage personal libraries of books, games, movies, and music. It features a Go (1.24+) API backend and an Angular (20) Material frontend. The architecture allows for independent deployment of the API and UI.
 
 ## Architecture
 
@@ -27,7 +27,7 @@ Anthology is a two-tier catalogue application designed to manage personal librar
 ## Building and Running
 
 ### Prerequisites
--   Go 1.22+
+-   Go 1.24+
 -   Node.js & npm
 -   Docker (optional, for container builds)
 
@@ -75,11 +75,17 @@ Configuration is driven by environment variables. Defaults are set in `Makefile`
 | `DATA_STORE` | `memory` | `memory` or `postgres` |
 | `DATABASE_URL` | `...` | Postgres connection string |
 | `PORT` | `8080` | API listening port |
-| `API_TOKEN` | `local-dev-token` | Bearer token for auth |
+| `APP_ENV` | `development` | `development`, `staging`, or `production` |
 | `GOOGLE_BOOKS_API_KEY` | `...` | API key for metadata lookups |
+| `AUTH_GOOGLE_CLIENT_ID` | `...` | Google OAuth client ID (non-dev) |
+| `AUTH_GOOGLE_CLIENT_SECRET` | `...` | Google OAuth client secret (non-dev) |
+| `AUTH_GOOGLE_ALLOWED_DOMAINS` | `...` | OAuth allowlist domains (non-dev) |
+| `AUTH_GOOGLE_ALLOWED_EMAILS` | `...` | OAuth allowlist emails (non-dev) |
+| `AUTH_GOOGLE_REDIRECT_URL` | `...` | OAuth callback URL |
+| `FRONTEND_URL` | `...` | UI URL used for OAuth redirects |
 | `ALLOWED_ORIGINS` | `...` | CORS allowed origins |
 
-**Note:** `_FILE` variants (e.g., `DATABASE_URL_FILE`) are supported for Docker secrets.
+**Note:** `_FILE` variants (e.g., `DATABASE_URL_FILE`) are supported for Docker secrets. OAuth is required when `APP_ENV` is `staging` or `production`, and sessions use Postgres.
 
 ## Development Conventions
 

@@ -1,0 +1,160 @@
+package auth
+
+import (
+	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
+	"fmt"
+	"time"
+
+	"github.com/google/uuid"
+)
+
+// Service provides authentication business logic.
+type Service struct {
+	repo       Repository
+	sessionTTL time.Duration
+}
+
+// NewService creates a new auth Service.
+func NewService(repo Repository, sessionTTL time.Duration) *Service {
+	if sessionTTL == 0 {
+		sessionTTL = 12 * time.Hour
+	}
+	return &Service{
+		repo:       repo,
+		sessionTTL: sessionTTL,
+	}
+}
+
+// CreateOrUpdateUser finds an existing user by OAuth credentials or creates a new one.
+func (s *Service) CreateOrUpdateUser(ctx context.Context, claims *GoogleClaims) (*User, error) {
+	existing, err := s.repo.FindUserByOAuth(ctx, "google", claims.Sub)
+	if err != nil {
+		return nil, fmt.Errorf("find user: %w", err)
+	}
+
+	if existing != nil {
+		// Update last login and refresh profile data
+		if err := s.repo.UpdateUserLogin(ctx, existing.ID, claims.Name, claims.Picture); err != nil {
+			return nil, fmt.Errorf("update user login: %w", err)
+		}
+		existing.Name = claims.Name
+		existing.AvatarURL = claims.Picture
+		existing.LastLoginAt = time.Now()
+		return existing, nil
+	}
+
+	// Create new user
+	now := time.Now()
+	newUser := User{
+		ID:              uuid.New(),
+		Email:           claims.Email,
+		Name:            claims.Name,
+		AvatarURL:       claims.Picture,
+		OAuthProvider:   "google",
+		OAuthProviderID: claims.Sub,
+		CreatedAt:       now,
+		UpdatedAt:       now,
+		LastLoginAt:     now,
+	}
+
+	created, err := s.repo.CreateUser(ctx, newUser)
+	if err != nil {
+		return nil, fmt.Errorf("create user: %w", err)
+	}
+
+	return &created, nil
+}
+
+// CreateSession creates a new session for the given user and returns the session token.
+func (s *Service) CreateSession(ctx context.Context, userID uuid.UUID, userAgent, ipAddress string) (string, error) {
+	// Generate cryptographically secure session token
+	tokenBytes := make([]byte, 32)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		return "", fmt.Errorf("generate session token: %w", err)
+	}
+	token := base64.URLEncoding.EncodeToString(tokenBytes)
+	tokenHash := hashToken(token)
+
+	now := time.Now()
+	session := Session{
+		ID:        uuid.New(),
+		UserID:    userID,
+		ExpiresAt: now.Add(s.sessionTTL),
+		CreatedAt: now,
+		UserAgent: truncateString(userAgent, 512),
+		IPAddress: truncateString(ipAddress, 45),
+	}
+
+	if err := s.repo.CreateSession(ctx, session, tokenHash); err != nil {
+		return "", fmt.Errorf("create session: %w", err)
+	}
+
+	return token, nil
+}
+
+// ValidateSession checks if the token is valid and returns the associated user.
+func (s *Service) ValidateSession(ctx context.Context, token string) (*User, error) {
+	if token == "" {
+		return nil, nil
+	}
+
+	tokenHash := hashToken(token)
+	session, user, err := s.repo.FindSessionByTokenHash(ctx, tokenHash)
+	if err != nil {
+		return nil, fmt.Errorf("find session: %w", err)
+	}
+
+	if session == nil || user == nil {
+		return nil, nil
+	}
+
+	// Check expiration
+	if time.Now().After(session.ExpiresAt) {
+		_ = s.repo.DeleteSession(ctx, session.ID)
+		return nil, nil
+	}
+
+	return user, nil
+}
+
+// DeleteSession removes the session associated with the given token.
+func (s *Service) DeleteSession(ctx context.Context, token string) error {
+	if token == "" {
+		return nil
+	}
+
+	tokenHash := hashToken(token)
+	session, _, err := s.repo.FindSessionByTokenHash(ctx, tokenHash)
+	if err != nil {
+		return fmt.Errorf("find session: %w", err)
+	}
+
+	if session == nil {
+		return nil
+	}
+
+	return s.repo.DeleteSession(ctx, session.ID)
+}
+
+// CleanupExpiredSessions removes all expired sessions from the database.
+func (s *Service) CleanupExpiredSessions(ctx context.Context) (int64, error) {
+	return s.repo.DeleteExpiredSessions(ctx)
+}
+
+// hashToken returns the SHA-256 hash of the token as a hex string.
+func hashToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
+}
+
+// truncateString truncates a string to the given max length.
+func truncateString(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen]
+}

@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Stack overview
-Anthology is a two-tier catalogue: a Go 1.22 API (under `cmd/api` + `internal/`) fronted by an Angular 20 Material UI (`web/`). Recent work adds metadata search (Google Books), CSV imports, and cover thumbnails that all flow through the Add Item page so validation and enrichment behave consistently. A new shelves module models real-world shelves with photo-backed layouts so items can be placed into slots and surfaced in the UI.
+Anthology is a two-tier catalogue: a Go 1.24 API (under `cmd/api` + `internal/`) fronted by an Angular 20 Material UI (`web/`). Recent work adds metadata search (Google Books), CSV imports, and cover thumbnails that all flow through the Add Item page so validation and enrichment behave consistently. A new shelves module models real-world shelves with photo-backed layouts so items can be placed into slots and surfaced in the UI.
 
 ## Project Structure & Module Organization
 - `cmd/api`: Go entrypoint; wire up config, repositories, chi router, middleware, and HTTP handlers.
@@ -21,14 +21,14 @@ Anthology is a two-tier catalogue: a Go 1.22 API (under `cmd/api` + `internal/`)
 
 ## Coding Style & Naming Conventions
 - Go: auto-format with `gofmt`, keep imports sorted, use short receiver names, and follow package boundaries like `internal/items`. Exported types mirror the `ItemService`/`ItemRepository` style. Logging uses `slog`.
-- Angular: 2-space indentation, kebab-case filenames (`items-page.component.ts`), standalone components, and SCSS scoped per component. Stick to Material 3 tokens defined in `styles.scss`. Keep environment variables in screaming snake case (e.g., `API_TOKEN`).
+- Angular: 2-space indentation, kebab-case filenames (`items-page.component.ts`), standalone components, and SCSS scoped per component. Stick to Material 3 tokens defined in `styles.scss`. Keep environment variables in screaming snake case (e.g., `GOOGLE_BOOKS_API_KEY`).
 
 ## Configuration & Security
-- Primary env vars: `DATA_STORE`, `DATABASE_URL`, `PORT`, `LOG_LEVEL`, `ALLOWED_ORIGINS`, `API_TOKEN`, `GOOGLE_BOOKS_API_KEY`. `_FILE` variants are respected (defaults point to `/run/secrets/anthology_*` in Docker, including `/run/secrets/anthology_google_books_api_key`). `GOOGLE_BOOKS_API_KEY` is required even in local/dev; set a placeholder when testing.
+- Primary env vars: `DATA_STORE`, `DATABASE_URL`, `PORT`, `LOG_LEVEL`, `ALLOWED_ORIGINS`, `APP_ENV`, `GOOGLE_BOOKS_API_KEY`, `AUTH_GOOGLE_CLIENT_ID`, `AUTH_GOOGLE_CLIENT_SECRET`, `AUTH_GOOGLE_REDIRECT_URL`, `AUTH_GOOGLE_ALLOWED_DOMAINS`, `AUTH_GOOGLE_ALLOWED_EMAILS`, `FRONTEND_URL`. `_FILE` variants are respected (defaults point to `/run/secrets/anthology_*`, including `anthology_google_books_api_key`, `anthology_google_client_id`, and `anthology_google_client_secret`). `GOOGLE_BOOKS_API_KEY` is required even in local/dev; set a placeholder when testing.
 - `DATA_STORE=memory` seeds demo catalogue data plus a sample shelf with pre-placed items; `DATA_STORE=postgres` expects migrations through `0007` to be applied and uses the `sqlx` repo implementation.
 - CORS defaults allow `http://localhost:4200`/`8080`; override via `ALLOWED_ORIGINS`.
-- Enable bearer auth (`API_TOKEN`) outside local demos. The Angular login screen exchanges tokens via `/api/session` to mint HttpOnly cookies.
-- Never commit secrets; rely on `.env` files locally. Docker secrets `anthology_database_url` and `anthology_api_token` map to the `_FILE` envs.
+- OAuth is required when `APP_ENV` is `staging` or `production` (configure Google OAuth client ID/secret plus an allowlist) and relies on Postgres for sessions. In `APP_ENV=development` without OAuth configured, auth is disabled.
+- Never commit secrets; rely on `.env` files locally. Docker secrets include `anthology_database_url`, `anthology_google_books_api_key`, `anthology_google_client_id`, and `anthology_google_client_secret`, which map to the `_FILE` envs.
 
 ## Feature behavior notes
 - Reading status supports `none`/`want_to_read`/`reading`/`read`; defaults to `none`. Filtering by `status` with no type filter applies only to books (non-books remain visible when status = `none`, and are excluded for the other statuses). `read` requires `readAt`; `reading` enforces non-negative `currentPage` capped by `pageCount` when provided.
@@ -41,7 +41,7 @@ Anthology is a two-tier catalogue: a Go 1.22 API (under `cmd/api` + `internal/`)
 - Always validate UI work in the running Angular app via the Playwright MCP: grab at least one screenshot (include scrolled states if relevant) from `http://localhost:4200`, and log any console or network errors.
 
 ## Commit & Pull Request Guidelines
-- Keep commits short, imperative, and scoped (e.g., “Add bearer token authentication”). Reference issues in the body when helpful.
+- Keep commits short, imperative, and scoped (e.g., “Add Google OAuth login”). Reference issues in the body when helpful.
 - PRs must include a change summary, manual test notes, confirmation that both `go test` and `npm test`/`npm run lint` were run, and screenshots or GIFs for UI changes. Mention deployment/migration steps if applicable.
 
 ## Deployment Notes
@@ -49,5 +49,5 @@ Anthology is a two-tier catalogue: a Go 1.22 API (under `cmd/api` + `internal/`)
 - UI container rewrites `assets/runtime-config.js` from `NG_APP_API_URL` at startup so you can repoint environments without rebuilding Angular assets.
 - Apply SQL migrations before booting the Postgres-backed API (run through `0007` for shelves + explicit reading status defaults), and ensure services load secrets through env vars or Swarm/Stack secret mounts.
 
-## Local Auth Token
-The Makefile defaults `API_TOKEN ?= local-dev-token`. Reuse this for local testing/logins unless explicitly overriding the token in your environment or deployment config.
+## Local Auth
+Local dev runs without auth unless OAuth is configured. To exercise OAuth locally, use Postgres plus the Google OAuth env vars and keep `APP_ENV=development` so cookies stay non-secure.

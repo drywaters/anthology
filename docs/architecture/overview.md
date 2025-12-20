@@ -5,7 +5,7 @@ Anthology is a split-stack application with a stateless Go API and an Angular Ma
 | Layer | Technology | Responsibilities |
 | ----- | ---------- | ---------------- |
 | Frontend | Angular 20 + Angular Material | Authentication UI, catalogue browse experience, Add Item workflows (search, manual entry, CSV import). |
-| Backend | Go 1.22 (`cmd/api`) | REST API for CRUD, CSV ingestion endpoint, metadata lookup proxy, session management. |
+| Backend | Go 1.24 (`cmd/api`) | REST API for CRUD, CSV ingestion endpoint, metadata lookup proxy, session management. |
 | Data | Postgres or in-memory store (`internal/items`) | Persists catalog items. |
 | External APIs | Google Books API | Provides metadata for ISBN/keyword searches and CSV enrichment. |
 
@@ -23,9 +23,10 @@ Anthology is a split-stack application with a stateless Go API and an Angular Ma
 ## Request flows
 
 ### Authentication
-1. UI renders `LoginPageComponent` and asks for the bearer token.
-2. The browser sends `POST /api/session` with the token.
-3. `internal/http/session_handler.go` verifies the token and sets an HttpOnly cookie so subsequent API calls are authenticated automatically.
+1. In non-dev environments, the UI renders `LoginPageComponent` and starts Google OAuth.
+2. The browser completes the OAuth flow and hits `/api/auth/google/callback`.
+3. `internal/http/oauth_handler.go` validates the callback, creates a user/session, and sets an HttpOnly cookie so subsequent API calls are authenticated automatically.
+4. In `APP_ENV=development` without OAuth configured, auth is disabled and the UI proceeds without login.
 
 ### Metadata search
 1. `AddItemPageComponent` submits `GET /api/catalog/lookup?query=...&category=...` when the Search tab runs.

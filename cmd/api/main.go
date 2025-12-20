@@ -11,6 +11,9 @@ import (
 
 	"log/slog"
 
+	"github.com/jmoiron/sqlx"
+
+	"anthology/internal/auth"
 	"anthology/internal/catalog"
 	"anthology/internal/config"
 	transporthttp "anthology/internal/http"
@@ -32,7 +35,7 @@ func main() {
 
 	logger := logging.New(cfg.LogLevel)
 
-	itemRepo, shelfRepo, cleanup, err := buildRepositories(ctx, cfg, logger)
+	itemRepo, shelfRepo, db, cleanup, err := buildRepositories(ctx, cfg, logger)
 	if err != nil {
 		logger.Error("failed to initialize repository", "error", err)
 		os.Exit(1)
@@ -41,11 +44,39 @@ func main() {
 		defer cleanup()
 	}
 
+	// Initialize auth components
+	var authService *auth.Service
+	var googleAuth *auth.GoogleAuthenticator
+
+	if cfg.OAuthEnabled() {
+		if db == nil {
+			logger.Error("OAuth requires postgres database (DATA_STORE=postgres)")
+			os.Exit(1)
+		}
+
+		authRepo := auth.NewPostgresRepository(db)
+		authService = auth.NewService(authRepo, 12*time.Hour)
+
+		googleAuth, err = auth.NewGoogleAuthenticator(
+			ctx,
+			cfg.GoogleClientID,
+			cfg.GoogleClientSecret,
+			cfg.GoogleRedirectURL,
+			cfg.GoogleAllowedDomains,
+			cfg.GoogleAllowedEmails,
+		)
+		if err != nil {
+			logger.Error("failed to initialize Google OAuth", "error", err)
+			os.Exit(1)
+		}
+		logger.Info("Google OAuth enabled", "redirect_url", cfg.GoogleRedirectURL)
+	}
+
 	svc := items.NewService(itemRepo)
 	lookupClient := &http.Client{Timeout: 12 * time.Second}
 	catalogSvc := catalog.NewService(lookupClient, catalog.WithGoogleBooksAPIKey(cfg.GoogleBooksAPIKey))
 	shelfSvc := shelves.NewService(shelfRepo, itemRepo, catalogSvc, svc)
-	router := transporthttp.NewRouter(cfg, svc, catalogSvc, shelfSvc, logger)
+	router := transporthttp.NewRouter(cfg, svc, catalogSvc, shelfSvc, authService, googleAuth, logger)
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddress(),
@@ -75,7 +106,7 @@ func main() {
 	}
 }
 
-func buildRepositories(ctx context.Context, cfg config.Config, logger *slog.Logger) (items.Repository, shelves.Repository, func(), error) {
+func buildRepositories(ctx context.Context, cfg config.Config, logger *slog.Logger) (items.Repository, shelves.Repository, *sqlx.DB, func(), error) {
 	if cfg.UseInMemoryStore() {
 		logger.Info("using in-memory repository")
 		demoItems := seedLocalItems()
@@ -88,12 +119,12 @@ func buildRepositories(ctx context.Context, cfg config.Config, logger *slog.Logg
 			}
 		}
 		itemRepo := items.NewInMemoryRepository(demoItems)
-		return itemRepo, shelfRepo, nil, nil
+		return itemRepo, shelfRepo, nil, nil, nil
 	}
 
 	db, err := database.NewPostgres(ctx, cfg.DatabaseURL)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	cleanup := func() {
@@ -102,9 +133,9 @@ func buildRepositories(ctx context.Context, cfg config.Config, logger *slog.Logg
 
 	if err := migrate.Apply(ctx, db, logger); err != nil {
 		cleanup()
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	logger.Info("connected to postgres")
-	return items.NewPostgresRepository(db), shelves.NewPostgresRepository(db), cleanup, nil
+	return items.NewPostgresRepository(db), shelves.NewPostgresRepository(db), db, cleanup, nil
 }

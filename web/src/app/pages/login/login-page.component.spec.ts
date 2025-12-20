@@ -1,23 +1,23 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
-import { of, Subject, throwError } from 'rxjs';
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { of, throwError } from 'rxjs';
 
 import { LoginPageComponent } from './login-page.component';
 import { AuthService } from '../../services/auth.service';
 
 describe(LoginPageComponent.name, () => {
     let authServiceSpy: jasmine.SpyObj<AuthService>;
-    let routerSpy: jasmine.SpyObj<Router>;
 
     beforeEach(async () => {
-        authServiceSpy = jasmine.createSpyObj<AuthService>('AuthService', ['login', 'logout']);
-        routerSpy = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
+        authServiceSpy = jasmine.createSpyObj<AuthService>('AuthService', [
+            'loginWithGoogle',
+            'logout',
+        ]);
 
         await TestBed.configureTestingModule({
             imports: [LoginPageComponent],
             providers: [
                 { provide: AuthService, useValue: authServiceSpy },
-                { provide: Router, useValue: routerSpy },
                 {
                     provide: ActivatedRoute,
                     useValue: {
@@ -34,69 +34,114 @@ describe(LoginPageComponent.name, () => {
         return fixture;
     }
 
-    it('submits a trimmed token and navigates to the redirect destination', () => {
-        authServiceSpy.login.and.returnValue(of(void 0));
+    it('calls loginWithGoogle with redirectTo when clicking Google button', () => {
         const fixture = createComponent();
         const component = fixture.componentInstance;
-        component.form.setValue({ token: '  local-dev-token  ' });
 
-        component.submit();
+        component.loginWithGoogle();
 
-        expect(authServiceSpy.login).toHaveBeenCalledWith('local-dev-token');
-        expect(routerSpy.navigateByUrl).toHaveBeenCalledWith('/items');
-        expect(component.submitting()).toBeFalse();
+        expect(authServiceSpy.loginWithGoogle).toHaveBeenCalledWith('/items');
+        expect(component.submitting()).toBeTrue();
     });
 
-    it('marks token control invalid when submitting empty tokens', () => {
-        const fixture = createComponent();
+    it('calls loginWithGoogle without redirectTo when none is provided', async () => {
+        await TestBed.resetTestingModule();
+        await TestBed.configureTestingModule({
+            imports: [LoginPageComponent],
+            providers: [
+                { provide: AuthService, useValue: authServiceSpy },
+                {
+                    provide: ActivatedRoute,
+                    useValue: {
+                        snapshot: { queryParamMap: convertToParamMap({}) },
+                    },
+                },
+            ],
+        }).compileComponents();
+
+        const fixture = TestBed.createComponent(LoginPageComponent);
+        fixture.detectChanges();
         const component = fixture.componentInstance;
-        component.form.setValue({ token: '   ' });
 
-        component.submit();
+        component.loginWithGoogle();
 
-        expect(authServiceSpy.login).not.toHaveBeenCalled();
-        expect(component.tokenControl.hasError('required')).toBeTrue();
+        expect(authServiceSpy.loginWithGoogle).toHaveBeenCalledWith(undefined);
+        expect(component.submitting()).toBeTrue();
     });
 
-    it('disables the form while submitting and re-enables on completion', () => {
-        const loginSubject = new Subject<void>();
-        authServiceSpy.login.and.returnValue(loginSubject.asObservable());
-        const fixture = createComponent();
+    it('shows error message when query params contain error', async () => {
+        // Reconfigure with error params
+        await TestBed.resetTestingModule();
+        await TestBed.configureTestingModule({
+            imports: [LoginPageComponent],
+            providers: [
+                { provide: AuthService, useValue: authServiceSpy },
+                {
+                    provide: ActivatedRoute,
+                    useValue: {
+                        snapshot: {
+                            queryParamMap: convertToParamMap({
+                                error: 'access_denied',
+                                message: 'Your account is not authorized.',
+                            }),
+                        },
+                    },
+                },
+            ],
+        }).compileComponents();
+
+        const fixture = TestBed.createComponent(LoginPageComponent);
+        fixture.detectChanges();
         const component = fixture.componentInstance;
-        component.form.setValue({ token: 'local-dev-token' });
 
-        component.submit();
-
-        expect(component.form.disabled).toBeTrue();
-
-        loginSubject.next();
-        loginSubject.complete();
-
-        expect(component.form.enabled).toBeTrue();
+        expect(component.errorMessage()).toBe('Your account is not authorized.');
     });
 
-    it('shows an error message when login returns 401', () => {
-        authServiceSpy.login.and.returnValue(throwError(() => ({ status: 401 })));
-        const fixture = createComponent();
+    it('shows default error message when error code has no custom message', async () => {
+        await TestBed.resetTestingModule();
+        await TestBed.configureTestingModule({
+            imports: [LoginPageComponent],
+            providers: [
+                { provide: AuthService, useValue: authServiceSpy },
+                {
+                    provide: ActivatedRoute,
+                    useValue: {
+                        snapshot: {
+                            queryParamMap: convertToParamMap({
+                                error: 'unknown_error',
+                            }),
+                        },
+                    },
+                },
+            ],
+        }).compileComponents();
+
+        const fixture = TestBed.createComponent(LoginPageComponent);
+        fixture.detectChanges();
         const component = fixture.componentInstance;
-        component.form.setValue({ token: 'bad-token' });
 
-        component.submit();
-
-        expect(component.errorMessage()).toContain('Invalid token');
-        expect(component.tokenControl.hasError('invalid')).toBeTrue();
+        expect(component.errorMessage()).toContain('An error occurred');
     });
 
-    it('clears the session and resets the form when logout succeeds', () => {
+    it('clears the session when clearSession is called', () => {
         authServiceSpy.logout.and.returnValue(of(void 0));
         const fixture = createComponent();
         const component = fixture.componentInstance;
-        component.form.setValue({ token: 'something' });
 
         component.clearSession();
 
         expect(authServiceSpy.logout).toHaveBeenCalled();
-        expect(component.form.value.token).toBe('');
-        expect(component.errorMessage()).toBeNull();
+        expect(component.submitting()).toBeFalse();
+    });
+
+    it('shows error when logout fails', () => {
+        authServiceSpy.logout.and.returnValue(throwError(() => new Error('Network error')));
+        const fixture = createComponent();
+        const component = fixture.componentInstance;
+
+        component.clearSession();
+
+        expect(component.errorMessage()).toContain('could not clear');
+        expect(component.submitting()).toBeFalse();
     });
 });

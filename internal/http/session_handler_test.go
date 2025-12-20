@@ -1,68 +1,213 @@
 package http
 
 import (
-	"fmt"
+	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
+	"time"
 
 	"log/slog"
+
+	"anthology/internal/auth"
+
+	"github.com/google/uuid"
 )
 
-func TestSessionHandlerRateLimitStripsPortFromRemoteAddr(t *testing.T) {
+func TestSessionHandlerStatusWithoutAuthService(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	handler := NewSessionHandler("secret", "development", logger)
+	handler := NewSessionHandler(nil, "development", logger)
 
-	for i := 0; i < maxLoginAttempts; i++ {
-		req := httptest.NewRequest(http.MethodPost, "/api/session", strings.NewReader(`{"token":"wrong"}`))
-		req.RemoteAddr = fmt.Sprintf("203.0.113.5:%d", 4000+i)
-		rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/session", nil)
+	rec := httptest.NewRecorder()
 
-		handler.Login(rec, req)
+	handler.Status(rec, req)
 
-		if rec.Code != http.StatusUnauthorized {
-			t.Fatalf("attempt %d expected status 401, got %d", i+1, rec.Code)
-		}
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
 
-	finalReq := httptest.NewRequest(http.MethodPost, "/api/session", strings.NewReader(`{"token":"wrong"}`))
-	finalReq.RemoteAddr = "203.0.113.5:9999"
-	finalRec := httptest.NewRecorder()
+	var response map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
 
-	handler.Login(finalRec, finalReq)
-
-	if finalRec.Code != http.StatusTooManyRequests {
-		t.Fatalf("expected status 429 after exceeding attempts, got %d", finalRec.Code)
+	if response["authenticated"] != true {
+		t.Fatalf("expected authenticated=true, got %v", response["authenticated"])
 	}
 }
 
-func TestSessionHandlerRateLimitStripsPortFromForwardedFor(t *testing.T) {
+func TestSessionHandlerLogoutWithoutAuthService(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	handler := NewSessionHandler("secret", "development", logger)
+	handler := NewSessionHandler(nil, "development", logger)
 
-	for i := 0; i < maxLoginAttempts; i++ {
-		req := httptest.NewRequest(http.MethodPost, "/api/session", strings.NewReader(`{"token":"wrong"}`))
-		req.RemoteAddr = fmt.Sprintf("10.0.0.%d:1234", i+1)
-		req.Header.Set("X-Forwarded-For", fmt.Sprintf("198.51.100.7:%d, 10.0.0.1", 3000+i))
-		rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodDelete, "/api/session", nil)
+	rec := httptest.NewRecorder()
 
-		handler.Login(rec, req)
+	handler.Logout(rec, req)
 
-		if rec.Code != http.StatusUnauthorized {
-			t.Fatalf("attempt %d expected status 401, got %d", i+1, rec.Code)
-		}
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("expected status 204, got %d", rec.Code)
 	}
 
-	finalReq := httptest.NewRequest(http.MethodPost, "/api/session", strings.NewReader(`{"token":"wrong"}`))
-	finalReq.RemoteAddr = "10.0.0.99:9999"
-	finalReq.Header.Set("X-Forwarded-For", "198.51.100.7:9998, 10.0.0.1")
-	finalRec := httptest.NewRecorder()
+	// Verify the cookie was cleared
+	cookies := rec.Result().Cookies()
+	var sessionCookieCleared bool
+	for _, c := range cookies {
+		if c.Name == sessionCookieName && c.MaxAge < 0 {
+			sessionCookieCleared = true
+			break
+		}
+	}
+	if !sessionCookieCleared {
+		t.Fatal("expected session cookie to be cleared")
+	}
+}
 
-	handler.Login(finalRec, finalReq)
+func TestSessionHandlerStatusWithNoCookie(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	authService := auth.NewService(&authRepoStub{}, time.Hour)
+	handler := NewSessionHandler(authService, "development", logger)
 
-	if finalRec.Code != http.StatusTooManyRequests {
-		t.Fatalf("expected status 429 after exceeding attempts, got %d", finalRec.Code)
+	req := httptest.NewRequest(http.MethodGet, "/api/session", nil)
+	rec := httptest.NewRecorder()
+
+	handler.Status(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+
+	var response map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if response["authenticated"] != false {
+		t.Fatalf("expected authenticated=false without cookie, got %v", response["authenticated"])
+	}
+}
+
+func TestSessionHandlerStatusWithValidSession(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	expectedUser := &auth.User{ID: uuid.New(), Email: "user@example.com", Name: "User", AvatarURL: "avatar.png"}
+	repo := &authRepoStub{
+		findSessionByHash: func(ctx context.Context, tokenHash string) (*auth.Session, *auth.User, error) {
+			return &auth.Session{ID: uuid.New(), ExpiresAt: time.Now().Add(time.Minute)}, expectedUser, nil
+		},
+	}
+	authService := auth.NewService(repo, time.Hour)
+	handler := NewSessionHandler(authService, "development", logger)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/session", nil)
+	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "token"})
+	rec := httptest.NewRecorder()
+
+	handler.Status(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+
+	var response map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if response["authenticated"] != true {
+		t.Fatalf("expected authenticated=true, got %v", response["authenticated"])
+	}
+	user, ok := response["user"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected user object, got %T", response["user"])
+	}
+	if user["email"] != expectedUser.Email {
+		t.Fatalf("expected user email %q, got %v", expectedUser.Email, user["email"])
+	}
+}
+
+func TestSessionHandlerStatusWithInvalidSession(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	repo := &authRepoStub{
+		findSessionByHash: func(ctx context.Context, tokenHash string) (*auth.Session, *auth.User, error) {
+			return nil, nil, nil
+		},
+	}
+	authService := auth.NewService(repo, time.Hour)
+	handler := NewSessionHandler(authService, "development", logger)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/session", nil)
+	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "token"})
+	rec := httptest.NewRecorder()
+
+	handler.Status(rec, req)
+
+	var response map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if response["authenticated"] != false {
+		t.Fatalf("expected authenticated=false, got %v", response["authenticated"])
+	}
+}
+
+func TestSessionHandlerLogoutDeletesSession(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	var deletedID uuid.UUID
+	sessionID := uuid.New()
+	repo := &authRepoStub{
+		findSessionByHash: func(ctx context.Context, tokenHash string) (*auth.Session, *auth.User, error) {
+			return &auth.Session{ID: sessionID, ExpiresAt: time.Now().Add(time.Minute)}, &auth.User{ID: uuid.New()}, nil
+		},
+		deleteSession: func(ctx context.Context, id uuid.UUID) error {
+			deletedID = id
+			return nil
+		},
+	}
+	authService := auth.NewService(repo, time.Hour)
+	handler := NewSessionHandler(authService, "development", logger)
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/session", nil)
+	req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "token"})
+	rec := httptest.NewRecorder()
+
+	handler.Logout(rec, req)
+
+	if deletedID != sessionID {
+		t.Fatalf("expected session %s to be deleted, got %s", sessionID, deletedID)
+	}
+}
+
+func TestClientIPFromRequestRemoteAddr(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "192.0.2.1:12345"
+
+	ip := clientIPFromRequest(req)
+	if ip != "192.0.2.1" {
+		t.Fatalf("expected 192.0.2.1, got %s", ip)
+	}
+}
+
+func TestClientIPFromRequestForwardedFor(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "10.0.0.1:12345"
+	req.Header.Set("X-Forwarded-For", "198.51.100.7:8080, 10.0.0.1")
+
+	ip := clientIPFromRequest(req)
+	if ip != "198.51.100.7" {
+		t.Fatalf("expected 198.51.100.7, got %s", ip)
+	}
+}
+
+func TestClientIPFromRequestNoPort(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "192.0.2.1"
+
+	ip := clientIPFromRequest(req)
+	if ip != "192.0.2.1" {
+		t.Fatalf("expected 192.0.2.1, got %s", ip)
 	}
 }

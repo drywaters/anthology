@@ -16,8 +16,15 @@ type Config struct {
 	DataStore         string
 	LogLevel          string
 	AllowedOrigins    []string
-	APIToken          string
 	GoogleBooksAPIKey string
+
+	// Google OAuth
+	GoogleClientID       string
+	GoogleClientSecret   string
+	GoogleRedirectURL    string
+	GoogleAllowedDomains []string
+	GoogleAllowedEmails  []string
+	FrontendURL          string
 }
 
 // Load reads configuration from environment variables with sensible defaults for local development.
@@ -27,24 +34,53 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
-	apiToken, err := getEnvOrFile("API_TOKEN", "/run/secrets/anthology_api_token")
-	if err != nil {
-		return Config{}, err
-	}
-
 	googleBooksAPIKey, err := getEnvOrFile("GOOGLE_BOOKS_API_KEY", "/run/secrets/anthology_google_books_api_key")
 	if err != nil {
 		return Config{}, err
 	}
 
+	googleClientID, err := getEnvOrFile("AUTH_GOOGLE_CLIENT_ID", "/run/secrets/anthology_google_client_id")
+	if err != nil {
+		return Config{}, err
+	}
+
+	googleClientSecret, err := getEnvOrFile("AUTH_GOOGLE_CLIENT_SECRET", "/run/secrets/anthology_google_client_secret")
+	if err != nil {
+		return Config{}, err
+	}
+
+	trimmedGoogleClientID := strings.TrimSpace(googleClientID)
+	trimmedGoogleClientSecret := strings.TrimSpace(googleClientSecret)
+
+	environment := strings.TrimSpace(os.Getenv("APP_ENV"))
+	oauthConfigured := trimmedGoogleClientID != "" && trimmedGoogleClientSecret != ""
+	if environment == "" {
+		if oauthConfigured {
+			environment = "production"
+		} else {
+			environment = "development"
+		}
+	}
+	environment = strings.ToLower(environment)
+	if !isValidEnvironment(environment) {
+		return Config{}, fmt.Errorf("APP_ENV must be one of development, staging, or production")
+	}
+
 	cfg := Config{
-		Environment:       getEnv("APP_ENV", "development"),
+		Environment:       environment,
 		DatabaseURL:       databaseURL,
 		DataStore:         strings.ToLower(getEnv("DATA_STORE", "memory")),
 		LogLevel:          strings.ToLower(getEnv("LOG_LEVEL", "info")),
 		AllowedOrigins:    parseCSV(getEnv("ALLOWED_ORIGINS", "http://localhost:4200,http://localhost:8080")),
-		APIToken:          strings.TrimSpace(apiToken),
 		GoogleBooksAPIKey: strings.TrimSpace(googleBooksAPIKey),
+
+		// Google OAuth
+		GoogleClientID:       trimmedGoogleClientID,
+		GoogleClientSecret:   trimmedGoogleClientSecret,
+		GoogleRedirectURL:    getEnv("AUTH_GOOGLE_REDIRECT_URL", "http://localhost:8080/api/auth/google/callback"),
+		GoogleAllowedDomains: parseCSV(getEnv("AUTH_GOOGLE_ALLOWED_DOMAINS", "")),
+		GoogleAllowedEmails:  parseCSV(getEnv("AUTH_GOOGLE_ALLOWED_EMAILS", "")),
+		FrontendURL:          getEnv("FRONTEND_URL", "http://localhost:4200"),
 	}
 
 	portValue := getEnv("PORT", getEnv("HTTP_PORT", "8080"))
@@ -58,12 +94,21 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("DATA_STORE is postgres but DATABASE_URL is not set")
 	}
 
-	if !strings.EqualFold(cfg.Environment, "development") && cfg.APIToken == "" {
-		return Config{}, fmt.Errorf("API_TOKEN is required when APP_ENV=%s", cfg.Environment)
-	}
-
 	if cfg.GoogleBooksAPIKey == "" {
 		return Config{}, fmt.Errorf("GOOGLE_BOOKS_API_KEY is required")
+	}
+
+	// Google OAuth is required in non-development environments
+	if !strings.EqualFold(cfg.Environment, "development") {
+		if cfg.GoogleClientID == "" {
+			return Config{}, fmt.Errorf("AUTH_GOOGLE_CLIENT_ID is required when APP_ENV=%s", cfg.Environment)
+		}
+		if cfg.GoogleClientSecret == "" {
+			return Config{}, fmt.Errorf("AUTH_GOOGLE_CLIENT_SECRET is required when APP_ENV=%s", cfg.Environment)
+		}
+		if len(cfg.GoogleAllowedDomains) == 0 && len(cfg.GoogleAllowedEmails) == 0 {
+			return Config{}, fmt.Errorf("AUTH_GOOGLE_ALLOWED_DOMAINS or AUTH_GOOGLE_ALLOWED_EMAILS is required when APP_ENV=%s", cfg.Environment)
+		}
 	}
 
 	allowedOrigins, err := sanitizeAllowedOrigins(cfg.AllowedOrigins, cfg.Environment)
@@ -85,6 +130,11 @@ func (c Config) UseInMemoryStore() bool {
 	return c.DataStore == "memory"
 }
 
+// OAuthEnabled returns true if Google OAuth is configured.
+func (c Config) OAuthEnabled() bool {
+	return c.GoogleClientID != "" && c.GoogleClientSecret != ""
+}
+
 func getEnv(key, fallback string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
@@ -102,6 +152,15 @@ func parseCSV(value string) []string {
 		}
 	}
 	return out
+}
+
+func isValidEnvironment(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "development", "staging", "production":
+		return true
+	default:
+		return false
+	}
 }
 
 func sanitizeAllowedOrigins(origins []string, env string) ([]string, error) {
