@@ -26,7 +26,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture
 
-Two-tier catalogue: Go 1.22 API + Angular 20 Material UI, deployed as independent containers.
+Two-tier catalogue: Go 1.24 API + Angular 20 Material UI, deployed as independent containers.
 
 ### Go Backend (`cmd/api`, `internal/`)
 - **chi router** with middleware for request IDs, timeouts, structured logging (slog)
@@ -45,7 +45,7 @@ Two-tier catalogue: Go 1.22 API + Angular 20 Material UI, deployed as independen
 - **models/** — TypeScript interfaces matching Go types
 
 ### Key Request Flows
-1. **Auth**: Login exchanges bearer token for HttpOnly session cookie via `/api/session`
+1. **Auth**: Non-dev login uses Google OAuth to mint an HttpOnly session cookie
 2. **Metadata Search**: `GET /api/catalog/lookup` proxies Google Books queries
 3. **CSV Import**: `POST /api/items/import` processes uploads through importer with enrichment
 
@@ -54,8 +54,12 @@ Two-tier catalogue: Go 1.22 API + Angular 20 Material UI, deployed as independen
 Key environment variables:
 - `DATA_STORE` — `memory` (default, seeded demo) or `postgres`
 - `DATABASE_URL` — Postgres connection string
-- `API_TOKEN` — Bearer token for API auth (default: `local-dev-token`)
 - `GOOGLE_BOOKS_API_KEY` — For metadata lookups
+- `AUTH_GOOGLE_CLIENT_ID` / `AUTH_GOOGLE_CLIENT_SECRET` — Google OAuth credentials (required in non-dev)
+- `AUTH_GOOGLE_ALLOWED_DOMAINS` / `AUTH_GOOGLE_ALLOWED_EMAILS` — OAuth allowlist (required in non-dev)
+- `AUTH_GOOGLE_REDIRECT_URL` — OAuth callback (defaults to localhost)
+- `FRONTEND_URL` — UI URL used for OAuth redirects
+- `APP_ENV` — `development`, `staging`, or `production`
 - `ALLOWED_ORIGINS` — CORS origins (default: localhost:4200,8080)
 - `PORT` — API port (default: 8080)
 

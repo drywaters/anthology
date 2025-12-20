@@ -88,6 +88,7 @@ describe('BarcodeScannerService', () => {
     it('preserves start-up error when camera access fails', async () => {
         const service = TestBed.inject(BarcodeScannerService);
         const video = document.createElement('video');
+        const consoleSpy = spyOn(console, 'error');
 
         Object.defineProperty(video, 'srcObject', {
             configurable: true,
@@ -108,6 +109,10 @@ describe('BarcodeScannerService', () => {
 
         expect(service.scannerActive()).toBeFalse();
         expect(service.scannerError()).toContain('Camera access failed');
+        expect(consoleSpy).toHaveBeenCalledWith(
+            'Unable to start barcode scanner',
+            jasmine.any(Error),
+        );
     });
 
     it('clears processing status when scan completes', () => {

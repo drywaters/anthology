@@ -6,9 +6,16 @@ WEB_DIR ?= web
 DATA_STORE ?= memory
 PORT ?= 8080
 ALLOWED_ORIGINS ?= http://localhost:4200,http://localhost:8080
-API_TOKEN ?= local-dev-token
 GOOGLE_BOOKS_API_KEY ?= local-google-books-api-key
 DATABASE_URL ?= postgres://anthology:anthology@localhost:5432/anthology?sslmode=disable
+
+# Google OAuth (set in local.mk for local development)
+AUTH_GOOGLE_CLIENT_ID ?=
+AUTH_GOOGLE_CLIENT_SECRET ?=
+AUTH_GOOGLE_REDIRECT_URL ?= http://localhost:8080/api/auth/google/callback
+AUTH_GOOGLE_ALLOWED_DOMAINS ?=
+AUTH_GOOGLE_ALLOWED_EMAILS ?=
+FRONTEND_URL ?= http://localhost:4200
 
 # Include local overrides if present (e.g., local.mk with real API keys)
 -include local.mk
@@ -40,10 +47,15 @@ api-run: ## Run the Go API with in-memory defaults.
 	DATA_STORE=$(DATA_STORE) \
 	PORT=$(PORT) \
 	ALLOWED_ORIGINS=$(ALLOWED_ORIGINS) \
-	API_TOKEN=$(API_TOKEN) \
 	GOOGLE_BOOKS_API_KEY=$(GOOGLE_BOOKS_API_KEY) \
 	DATABASE_URL=$(DATABASE_URL) \
 	LOG_LEVEL=$(LOG_LEVEL) \
+	AUTH_GOOGLE_CLIENT_ID=$(AUTH_GOOGLE_CLIENT_ID) \
+	AUTH_GOOGLE_CLIENT_SECRET=$(AUTH_GOOGLE_CLIENT_SECRET) \
+	AUTH_GOOGLE_REDIRECT_URL=$(AUTH_GOOGLE_REDIRECT_URL) \
+	AUTH_GOOGLE_ALLOWED_DOMAINS=$(AUTH_GOOGLE_ALLOWED_DOMAINS) \
+	AUTH_GOOGLE_ALLOWED_EMAILS=$(AUTH_GOOGLE_ALLOWED_EMAILS) \
+	FRONTEND_URL=$(FRONTEND_URL) \
 	go run ./cmd/api
 
 run: api-run ## Alias for api-run to match common tooling expectations.

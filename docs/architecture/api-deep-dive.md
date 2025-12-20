@@ -4,11 +4,11 @@ This document reflects the current API implementation under `cmd/api` and `inter
 
 ## High-level shape
 
-* Go 1.22, chi router, `slog` logging.
+* Go 1.24, chi router, `slog` logging.
 * Runtime config from env/_FILE (see **Configuration**).
 * Supports `DATA_STORE=memory` (demo seed) or Postgres (sqlx, embedded migrations).
 * Metadata lookups proxy Google Books; CSV import reuses that pipeline.
-* Authentication: bearer token header or HttpOnly session cookie minted by `/api/session`.
+* Authentication: Google OAuth in non-dev, with an HttpOnly session cookie for API calls; dev mode can run unauthenticated when OAuth is not configured.
 
 ### Runtime topology
 
@@ -25,7 +25,7 @@ flowchart LR
         GB[Google Books]
         DB[(Postgres)]
     end
-    A -->|Bearer or cookie| R --> H --> Svc --> Repo
+    A -->|OAuth + cookie| R --> H --> Svc --> Repo
     Svc -->|ISBN/keyword| GB
     Repo -.->|memory| DB
 ```
@@ -37,29 +37,36 @@ flowchart LR
 * `PORT`/`HTTP_PORT` (default 8080).
 * `ALLOWED_ORIGINS` CSV list; wildcards only allowed in `APP_ENV=development`.
 * `LOG_LEVEL` (`debug`, `info`, `warn`, `error`).
-* `API_TOKEN` (required outside dev; blank disables auth) or `API_TOKEN_FILE`.
 * `GOOGLE_BOOKS_API_KEY` (required; `_FILE` supported with default `/run/secrets/anthology_google_books_api_key`).
-* `APP_ENV` (`development` default) toggles cookie `Secure` flag and auth requirement for prod.
+* `AUTH_GOOGLE_CLIENT_ID` / `AUTH_GOOGLE_CLIENT_SECRET` (required when `APP_ENV` is `staging` or `production`).
+* `AUTH_GOOGLE_ALLOWED_DOMAINS` or `AUTH_GOOGLE_ALLOWED_EMAILS` (allowlist required in non-dev).
+* `AUTH_GOOGLE_REDIRECT_URL` (defaults to `http://localhost:8080/api/auth/google/callback`).
+* `FRONTEND_URL` (defaults to `http://localhost:4200`).
+* `APP_ENV` (`development` default unless OAuth is configured, then `production`) toggles cookie `Secure` flag and enforces OAuth outside dev.
+
+OAuth sessions are stored in Postgres, so non-dev deployments must use `DATA_STORE=postgres`.
 
 `cmd/api/main.go` loads config, builds logger, chooses repository via `buildRepositories`, applies migrations when using Postgres, then binds `http.Server` with sensible timeouts.
 
 ## Authentication and sessions
 
-* **Bearer**: `Authorization: Bearer <API_TOKEN>`.
-* **Session cookie**: `/api/session` endpoints hash the configured token with SHA-256 and set `anthology_session` (HttpOnly, SameSite=Lax, Secure outside dev, 12h TTL).
-* Auth middleware accepts either Bearer header or valid session cookie; otherwise 401 with `WWW-Authenticate: Bearer`.
-* When `API_TOKEN` is empty, auth is disabled and a startup warning is logged.
+* **OAuth**: `GET /api/auth/google` initiates the flow, and `GET /api/auth/google/callback` creates a user/session and sets `anthology_session`.
+* **Session cookie**: `anthology_session` is HttpOnly, SameSite=Lax, Secure outside dev, with a 12h TTL.
+* Auth middleware requires a valid session cookie when OAuth is enabled; otherwise 401 with `WWW-Authenticate: Bearer`.
+* In `APP_ENV=development` without OAuth configured, auth is disabled and `/api/session` reports `authenticated: true`.
 
 ## Endpoints (current)
 
-Base URL: `http://<host>:<port>`. All `/api/*` endpoints are authenticated unless `API_TOKEN` is blank.
+Base URL: `http://<host>:<port>`. When OAuth is enabled (or `APP_ENV` is non-development), `/api/*` endpoints require the session cookie. In development without OAuth configured, `/api/*` is open.
 
 | Method | Path | Description | Handler |
 | --- | --- | --- | --- |
 | GET | `/health` | Liveness; returns `{status, environment}`. | inline in router |
-| POST | `/api/session` | Validate token, set session cookie. | `SessionHandler.Login` |
-| GET | `/api/session` | Report active session (204) or 401. | `SessionHandler.Status` |
+| GET | `/api/auth/google` | Initiate Google OAuth. | `OAuthHandler.InitiateGoogle` |
+| GET | `/api/auth/google/callback` | Handle OAuth callback, set session. | `OAuthHandler.CallbackGoogle` |
+| GET | `/api/session` | Report session status and user (if authenticated). | `SessionHandler.Status` |
 | DELETE | `/api/session` | Clear session cookie. | `SessionHandler.Logout` |
+| GET | `/api/session/user` | Return current user profile. | `SessionHandler.CurrentUser` |
 | GET | `/api/items` | List items with filters (type/status/letter/query/limit). | `ItemHandler.List` |
 | GET | `/api/items/histogram` | Letter counts for alphabet rail. | `ItemHandler.Histogram` |
 | GET | `/api/items/duplicates` | Check potential duplicates by title/ISBN. | `ItemHandler.Duplicates` |
@@ -190,8 +197,12 @@ Shelves:
 sequenceDiagram
     participant UI
     participant API as Anthology API
-    UI->>API: POST /api/session { token }
-    API-->>UI: 204 No Content + Set-Cookie anthology_session
+    participant Google
+    UI->>API: GET /api/auth/google?redirectTo=/items
+    API-->>UI: 302 Redirect to Google
+    UI->>Google: OAuth consent
+    Google-->>API: GET /api/auth/google/callback?code=...
+    API-->>UI: 302 Redirect + Set-Cookie anthology_session
     UI->>API: Subsequent /api/* with cookie
     API-->>UI: 200/… (authorized)
 ```
@@ -263,10 +274,10 @@ sequenceDiagram
 ```bash
 export DATA_STORE=memory
 export PORT=8080
-export API_TOKEN="local-dev-token"
+export APP_ENV=development
 export GOOGLE_BOOKS_API_KEY="your-key"
 go run ./cmd/api
 ```
 
 Health: `curl http://localhost:8080/health`  
-List items (with auth if token set): `curl -H "Authorization: Bearer $API_TOKEN" http://localhost:8080/api/items`
+List items (dev without OAuth): `curl http://localhost:8080/api/items`

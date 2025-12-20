@@ -25,7 +25,7 @@ flowchart TD
 
 ## Diagram Notes
 
-- `config.Load()` gathers environment-driven settings (ports, datastore selection, tokens, CORS).
+- `config.Load()` gathers environment-driven settings (ports, datastore selection, OAuth config, CORS).
 - `logging.New()` builds the global `slog.Logger` instance used across packages.
 - `buildRepository()` either seeds in-memory repos (local/demo) or initializes Postgres, runs migrations, and wires `items`/`shelves` repositories.
 - Domain services (`items`, `shelves`, `catalog`) encapsulate validation and business logic; they are injected into HTTP handlers.

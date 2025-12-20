@@ -20,13 +20,14 @@ If you are new to the project, start with [`docs/architecture/overview.md`](docs
 
 ## Backend (Go)
 
-* Go 1.22 with structured logging via `log/slog`.
+* Go 1.24 with structured logging via `log/slog`.
 * HTTP routing handled by `chi`, with middleware for request IDs, timeouts, and structured logging.
 * Domain package `internal/items` exposes a repository interface with both in-memory and Postgres implementations, while `internal/shelves` manages shelf layouts and item placement.
 * Metadata lookups (`internal/catalog`) call the Google Books API. `/api/catalog/lookup` proxies those queries so the Angular UI can search by ISBN or keyword without exposing API tokens.
 * Bulk imports use `internal/importer`, which accepts CSV uploads, fetches metadata for incomplete rows, deduplicates based on title/ISBN, and returns a structured summary so the UI can visualize success vs. warnings.
-* Configuration is environment-driven (`DATA_STORE`, `DATABASE_URL`, `PORT`, `LOG_LEVEL`, `ALLOWED_ORIGINS`, `API_TOKEN`, `GOOGLE_BOOKS_API_KEY`). When `DATA_STORE=memory` (the default), the API boots with a seeded in-memory catalogue to help demo the experience quickly. Secrets can be provided via environment variables, `<NAME>_FILE` pointers, or the default Docker Swarm secret paths under `/run/secrets/anthology_*`.
-* When `API_TOKEN` is set, every `/api/*` request must send `Authorization: Bearer <token>`. Requests to `/health` remain public so uptime checks continue to work.
+* Configuration is environment-driven (`DATA_STORE`, `DATABASE_URL`, `PORT`, `LOG_LEVEL`, `ALLOWED_ORIGINS`, `APP_ENV`, `GOOGLE_BOOKS_API_KEY`, `AUTH_GOOGLE_CLIENT_ID`, `AUTH_GOOGLE_CLIENT_SECRET`, `AUTH_GOOGLE_REDIRECT_URL`, `AUTH_GOOGLE_ALLOWED_DOMAINS`, `AUTH_GOOGLE_ALLOWED_EMAILS`, `FRONTEND_URL`). When `DATA_STORE=memory` (the default), the API boots with a seeded in-memory catalogue to help demo the experience quickly. Secrets can be provided via environment variables, `<NAME>_FILE` pointers, or the default Docker Swarm secret paths under `/run/secrets/anthology_*`.
+* Google OAuth is required when `APP_ENV` is `staging` or `production` (configure the Google client ID/secret plus an allowlist). OAuth sessions are stored in Postgres, so non-dev deployments must use `DATA_STORE=postgres`.
+* In `APP_ENV=development` without OAuth configured, auth is disabled and `/api/*` endpoints are open. Requests to `/health` remain public in all environments.
 * CORS is enabled via [`github.com/go-chi/cors`](https://github.com/go-chi/cors) and defaults to allowing `http://localhost:4200` and `http://localhost:8080`. Override with `ALLOWED_ORIGINS="https://example.com,https://admin.example.com"` when deploying.
 * Postgres persistence is implemented with `sqlx`; see `migrations/` (current schema requires up to `0007_make_no_status_explicit.sql`).
 
@@ -37,34 +38,45 @@ If you are new to the project, start with [`docs/architecture/overview.md`](docs
 export DATA_STORE=memory
 export PORT=8080
 export ALLOWED_ORIGINS="http://localhost:4200,http://localhost:8080"
-export API_TOKEN="super-secret-token"
+export APP_ENV=development
 export GOOGLE_BOOKS_API_KEY="super-google-books-key"
 go run ./cmd/api
 ```
+
+In development without OAuth configured, the API treats requests as authenticated. To exercise OAuth locally, use Postgres and set `AUTH_GOOGLE_CLIENT_ID`, `AUTH_GOOGLE_CLIENT_SECRET`, and either `AUTH_GOOGLE_ALLOWED_DOMAINS` or `AUTH_GOOGLE_ALLOWED_EMAILS` (keep `APP_ENV=development` to avoid enforcing prod-only constraints).
 
 The API listens on `http://localhost:8080` and exposes JSON-only endpoints (the Angular bundle is served by the separate UI container):
 
 | Method | Endpoint       | Description            |
 | ------ | -------------- | ---------------------- |
 | GET    | `/health`      | Service health check   |
+| GET    | `/api/auth/google` | Start the Google OAuth flow (redirect) |
+| GET    | `/api/auth/google/callback` | OAuth callback; sets session cookie |
+| GET    | `/api/session` | Return active session status |
+| DELETE | `/api/session` | Clear the session cookie |
+| GET    | `/api/session/user` | Return the current user (authenticated only) |
 | GET    | `/api/items`   | List catalogue items   |
 | POST   | `/api/items`   | Create a new item      |
 | POST   | `/api/items/import` | Upload a CSV file and import multiple items |
 | GET    | `/api/items/{id}` | Retrieve an item   |
 | PUT    | `/api/items/{id}` | Update an item      |
 | DELETE | `/api/items/{id}` | Delete an item      |
-| POST   | `/api/session` | Exchange bearer token for an HttpOnly session cookie |
-| GET    | `/api/session` | Return the active session status |
-| DELETE | `/api/session` | Clear the session cookie |
 
 ### Using Postgres
+
+OAuth requires Postgres. When `APP_ENV` is `staging` or `production`, configure the Google OAuth env vars and allowlist.
 
 ```bash
 export DATA_STORE=postgres
 export DATABASE_URL="postgres://anthology:anthology@localhost:5432/anthology?sslmode=disable"
 export PORT=8080
 export ALLOWED_ORIGINS="https://tracker.example.com"
-export API_TOKEN="super-secret-token"
+export APP_ENV=production
+export AUTH_GOOGLE_CLIENT_ID="google-client-id"
+export AUTH_GOOGLE_CLIENT_SECRET="google-client-secret"
+export AUTH_GOOGLE_ALLOWED_DOMAINS="example.com"
+export AUTH_GOOGLE_REDIRECT_URL="https://app.example.com/api/auth/google/callback"
+export FRONTEND_URL="https://app.example.com"
 export GOOGLE_BOOKS_API_KEY="staging-or-prod-google-books-key"
 
 # Apply the migration (example)
@@ -85,7 +97,7 @@ The Go test suite covers the metadata lookup pipeline (`internal/catalog`) and t
 
 * Angular 20 standalone application located in `web/`.
 * Styling is powered by [`@angular/material`](https://www.npmjs.com/package/@angular/material) and its Material 3 design tokens. The global theme lives in [`web/src/styles.scss`](web/src/styles.scss).
-* The main page (`ItemsPageComponent`) provides a responsive catalogue view, inline editing, and CRUD actions that call the Go API. A dedicated login screen exchanges your bearer token for an HttpOnly session cookie so browsers send it automatically without exposing it to JavaScript.
+* The main page (`ItemsPageComponent`) provides a responsive catalogue view, inline editing, and CRUD actions that call the Go API. A dedicated login screen initiates Google OAuth (non-dev) and relies on an HttpOnly session cookie so browsers send it automatically without exposing it to JavaScript.
 * API base URL is resolved from the `<meta name="anthology-api">` tag (defaults to `http://localhost:8080/api`).
   Deployments can override this without rebuilding by setting `window.NG_APP_API_URL` before the Angular bundle loads (the shipped `assets/runtime-config.js` file is replaced at container start when `NG_APP_API_URL` is defined).
 * The UI seed data and layout offer a curated catalogue dashboard out of the box.
@@ -100,7 +112,7 @@ npm start                           # ng serve --open
 
 The dev server runs on `http://localhost:4200` and proxies requests directly to the API URL specified in the meta tag. To point at a different backend, update the meta tag in `web/src/index.html` or adjust `web/src/assets/runtime-config.js` before serving. Running `make local` will start both the Go API and Angular dev server together for local testing so you can exercise the split-stack workflow end-to-end.
 
-When you first load the app you will be redirected to the login screen. Paste the same value you configured for `API_TOKEN` on the API server and the Angular client will call `/api/session` to mint an HttpOnly cookie. Use the “Log out” button in the toolbar to clear it at any time.
+In non-dev environments you will be redirected to the login screen and asked to continue with Google. The OAuth callback sets an HttpOnly session cookie so the browser stays authenticated; use the “Log out” button in the toolbar to clear it at any time. In development without OAuth configured, the session endpoint reports authenticated and the UI does not require a login.
 
 ### Add items faster
 
@@ -164,24 +176,28 @@ npm run build
 ## Deployment notes
 
 * **Docker**: the repository now publishes separate images for the API (`Docker/Dockerfile.api`) and UI (`Docker/Dockerfile.ui`). The Makefile targets `docker-build-api`/`docker-build-ui` (and matching `docker-push`/`docker-buildx` variants) build and publish each image. The UI container writes `assets/runtime-config.js` from the `NG_APP_API_URL` environment variable so preview deployments can point at different backends without rebuilding the Angular assets.
-* **Secrets**: the API automatically loads `DATABASE_URL` and `API_TOKEN` from either the env var or a `<NAME>_FILE` path. The published Docker image sets `/run/secrets/anthology_database_url` and `/run/secrets/anthology_api_token` as the defaults, so Swarm/Stack secrets are consumed without baking credentials into the image.
+* **Secrets**: the API automatically loads `DATABASE_URL`, `GOOGLE_BOOKS_API_KEY`, `AUTH_GOOGLE_CLIENT_ID`, and `AUTH_GOOGLE_CLIENT_SECRET` from either the env var or a `<NAME>_FILE` path. Default secret paths include `/run/secrets/anthology_database_url`, `/run/secrets/anthology_google_books_api_key`, `/run/secrets/anthology_google_client_id`, and `/run/secrets/anthology_google_client_secret`, so Swarm/Stack secrets are consumed without baking credentials into the image.
 * **Environment management**: prefer `.env` files for local overrides (`DATA_STORE`, `DATABASE_URL`, `LOG_LEVEL`). Do not commit secrets.
 * **Migrations**: Ship migrations alongside deployments (e.g., run via `golang-migrate` or `psql`) before starting the API container.
 
 ### Docker secrets quickstart
 
-The container expects two Docker secrets:
+The container expects these Docker secrets (add the OAuth secrets in non-dev deployments):
 
 | Secret name                       | Environment variable | Description                                      |
 | --------------------------------- | -------------------- | ------------------------------------------------ |
 | `anthology_database_url`          | `DATABASE_URL_FILE`  | Full Postgres connection string                  |
-| `anthology_api_token`             | `API_TOKEN_FILE`     | Bearer token required by the HTTP API            |
+| `anthology_google_books_api_key`  | `GOOGLE_BOOKS_API_KEY_FILE` | Google Books API key                       |
+| `anthology_google_client_id`      | `AUTH_GOOGLE_CLIENT_ID_FILE` | Google OAuth client ID                    |
+| `anthology_google_client_secret`  | `AUTH_GOOGLE_CLIENT_SECRET_FILE` | Google OAuth client secret            |
 
 Create them once per Swarm and attach them to the stack/service:
 
 ```bash
 printf 'postgres://user:pass@db:5432/anthology?sslmode=disable' | docker secret create anthology_database_url -
-printf 'super-secret-token' | docker secret create anthology_api_token -
+printf 'google-books-key' | docker secret create anthology_google_books_api_key -
+printf 'google-client-id' | docker secret create anthology_google_client_id -
+printf 'google-client-secret' | docker secret create anthology_google_client_secret -
 
 # example stack deployment (provide your own stack file)
 docker stack deploy -c stack.yml anthology
@@ -190,17 +206,21 @@ docker stack deploy -c stack.yml anthology
 Secrets are immutable. To change a value, remove and recreate it, then update the service:
 
 ```bash
-docker secret rm anthology_database_url anthology_api_token
+docker secret rm anthology_database_url anthology_google_books_api_key anthology_google_client_id anthology_google_client_secret
 printf 'new-connection-string' | docker secret create anthology_database_url -
-printf 'new-token' | docker secret create anthology_api_token -
+printf 'new-google-books-key' | docker secret create anthology_google_books_api_key -
+printf 'new-google-client-id' | docker secret create anthology_google_client_id -
+printf 'new-google-client-secret' | docker secret create anthology_google_client_secret -
 
-docker service update --secret-rm anthology_database_url --secret-rm anthology_api_token \
+docker service update --secret-rm anthology_database_url --secret-rm anthology_google_books_api_key --secret-rm anthology_google_client_id --secret-rm anthology_google_client_secret \
   --secret-add source=anthology_database_url,target=anthology_database_url \
-  --secret-add source=anthology_api_token,target=anthology_api_token \
+  --secret-add source=anthology_google_books_api_key,target=anthology_google_books_api_key \
+  --secret-add source=anthology_google_client_id,target=anthology_google_client_id \
+  --secret-add source=anthology_google_client_secret,target=anthology_google_client_secret \
   anthology_api
 ```
 
-Alternatively, override `DATABASE_URL_FILE` / `API_TOKEN_FILE` or set `DATABASE_URL` / `API_TOKEN` directly when not running under Swarm (e.g., local `docker compose up`).
+Alternatively, override `DATABASE_URL_FILE`, `GOOGLE_BOOKS_API_KEY_FILE`, `AUTH_GOOGLE_CLIENT_ID_FILE`, and `AUTH_GOOGLE_CLIENT_SECRET_FILE` or set `DATABASE_URL`, `GOOGLE_BOOKS_API_KEY`, `AUTH_GOOGLE_CLIENT_ID`, and `AUTH_GOOGLE_CLIENT_SECRET` directly when not running under Swarm (e.g., local `docker compose up`).
 
 When provisioning Postgres outside of Compose, create the database/user first:
 

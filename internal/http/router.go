@@ -2,7 +2,6 @@ package http
 
 import (
 	"net/http"
-	"strings"
 	"time"
 
 	"log/slog"
@@ -11,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 
+	"anthology/internal/auth"
 	"anthology/internal/catalog"
 	"anthology/internal/config"
 	"anthology/internal/importer"
@@ -19,7 +19,7 @@ import (
 )
 
 // NewRouter wires application routes and middleware using chi.
-func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Service, shelfSvc *shelves.Service, logger *slog.Logger) http.Handler {
+func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Service, shelfSvc *shelves.Service, authService *auth.Service, googleAuth *auth.GoogleAuthenticator, logger *slog.Logger) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -43,25 +43,39 @@ func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Servic
 		})
 	})
 
-	sessionHandler := NewSessionHandler(cfg.APIToken, cfg.Environment, logger)
+	sessionHandler := NewSessionHandler(authService, cfg.Environment, logger)
 	bulkImporter := importer.NewCSVImporter(svc, catalogSvc)
 	handler := NewItemHandler(svc, catalogSvc, bulkImporter, logger)
 	catalogHandler := NewCatalogHandler(catalogSvc, logger)
 	shelfHandler := NewShelfHandler(shelfSvc, logger)
 
-	if strings.TrimSpace(cfg.APIToken) == "" {
-		logger.Warn("API token authentication disabled; /api endpoints are unauthenticated")
+	if authService == nil {
+		logger.Warn("OAuth authentication disabled; /api endpoints are unauthenticated")
 	}
 
 	r.Route("/api", func(r chi.Router) {
+		// OAuth routes (unauthenticated)
+		if googleAuth != nil {
+			oauthHandler := NewOAuthHandler(googleAuth, authService, cfg.FrontendURL, cfg.Environment, logger)
+			r.Route("/auth", func(r chi.Router) {
+				r.Get("/google", oauthHandler.InitiateGoogle)
+				r.Get("/google/callback", oauthHandler.CallbackGoogle)
+			})
+		}
+
+		// Session routes (unauthenticated - for checking status and logout)
 		r.Route("/session", func(r chi.Router) {
-			r.Post("/", sessionHandler.Login)
 			r.Get("/", sessionHandler.Status)
 			r.Delete("/", sessionHandler.Logout)
 		})
 
+		// Protected routes
 		r.Group(func(r chi.Router) {
-			r.Use(newTokenAuthMiddleware(cfg.APIToken))
+			r.Use(newAuthMiddleware(authService, logger))
+
+			// User info endpoint
+			r.Get("/session/user", sessionHandler.CurrentUser)
+
 			r.Route("/items", func(r chi.Router) {
 				r.Get("/", handler.List)
 				r.Get("/histogram", handler.Histogram)

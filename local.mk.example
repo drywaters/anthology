@@ -2,3 +2,12 @@
 # local.mk is gitignored and will not be committed
 
 # GOOGLE_BOOKS_API_KEY = your-real-api-key-here
+#
+# Google OAuth Configuration
+# Get these from Google Cloud Console: APIs & Services > Credentials > OAuth 2.0 Client IDs
+# AUTH_GOOGLE_CLIENT_ID = your-client-id.apps.googleusercontent.com
+# AUTH_GOOGLE_CLIENT_SECRET = your-client-secret
+
+# Restrict access to specific domains and/or emails (comma-separated)
+# AUTH_GOOGLE_ALLOWED_DOMAINS = example.com,yourcompany.com
+# AUTH_GOOGLE_ALLOWED_EMAILS = user@gmail.com
