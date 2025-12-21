@@ -525,7 +525,7 @@ func handleServiceError(w http.ResponseWriter, err error, logger *slog.Logger) {
 	writeError(w, http.StatusInternalServerError, "unexpected error")
 }
 
-const maxJSONBodyBytes int64 = 1 << 20 // 1 MiB
+const maxJSONBodyBytes int64 = 8 << 20 // 8 MiB (accommodates 5MB images after base64 encoding)
 
 var errPayloadTooLarge = errors.New("payload too large")
 
