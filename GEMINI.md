@@ -8,7 +8,7 @@ Anthology is a two-tier catalogue application designed to manage personal librar
 ### Backend (Go)
 -   **Entrypoint:** `cmd/api`
 -   **Router:** `chi` (v5)
--   **Persistence:** In-memory (default) or Postgres (via `sqlx`).
+-   **Persistence:** Postgres (via `sqlx`).
 -   **Structure:**
     -   `internal/items`: Domain logic and repository interfaces.
     -   `internal/catalog`: Google Books API client for metadata.
@@ -35,7 +35,7 @@ Anthology is a two-tier catalogue application designed to manage personal librar
 The API runs on port 8080 by default.
 
 ```bash
-# Run with in-memory storage (default)
+# Run with Postgres storage (required)
 make api-run
 # OR directly
 go run ./cmd/api
@@ -72,7 +72,7 @@ Configuration is driven by environment variables. Defaults are set in `Makefile`
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| `DATA_STORE` | `memory` | `memory` or `postgres` |
+| `DATA_STORE` | `postgres` | `postgres` (required) |
 | `DATABASE_URL` | `...` | Postgres connection string |
 | `PORT` | `8080` | API listening port |
 | `APP_ENV` | `development` | `development`, `staging`, or `production` |

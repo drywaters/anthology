@@ -9,10 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"log/slog"
-
-	"github.com/jmoiron/sqlx"
-
 	"anthology/internal/auth"
 	"anthology/internal/catalog"
 	"anthology/internal/config"
@@ -35,42 +31,46 @@ func main() {
 
 	logger := logging.New(cfg.LogLevel)
 
-	itemRepo, shelfRepo, db, cleanup, err := buildRepositories(ctx, cfg, logger)
+	// Connect to Postgres
+	db, err := database.NewPostgres(ctx, cfg.DatabaseURL)
 	if err != nil {
-		logger.Error("failed to initialize repository", "error", err)
+		logger.Error("failed to connect to database", "error", err)
 		os.Exit(1)
 	}
-	if cleanup != nil {
-		defer cleanup()
-	}
-
-	// Initialize auth components
-	var authService *auth.Service
-	var googleAuth *auth.GoogleAuthenticator
-
-	if cfg.OAuthEnabled() {
-		if db == nil {
-			logger.Error("OAuth requires postgres database (DATA_STORE=postgres)")
-			os.Exit(1)
+	defer func() {
+		if err := db.Close(); err != nil {
+			logger.Error("failed to close database", "error", err)
 		}
+	}()
 
-		authRepo := auth.NewPostgresRepository(db)
-		authService = auth.NewService(authRepo, 12*time.Hour)
-
-		googleAuth, err = auth.NewGoogleAuthenticator(
-			ctx,
-			cfg.GoogleClientID,
-			cfg.GoogleClientSecret,
-			cfg.GoogleRedirectURL,
-			cfg.GoogleAllowedDomains,
-			cfg.GoogleAllowedEmails,
-		)
-		if err != nil {
-			logger.Error("failed to initialize Google OAuth", "error", err)
-			os.Exit(1)
-		}
-		logger.Info("Google OAuth enabled", "redirect_url", cfg.GoogleRedirectURL)
+	// Apply migrations
+	if err := migrate.Apply(ctx, db, logger); err != nil {
+		logger.Error("failed to apply migrations", "error", err)
+		os.Exit(1)
 	}
+	logger.Info("connected to postgres")
+
+	// Initialize repositories
+	itemRepo := items.NewPostgresRepository(db)
+	shelfRepo := shelves.NewPostgresRepository(db)
+
+	// Initialize auth (always required)
+	authRepo := auth.NewPostgresRepository(db)
+	authService := auth.NewService(authRepo, 12*time.Hour)
+
+	googleAuth, err := auth.NewGoogleAuthenticator(
+		ctx,
+		cfg.GoogleClientID,
+		cfg.GoogleClientSecret,
+		cfg.GoogleRedirectURL,
+		cfg.GoogleAllowedDomains,
+		cfg.GoogleAllowedEmails,
+	)
+	if err != nil {
+		logger.Error("failed to initialize Google OAuth", "error", err)
+		os.Exit(1)
+	}
+	logger.Info("Google OAuth enabled", "redirect_url", cfg.GoogleRedirectURL)
 
 	svc := items.NewService(itemRepo)
 	lookupClient := &http.Client{Timeout: 12 * time.Second}
@@ -89,7 +89,7 @@ func main() {
 	}
 
 	go func() {
-		logger.Info("Anthology API listening", "addr", srv.Addr, "store", cfg.DataStore)
+		logger.Info("Anthology API listening", "addr", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("http server error", "error", err)
 		}
@@ -104,38 +104,4 @@ func main() {
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		logger.Error("graceful shutdown failed", "error", err)
 	}
-}
-
-func buildRepositories(ctx context.Context, cfg config.Config, logger *slog.Logger) (items.Repository, shelves.Repository, *sqlx.DB, func(), error) {
-	if cfg.UseInMemoryStore() {
-		logger.Info("using in-memory repository")
-		demoItems := seedLocalItems()
-		shelfRepo := shelves.NewInMemoryRepository()
-		placements := seedShelves(ctx, shelfRepo, demoItems)
-		for i := range demoItems {
-			if placement, ok := placements[demoItems[i].ID]; ok {
-				placementCopy := placement
-				demoItems[i].ShelfPlacement = &placementCopy
-			}
-		}
-		itemRepo := items.NewInMemoryRepository(demoItems)
-		return itemRepo, shelfRepo, nil, nil, nil
-	}
-
-	db, err := database.NewPostgres(ctx, cfg.DatabaseURL)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-
-	cleanup := func() {
-		_ = db.Close()
-	}
-
-	if err := migrate.Apply(ctx, db, logger); err != nil {
-		cleanup()
-		return nil, nil, nil, nil, err
-	}
-
-	logger.Info("connected to postgres")
-	return items.NewPostgresRepository(db), shelves.NewPostgresRepository(db), db, cleanup, nil
 }

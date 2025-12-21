@@ -1,13 +1,32 @@
-# Copy this file to local.mk and add your real values
+# Local Development Configuration
+# Copy this file to local.mk and fill in your values
 # local.mk is gitignored and will not be committed
-
-# GOOGLE_BOOKS_API_KEY = your-real-api-key-here
 #
-# Google OAuth Configuration
-# Get these from Google Cloud Console: APIs & Services > Credentials > OAuth 2.0 Client IDs
-# AUTH_GOOGLE_CLIENT_ID = your-client-id.apps.googleusercontent.com
-# AUTH_GOOGLE_CLIENT_SECRET = your-client-secret
+# See docs/LOCAL_DEVELOPMENT.md for setup instructions
 
-# Restrict access to specific domains and/or emails (comma-separated)
-# AUTH_GOOGLE_ALLOWED_DOMAINS = example.com,yourcompany.com
-# AUTH_GOOGLE_ALLOWED_EMAILS = user@gmail.com
+# PostgreSQL connection (required)
+DATABASE_URL = postgres://anthology:anthology@localhost:5432/anthology?sslmode=disable
+
+# Google Books API Key (required for metadata lookups)
+GOOGLE_BOOKS_API_KEY = your-google-books-api-key
+
+# Google OAuth Configuration (required)
+# Get these from Google Cloud Console: APIs & Services > Credentials > OAuth 2.0 Client IDs
+AUTH_GOOGLE_CLIENT_ID = your-client-id.apps.googleusercontent.com
+AUTH_GOOGLE_CLIENT_SECRET = your-client-secret
+
+# OAuth redirect URL (default works for local development)
+AUTH_GOOGLE_REDIRECT_URL = http://localhost:8080/api/auth/google/callback
+
+# Access allowlist - at least one is required
+# Add your email address to allow login
+AUTH_GOOGLE_ALLOWED_EMAILS = you@gmail.com
+# Or allow an entire domain:
+# AUTH_GOOGLE_ALLOWED_DOMAINS = yourcompany.com
+
+# Frontend URL for OAuth redirects
+FRONTEND_URL = http://localhost:4200
+
+# Set to development for local behaviors (HTTP cookies, no HSTS)
+# Defaults to production if not set, so this is required for local dev
+APP_ENV = development

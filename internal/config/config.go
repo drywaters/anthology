@@ -13,7 +13,6 @@ type Config struct {
 	Environment       string
 	HTTPPort          int
 	DatabaseURL       string
-	DataStore         string
 	LogLevel          string
 	AllowedOrigins    []string
 	GoogleBooksAPIKey string
@@ -53,13 +52,8 @@ func Load() (Config, error) {
 	trimmedGoogleClientSecret := strings.TrimSpace(googleClientSecret)
 
 	environment := strings.TrimSpace(os.Getenv("APP_ENV"))
-	oauthConfigured := trimmedGoogleClientID != "" && trimmedGoogleClientSecret != ""
 	if environment == "" {
-		if oauthConfigured {
-			environment = "production"
-		} else {
-			environment = "development"
-		}
+		environment = "production"
 	}
 	environment = strings.ToLower(environment)
 	if !isValidEnvironment(environment) {
@@ -69,7 +63,6 @@ func Load() (Config, error) {
 	cfg := Config{
 		Environment:       environment,
 		DatabaseURL:       databaseURL,
-		DataStore:         strings.ToLower(getEnv("DATA_STORE", "memory")),
 		LogLevel:          strings.ToLower(getEnv("LOG_LEVEL", "info")),
 		AllowedOrigins:    parseCSV(getEnv("ALLOWED_ORIGINS", "http://localhost:4200,http://localhost:8080")),
 		GoogleBooksAPIKey: strings.TrimSpace(googleBooksAPIKey),
@@ -90,25 +83,23 @@ func Load() (Config, error) {
 	}
 	cfg.HTTPPort = port
 
-	if cfg.DataStore == "postgres" && cfg.DatabaseURL == "" {
-		return Config{}, fmt.Errorf("DATA_STORE is postgres but DATABASE_URL is not set")
+	if cfg.DatabaseURL == "" {
+		return Config{}, fmt.Errorf("DATABASE_URL is required")
 	}
 
 	if cfg.GoogleBooksAPIKey == "" {
 		return Config{}, fmt.Errorf("GOOGLE_BOOKS_API_KEY is required")
 	}
 
-	// Google OAuth is required in non-development environments
-	if !strings.EqualFold(cfg.Environment, "development") {
-		if cfg.GoogleClientID == "" {
-			return Config{}, fmt.Errorf("AUTH_GOOGLE_CLIENT_ID is required when APP_ENV=%s", cfg.Environment)
-		}
-		if cfg.GoogleClientSecret == "" {
-			return Config{}, fmt.Errorf("AUTH_GOOGLE_CLIENT_SECRET is required when APP_ENV=%s", cfg.Environment)
-		}
-		if len(cfg.GoogleAllowedDomains) == 0 && len(cfg.GoogleAllowedEmails) == 0 {
-			return Config{}, fmt.Errorf("AUTH_GOOGLE_ALLOWED_DOMAINS or AUTH_GOOGLE_ALLOWED_EMAILS is required when APP_ENV=%s", cfg.Environment)
-		}
+	// Google OAuth is required in all environments
+	if cfg.GoogleClientID == "" {
+		return Config{}, fmt.Errorf("AUTH_GOOGLE_CLIENT_ID is required")
+	}
+	if cfg.GoogleClientSecret == "" {
+		return Config{}, fmt.Errorf("AUTH_GOOGLE_CLIENT_SECRET is required")
+	}
+	if len(cfg.GoogleAllowedDomains) == 0 && len(cfg.GoogleAllowedEmails) == 0 {
+		return Config{}, fmt.Errorf("AUTH_GOOGLE_ALLOWED_DOMAINS or AUTH_GOOGLE_ALLOWED_EMAILS is required")
 	}
 
 	allowedOrigins, err := sanitizeAllowedOrigins(cfg.AllowedOrigins, cfg.Environment)
@@ -123,16 +114,6 @@ func Load() (Config, error) {
 // HTTPAddress returns the address the HTTP server should bind to.
 func (c Config) HTTPAddress() string {
 	return fmt.Sprintf(":%d", c.HTTPPort)
-}
-
-// UseInMemoryStore returns true if the in-memory repository should be used.
-func (c Config) UseInMemoryStore() bool {
-	return c.DataStore == "memory"
-}
-
-// OAuthEnabled returns true if Google OAuth is configured.
-func (c Config) OAuthEnabled() bool {
-	return c.GoogleClientID != "" && c.GoogleClientSecret != ""
 }
 
 func getEnv(key, fallback string) string {
