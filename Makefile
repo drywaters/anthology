@@ -3,7 +3,6 @@
 BIN_DIR ?= bin
 WEB_DIR ?= web
 
-DATA_STORE ?= memory
 PORT ?= 8080
 ALLOWED_ORIGINS ?= http://localhost:4200,http://localhost:8080
 GOOGLE_BOOKS_API_KEY ?= local-google-books-api-key
@@ -43,8 +42,7 @@ configure-image: ## Evaluate container image metadata defaults.
 ensure-image-tag: configure-image ## Abort if git metadata is unavailable for image tagging.
 	@test -n "$(strip $(SHORT_SHA))" || (echo "Unable to determine git short SHA. Commit your work before building images." >&2; exit 1)
 
-api-run: ## Run the Go API with in-memory defaults.
-	DATA_STORE=$(DATA_STORE) \
+api-run: ## Run the Go API (requires local.mk configuration).
 	PORT=$(PORT) \
 	ALLOWED_ORIGINS=$(ALLOWED_ORIGINS) \
 	GOOGLE_BOOKS_API_KEY=$(GOOGLE_BOOKS_API_KEY) \

@@ -14,22 +14,6 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestAuthMiddlewareAllowsWhenDisabled(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	next := newAuthMiddleware(nil, logger)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-
-	req := httptest.NewRequest(http.MethodGet, "/api/items", nil)
-	rec := httptest.NewRecorder()
-
-	next.ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rec.Code)
-	}
-}
-
 func TestAuthMiddlewareRejectsMissingCookie(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	authService := auth.NewService(&authRepoStub{}, time.Hour)

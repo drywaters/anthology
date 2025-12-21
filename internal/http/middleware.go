@@ -47,12 +47,6 @@ func UserFromContext(ctx context.Context) *auth.User {
 func newAuthMiddleware(authService *auth.Service, logger *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// If auth service is not configured, allow all requests (dev mode)
-			if authService == nil {
-				next.ServeHTTP(w, r)
-				return
-			}
-
 			// Check session cookie
 			cookie, err := r.Cookie(sessionCookieName)
 			if err != nil || cookie.Value == "" {

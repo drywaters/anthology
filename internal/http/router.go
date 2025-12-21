@@ -49,10 +49,6 @@ func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Servic
 	catalogHandler := NewCatalogHandler(catalogSvc, logger)
 	shelfHandler := NewShelfHandler(shelfSvc, logger)
 
-	if authService == nil {
-		logger.Warn("OAuth authentication disabled; /api endpoints are unauthenticated")
-	}
-
 	r.Route("/api", func(r chi.Router) {
 		// OAuth routes (unauthenticated)
 		if googleAuth != nil {

@@ -33,14 +33,6 @@ func NewSessionHandler(authService *auth.Service, env string, logger *slog.Logge
 
 // Status reports whether the request holds a valid session and returns user info.
 func (h *SessionHandler) Status(w http.ResponseWriter, r *http.Request) {
-	// If auth service is not configured, treat requests as authenticated (dev mode).
-	if h.authService == nil {
-		writeJSON(w, http.StatusOK, map[string]any{
-			"authenticated": true,
-		})
-		return
-	}
-
 	cookie, err := r.Cookie(sessionCookieName)
 	if err != nil || cookie.Value == "" {
 		writeJSON(w, http.StatusOK, map[string]any{

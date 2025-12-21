@@ -16,56 +16,6 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestSessionHandlerStatusWithoutAuthService(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	handler := NewSessionHandler(nil, "development", logger)
-
-	req := httptest.NewRequest(http.MethodGet, "/api/session", nil)
-	rec := httptest.NewRecorder()
-
-	handler.Status(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rec.Code)
-	}
-
-	var response map[string]any
-	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-
-	if response["authenticated"] != true {
-		t.Fatalf("expected authenticated=true, got %v", response["authenticated"])
-	}
-}
-
-func TestSessionHandlerLogoutWithoutAuthService(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	handler := NewSessionHandler(nil, "development", logger)
-
-	req := httptest.NewRequest(http.MethodDelete, "/api/session", nil)
-	rec := httptest.NewRecorder()
-
-	handler.Logout(rec, req)
-
-	if rec.Code != http.StatusNoContent {
-		t.Fatalf("expected status 204, got %d", rec.Code)
-	}
-
-	// Verify the cookie was cleared
-	cookies := rec.Result().Cookies()
-	var sessionCookieCleared bool
-	for _, c := range cookies {
-		if c.Name == sessionCookieName && c.MaxAge < 0 {
-			sessionCookieCleared = true
-			break
-		}
-	}
-	if !sessionCookieCleared {
-		t.Fatal("expected session cookie to be cleared")
-	}
-}
-
 func TestSessionHandlerStatusWithNoCookie(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	authService := auth.NewService(&authRepoStub{}, time.Hour)

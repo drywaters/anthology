@@ -12,7 +12,7 @@ Anthology is a two-tier catalogue: a Go 1.24 API (under `cmd/api` + `internal/`)
 - `docs/architecture/` & `docs/planning/`: architecture diagrams, startup flows, Material guidelines, and roadmap notes.
 
 ## Build, Test, and Development Commands
-- `go run ./cmd/api` — boots the API using the current env vars; defaults to `DATA_STORE=memory` with seeded demo data.
+- `go run ./cmd/api` — boots the API using the current env vars; requires Postgres (`DATA_STORE=postgres` + `DATABASE_URL`) with migrations through `0007`.
 - `go test ./...` — Go unit tests (catalog lookups, importer, services, handlers).
 - `cd web && npm install` — install Angular deps (Material, CLI, test runners).
 - `cd web && npm start` — Angular dev server on `http://localhost:4200` proxying to the API URL defined in the meta tag/runtime config.
@@ -25,7 +25,7 @@ Anthology is a two-tier catalogue: a Go 1.24 API (under `cmd/api` + `internal/`)
 
 ## Configuration & Security
 - Primary env vars: `DATA_STORE`, `DATABASE_URL`, `PORT`, `LOG_LEVEL`, `ALLOWED_ORIGINS`, `APP_ENV`, `GOOGLE_BOOKS_API_KEY`, `AUTH_GOOGLE_CLIENT_ID`, `AUTH_GOOGLE_CLIENT_SECRET`, `AUTH_GOOGLE_REDIRECT_URL`, `AUTH_GOOGLE_ALLOWED_DOMAINS`, `AUTH_GOOGLE_ALLOWED_EMAILS`, `FRONTEND_URL`. `_FILE` variants are respected (defaults point to `/run/secrets/anthology_*`, including `anthology_google_books_api_key`, `anthology_google_client_id`, and `anthology_google_client_secret`). `GOOGLE_BOOKS_API_KEY` is required even in local/dev; set a placeholder when testing.
-- `DATA_STORE=memory` seeds demo catalogue data plus a sample shelf with pre-placed items; `DATA_STORE=postgres` expects migrations through `0007` to be applied and uses the `sqlx` repo implementation.
+- The in-memory store has been removed; `DATA_STORE=postgres` is required and expects migrations through `0007` to be applied (uses the `sqlx` repo implementation).
 - CORS defaults allow `http://localhost:4200`/`8080`; override via `ALLOWED_ORIGINS`.
 - OAuth is required when `APP_ENV` is `staging` or `production` (configure Google OAuth client ID/secret plus an allowlist) and relies on Postgres for sessions. In `APP_ENV=development` without OAuth configured, auth is disabled.
 - Never commit secrets; rely on `.env` files locally. Docker secrets include `anthology_database_url`, `anthology_google_books_api_key`, `anthology_google_client_id`, and `anthology_google_client_secret`, which map to the `_FILE` envs.
