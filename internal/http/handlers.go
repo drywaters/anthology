@@ -53,6 +53,7 @@ func (h *ItemHandler) List(w http.ResponseWriter, r *http.Request) {
 func parseListOptions(values url.Values) (items.ListOptions, error) {
 	opts := items.ListOptions{}
 	const maxListLimit = 50
+	const maxSearchQueryLength = 500
 
 	if rawType := strings.TrimSpace(values.Get("type")); rawType != "" {
 		typeValue := items.ItemType(rawType)
@@ -96,6 +97,9 @@ func parseListOptions(values url.Values) (items.ListOptions, error) {
 	}
 
 	if rawQuery := strings.TrimSpace(values.Get("query")); rawQuery != "" {
+		if len(rawQuery) > maxSearchQueryLength {
+			return items.ListOptions{}, fmt.Errorf("query too long (max %d characters)", maxSearchQueryLength)
+		}
 		query := rawQuery
 		opts.Query = &query
 	}

@@ -3,6 +3,8 @@ package http
 import (
 	"context"
 	"crypto/subtle"
+	"encoding/base64"
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -11,6 +13,47 @@ import (
 
 	"anthology/internal/auth"
 )
+
+// oauthStatePayload holds the CSRF state and optional redirect path.
+type oauthStatePayload struct {
+	State      string `json:"s"`
+	RedirectTo string `json:"r,omitempty"`
+}
+
+// isValidRedirectPath validates that a path is a safe relative redirect.
+// It prevents open redirect attacks by ensuring the path:
+// - Starts with a single "/" (not "//")
+// - Has no scheme or host component
+// - Cannot be bypassed via URL encoding
+func isValidRedirectPath(path string) bool {
+	if path == "" {
+		return false
+	}
+
+	// Decode to catch encoded bypass attempts like /%2f%2f
+	decoded, err := url.QueryUnescape(path)
+	if err != nil {
+		return false
+	}
+
+	// Must start with / but not //
+	if !strings.HasPrefix(decoded, "/") || strings.HasPrefix(decoded, "//") {
+		return false
+	}
+
+	// Parse as URL to ensure no scheme or host
+	parsed, err := url.Parse(decoded)
+	if err != nil {
+		return false
+	}
+
+	// Reject if it has a scheme or host (would be absolute URL)
+	if parsed.Scheme != "" || parsed.Host != "" {
+		return false
+	}
+
+	return true
+}
 
 const (
 	oauthStateCookieName = "anthology_oauth_state"
@@ -64,12 +107,16 @@ func (h *OAuthHandler) InitiateGoogle(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   int(oauthStateCookieTTL.Seconds()),
 	})
 
-	// Preserve redirectTo query param by appending to state
+	// Preserve redirectTo query param in state payload
 	redirectTo := r.URL.Query().Get("redirectTo")
-	fullState := state
-	if redirectTo != "" {
-		fullState = state + "|" + redirectTo
+	payload := oauthStatePayload{State: state}
+	if redirectTo != "" && isValidRedirectPath(redirectTo) {
+		payload.RedirectTo = redirectTo
 	}
+
+	// Encode state as base64 JSON to avoid delimiter issues
+	stateJSON, _ := json.Marshal(payload)
+	fullState := base64.RawURLEncoding.EncodeToString(stateJSON)
 
 	authURL := h.google.AuthURL(fullState)
 	http.Redirect(w, r, authURL, http.StatusTemporaryRedirect)
@@ -90,18 +137,27 @@ func (h *OAuthHandler) CallbackGoogle(w http.ResponseWriter, r *http.Request) {
 	expectedState := stateCookie.Value
 	redirectTo := "/"
 
-	// Parse state (may contain |redirectTo suffix)
-	if idx := strings.Index(stateParam, "|"); idx != -1 {
-		stateOnly := stateParam[:idx]
-		redirectTo = stateParam[idx+1:]
-		// Validate redirectTo is a relative path
-		if !strings.HasPrefix(redirectTo, "/") || strings.HasPrefix(redirectTo, "//") {
-			redirectTo = "/"
-		}
-		stateParam = stateOnly
+	// Decode base64 JSON state payload
+	stateBytes, err := base64.RawURLEncoding.DecodeString(stateParam)
+	if err != nil {
+		h.logger.Warn("oauth callback: invalid state encoding")
+		h.redirectWithError(w, r, "invalid_request", "Invalid state. Please try again.")
+		return
 	}
 
-	if subtle.ConstantTimeCompare([]byte(stateParam), []byte(expectedState)) != 1 {
+	var statePayload oauthStatePayload
+	if err := json.Unmarshal(stateBytes, &statePayload); err != nil {
+		h.logger.Warn("oauth callback: invalid state JSON")
+		h.redirectWithError(w, r, "invalid_request", "Invalid state. Please try again.")
+		return
+	}
+
+	// Extract and validate redirectTo
+	if statePayload.RedirectTo != "" && isValidRedirectPath(statePayload.RedirectTo) {
+		redirectTo = statePayload.RedirectTo
+	}
+
+	if subtle.ConstantTimeCompare([]byte(statePayload.State), []byte(expectedState)) != 1 {
 		h.logger.Warn("oauth callback: state mismatch")
 		h.redirectWithError(w, r, "invalid_request", "Invalid state. Please try again.")
 		return
