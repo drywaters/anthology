@@ -192,9 +192,12 @@ func TestClientIPFromRequestRemoteAddr(t *testing.T) {
 }
 
 func TestClientIPFromRequestForwardedFor(t *testing.T) {
+	// Note: In production, chi's RealIP middleware processes X-Forwarded-For
+	// and sets RemoteAddr. This test verifies that our function correctly
+	// extracts from RemoteAddr (which would already be set by the middleware).
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.RemoteAddr = "10.0.0.1:12345"
-	req.Header.Set("X-Forwarded-For", "198.51.100.7:8080, 10.0.0.1")
+	// Simulate chi's RealIP middleware having already set RemoteAddr
+	req.RemoteAddr = "198.51.100.7:8080"
 
 	ip := clientIPFromRequest(req)
 	if ip != "198.51.100.7" {

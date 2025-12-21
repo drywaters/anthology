@@ -121,12 +121,11 @@ func (h *SessionHandler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 
 // clientIPFromRequest extracts the originating IP address, normalizing away any port
 // so rate limiting buckets attempts by IP regardless of ephemeral ports.
+// Note: chi's RealIP middleware (configured in router.go) has already processed
+// X-Forwarded-For and X-Real-IP headers and set r.RemoteAddr appropriately.
+// We rely on that middleware instead of parsing headers directly to avoid spoofing.
 func clientIPFromRequest(r *http.Request) string {
 	ip := r.RemoteAddr
-	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
-		ip = strings.Split(forwarded, ",")[0]
-	}
-	ip = strings.TrimSpace(ip)
 
 	host, _, err := net.SplitHostPort(ip)
 	if err == nil {

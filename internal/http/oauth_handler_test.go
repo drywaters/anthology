@@ -2,6 +2,8 @@ package http
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
@@ -14,6 +16,13 @@ import (
 
 	"anthology/internal/auth"
 )
+
+// encodeOAuthState creates a base64-encoded JSON state payload for testing
+func encodeOAuthState(state, redirectTo string) string {
+	payload := oauthStatePayload{State: state, RedirectTo: redirectTo}
+	data, _ := json.Marshal(payload)
+	return base64.RawURLEncoding.EncodeToString(data)
+}
 
 type fakeGoogleAuthenticator struct {
 	authURLBase    string
@@ -66,11 +75,21 @@ func TestOAuthInitiateGoogleSetsStateCookieAndRedirects(t *testing.T) {
 	if stateCookie == nil || stateCookie.Value == "" {
 		t.Fatal("expected state cookie to be set")
 	}
-	if !strings.HasPrefix(google.lastState, stateCookie.Value) {
-		t.Fatalf("expected auth state to include cookie value, got %q", google.lastState)
+
+	// Decode the base64 JSON state to verify it contains the cookie value and redirectTo
+	stateBytes, err := base64.RawURLEncoding.DecodeString(google.lastState)
+	if err != nil {
+		t.Fatalf("failed to decode state: %v", err)
 	}
-	if !strings.Contains(google.lastState, "|/items") {
-		t.Fatalf("expected redirectTo to be appended to state, got %q", google.lastState)
+	var statePayload oauthStatePayload
+	if err := json.Unmarshal(stateBytes, &statePayload); err != nil {
+		t.Fatalf("failed to parse state JSON: %v", err)
+	}
+	if statePayload.State != stateCookie.Value {
+		t.Fatalf("expected state to match cookie value %q, got %q", stateCookie.Value, statePayload.State)
+	}
+	if statePayload.RedirectTo != "/items" {
+		t.Fatalf("expected redirectTo to be /items, got %q", statePayload.RedirectTo)
 	}
 
 	location := rec.Header().Get("Location")
@@ -102,7 +121,9 @@ func TestOAuthCallbackRejectsStateMismatch(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	handler := NewOAuthHandler(google, nil, "http://frontend.test", "development", logger)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state=other", nil)
+	// Encode state with wrong value
+	encodedState := encodeOAuthState("other", "")
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state="+url.QueryEscape(encodedState), nil)
 	req.AddCookie(&http.Cookie{Name: oauthStateCookieName, Value: "expected"})
 	rec := httptest.NewRecorder()
 
@@ -118,7 +139,8 @@ func TestOAuthCallbackPropagatesProviderError(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	handler := NewOAuthHandler(google, nil, "http://frontend.test", "development", logger)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state=abc&error=access_denied&error_description=Denied", nil)
+	encodedState := encodeOAuthState("abc", "")
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state="+url.QueryEscape(encodedState)+"&error=access_denied&error_description=Denied", nil)
 	req.AddCookie(&http.Cookie{Name: oauthStateCookieName, Value: "abc"})
 	rec := httptest.NewRecorder()
 
@@ -135,7 +157,8 @@ func TestOAuthCallbackRequiresCode(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	handler := NewOAuthHandler(google, nil, "http://frontend.test", "development", logger)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state=abc", nil)
+	encodedState := encodeOAuthState("abc", "")
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state="+url.QueryEscape(encodedState), nil)
 	req.AddCookie(&http.Cookie{Name: oauthStateCookieName, Value: "abc"})
 	rec := httptest.NewRecorder()
 
@@ -151,7 +174,8 @@ func TestOAuthCallbackHandlesExchangeError(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	handler := NewOAuthHandler(google, nil, "http://frontend.test", "development", logger)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state=abc&code=123", nil)
+	encodedState := encodeOAuthState("abc", "")
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state="+url.QueryEscape(encodedState)+"&code=123", nil)
 	req.AddCookie(&http.Cookie{Name: oauthStateCookieName, Value: "abc"})
 	rec := httptest.NewRecorder()
 
@@ -170,7 +194,8 @@ func TestOAuthCallbackRequiresVerifiedEmail(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	handler := NewOAuthHandler(google, nil, "http://frontend.test", "development", logger)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state=abc&code=123", nil)
+	encodedState := encodeOAuthState("abc", "")
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state="+url.QueryEscape(encodedState)+"&code=123", nil)
 	req.AddCookie(&http.Cookie{Name: oauthStateCookieName, Value: "abc"})
 	rec := httptest.NewRecorder()
 
@@ -189,7 +214,8 @@ func TestOAuthCallbackRejectsUnauthorizedEmail(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	handler := NewOAuthHandler(google, nil, "http://frontend.test", "development", logger)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state=abc&code=123", nil)
+	encodedState := encodeOAuthState("abc", "")
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state="+url.QueryEscape(encodedState)+"&code=123", nil)
 	req.AddCookie(&http.Cookie{Name: oauthStateCookieName, Value: "abc"})
 	rec := httptest.NewRecorder()
 
@@ -214,7 +240,8 @@ func TestOAuthCallbackHandlesUserCreationError(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	handler := NewOAuthHandler(google, authService, "http://frontend.test", "development", logger)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state=abc&code=123", nil)
+	encodedState := encodeOAuthState("abc", "")
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state="+url.QueryEscape(encodedState)+"&code=123", nil)
 	req.AddCookie(&http.Cookie{Name: oauthStateCookieName, Value: "abc"})
 	rec := httptest.NewRecorder()
 
@@ -242,7 +269,8 @@ func TestOAuthCallbackHandlesSessionCreationError(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	handler := NewOAuthHandler(google, authService, "http://frontend.test", "development", logger)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state=abc&code=123", nil)
+	encodedState := encodeOAuthState("abc", "")
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state="+url.QueryEscape(encodedState)+"&code=123", nil)
 	req.AddCookie(&http.Cookie{Name: oauthStateCookieName, Value: "abc"})
 	rec := httptest.NewRecorder()
 
@@ -268,7 +296,8 @@ func TestOAuthCallbackSuccessRedirectsToFrontend(t *testing.T) {
 	handler := NewOAuthHandler(google, authService, "http://frontend.test", "development", logger)
 
 	state := "state123"
-	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state="+url.QueryEscape(state+"|/items")+"&code=123", nil)
+	encodedState := encodeOAuthState(state, "/items")
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state="+url.QueryEscape(encodedState)+"&code=123", nil)
 	req.AddCookie(&http.Cookie{Name: oauthStateCookieName, Value: state})
 	rec := httptest.NewRecorder()
 
@@ -309,7 +338,9 @@ func TestOAuthCallbackSanitizesRedirectTo(t *testing.T) {
 	handler := NewOAuthHandler(google, authService, "http://frontend.test", "development", logger)
 
 	state := "state123"
-	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state="+url.QueryEscape(state+"|https://evil.test")+"&code=123", nil)
+	// The evil redirect URL should be rejected by isValidRedirectPath
+	encodedState := encodeOAuthState(state, "https://evil.test")
+	req := httptest.NewRequest(http.MethodGet, "/api/auth/google/callback?state="+url.QueryEscape(encodedState)+"&code=123", nil)
 	req.AddCookie(&http.Cookie{Name: oauthStateCookieName, Value: state})
 	rec := httptest.NewRecorder()
 
@@ -318,5 +349,56 @@ func TestOAuthCallbackSanitizesRedirectTo(t *testing.T) {
 	location := rec.Header().Get("Location")
 	if location != "http://frontend.test/" {
 		t.Fatalf("expected redirect to root, got %q", location)
+	}
+}
+
+func TestIsValidRedirectPath(t *testing.T) {
+	tests := []struct {
+		name  string
+		path  string
+		valid bool
+	}{
+		// Valid paths
+		{"root", "/", true},
+		{"simple path", "/items", true},
+		{"nested path", "/items/123", true},
+		{"path with query", "/items?page=1", true},
+		{"path with fragment", "/items#section", true},
+
+		// Invalid - empty
+		{"empty string", "", false},
+
+		// Invalid - absolute URLs / open redirect attempts
+		{"http URL", "http://evil.com", false},
+		{"https URL", "https://evil.com", false},
+		{"protocol-relative", "//evil.com", false},
+		{"protocol-relative with path", "//evil.com/path", false},
+
+		// Invalid - encoded bypass attempts
+		{"encoded double slash", "/%2f%2fevil.com", false},
+		{"encoded slash", "/%2fevil.com", false},
+		// Note: double-encoded is safe - after one decode it's /%2f%2fevil.com (literal path)
+		{"double encoded is safe", "/%252f%252fevil.com", true},
+
+		// Invalid - no leading slash
+		{"no leading slash", "items", false},
+		{"relative path", "items/123", false},
+
+		// Invalid - other schemes
+		{"javascript protocol", "javascript:alert(1)", false},
+		{"data protocol", "data:text/html,<script>", false},
+
+		// Edge cases
+		{"backslash", "\\\\evil.com", false},
+		{"mixed slashes", "/\\evil.com", true}, // This is OK - just a weird but safe path
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isValidRedirectPath(tt.path)
+			if got != tt.valid {
+				t.Errorf("isValidRedirectPath(%q) = %v, want %v", tt.path, got, tt.valid)
+			}
+		})
 	}
 }
