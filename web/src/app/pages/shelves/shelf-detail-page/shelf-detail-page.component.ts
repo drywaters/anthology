@@ -96,13 +96,8 @@ export class ShelfDetailPageComponent {
     // Writable signal for canvas slots - must be explicitly updated when form changes
     readonly layoutSlots = signal<LayoutSlotData[]>([]);
 
-    // Computed property for layout editor
-    readonly layoutRows = computed<LayoutRow[]>(() => {
-        return this.rows.controls.map((row, rowIndex) => ({
-            rowIndex,
-            columns: row.controls.columns.controls.map((_, colIndex) => ({ colIndex })),
-        }));
-    });
+    // Explicit signal for layout editor - stays in sync with form mutations.
+    readonly layoutRows = signal<LayoutRow[]>([]);
 
     constructor() {
         this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
@@ -327,6 +322,14 @@ export class ShelfDetailPageComponent {
             });
         });
         this.layoutSlots.set(slots);
+        this.layoutRows.set(
+            this.rows.controls.map((row) => ({
+                rowIndex: row.controls.rowIndex.value,
+                columns: row.controls.columns.controls.map((col) => ({
+                    colIndex: col.controls.colIndex.value,
+                })),
+            })),
+        );
     }
 
     saveLayout(): void {
