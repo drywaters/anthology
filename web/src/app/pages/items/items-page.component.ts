@@ -104,6 +104,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     readonly seriesData = signal<SeriesSummary[]>([]);
     readonly expandedSeries = signal<Set<string>>(new Set());
     readonly seriesLoading = signal(false);
+    readonly exportBusy = signal(false);
 
     readonly typeOptions: Array<{ value: ItemTypeFilter; label: string }> = [
         { value: 'all', label: 'All items' },
@@ -366,6 +367,47 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
 
     setViewMode(mode: ViewMode): void {
         this.viewMode.set(mode);
+    }
+
+    exportToCsv(): void {
+        if (this.exportBusy()) {
+            return;
+        }
+
+        this.exportBusy.set(true);
+        const filters = this.currentFilters();
+
+        this.itemService
+            .exportCsv(filters)
+            .pipe(
+                tap((blob) => {
+                    this.downloadBlob(blob, this.generateExportFilename());
+                    this.notification.info('Library exported successfully');
+                }),
+                catchError(() => {
+                    this.notification.error('Failed to export library');
+                    return EMPTY;
+                }),
+                takeUntilDestroyed(this.destroyRef),
+            )
+            .subscribe({
+                complete: () => this.exportBusy.set(false),
+                error: () => this.exportBusy.set(false),
+            });
+    }
+
+    private downloadBlob(blob: Blob, filename: string): void {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        window.URL.revokeObjectURL(url);
+    }
+
+    private generateExportFilename(): string {
+        const date = new Date().toISOString().split('T')[0];
+        return `anthology-export-${date}.csv`;
     }
 
     viewShelfPlacementFromChild(data: { item: Item; event: MouseEvent }): void {

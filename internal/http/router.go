@@ -77,6 +77,7 @@ func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Servic
 				r.Get("/", handler.List)
 				r.Get("/histogram", handler.Histogram)
 				r.Get("/duplicates", handler.Duplicates)
+				r.Get("/export", handler.ExportCSV)
 				r.Post("/", handler.Create)
 				r.Post("/import", handler.ImportCSV)
 				r.Route("/{id}", func(r chi.Router) {

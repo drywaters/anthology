@@ -10,6 +10,7 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 
 import { BookStatusFilter, ItemType, ShelfStatusFilter } from '../../../models';
@@ -20,7 +21,15 @@ export type ViewMode = 'table' | 'grid' | 'series';
 @Component({
     selector: 'app-items-filter-panel',
     standalone: true,
-    imports: [NgFor, NgIf, MatButtonModule, MatFormFieldModule, MatIconModule, MatSelectModule],
+    imports: [
+        NgFor,
+        NgIf,
+        MatButtonModule,
+        MatFormFieldModule,
+        MatIconModule,
+        MatProgressSpinnerModule,
+        MatSelectModule,
+    ],
     templateUrl: './items-filter-panel.component.html',
     styleUrl: './items-filter-panel.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,11 +43,14 @@ export class ItemsFilterPanelComponent {
     @Input() typeOptions: Array<{ value: ItemTypeFilter; label: string }> = [];
     @Input() statusOptions: Array<{ value: BookStatusFilter; label: string }> = [];
     @Input() shelfStatusOptions: Array<{ value: ShelfStatusFilter; label: string }> = [];
+    @Input() exportBusy = false;
 
     @Output() typeFilterChange = new EventEmitter<ItemTypeFilter>();
     @Output() statusFilterChange = new EventEmitter<BookStatusFilter>();
     @Output() shelfStatusFilterChange = new EventEmitter<ShelfStatusFilter>();
     @Output() viewModeChange = new EventEmitter<ViewMode>();
+    @Output() viewModeChange = new EventEmitter<'table' | 'grid'>();
+    @Output() exportClick = new EventEmitter<void>();
 
     onTypeChange(value: ItemTypeFilter): void {
         this.typeFilterChange.emit(value);
@@ -66,5 +78,7 @@ export class ItemsFilterPanelComponent {
 
     isSeriesView(): boolean {
         return this.viewMode() === 'series';
+    onExport(): void {
+        this.exportClick.emit();
     }
 }

@@ -8,10 +8,12 @@
         [typeOptions]="typeOptions"
         [statusOptions]="statusOptions"
         [shelfStatusOptions]="shelfStatusOptions"
+        [exportBusy]="exportBusy()"
         (typeFilterChange)="setTypeFilter($event)"
         (statusFilterChange)="setStatusFilter($event)"
         (shelfStatusFilterChange)="setShelfStatusFilter($event)"
         (viewModeChange)="setViewMode($event)"
+        (exportClick)="exportToCsv()"
     ></app-items-filter-panel>
 
     <div class="layout">

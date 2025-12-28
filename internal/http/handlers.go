@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 
 	"anthology/internal/catalog"
+	"anthology/internal/exporter"
 	"anthology/internal/importer"
 	"anthology/internal/items"
 )
@@ -25,12 +26,19 @@ type ItemHandler struct {
 	service    *items.Service
 	catalogSvc *catalog.Service
 	importer   *importer.CSVImporter
+	exporter   *exporter.CSVExporter
 	logger     *slog.Logger
 }
 
 // NewItemHandler creates a handler.
 func NewItemHandler(service *items.Service, catalogSvc *catalog.Service, importer *importer.CSVImporter, logger *slog.Logger) *ItemHandler {
-	return &ItemHandler{service: service, catalogSvc: catalogSvc, importer: importer, logger: logger}
+	return &ItemHandler{
+		service:    service,
+		catalogSvc: catalogSvc,
+		importer:   importer,
+		exporter:   exporter.NewCSVExporter(),
+		logger:     logger,
+	}
 }
 
 // List returns all items.
@@ -521,6 +529,38 @@ func (h *ItemHandler) ImportCSV(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, summary)
+}
+
+// ExportCSV exports all items matching the given filters to CSV format.
+func (h *ItemHandler) ExportCSV(w http.ResponseWriter, r *http.Request) {
+	opts, err := parseListOptions(r.URL.Query())
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Remove limit for export - we want all matching items
+	opts.Limit = nil
+
+	itemList, err := h.service.List(r.Context(), opts)
+	if err != nil {
+		h.logger.Error("export items", "error", err)
+		writeError(w, http.StatusInternalServerError, "failed to export items")
+		return
+	}
+
+	// Generate filename with timestamp
+	timestamp := time.Now().UTC().Format("2006-01-02")
+	filename := fmt.Sprintf("anthology-export-%s.csv", timestamp)
+
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
+
+	if err := h.exporter.Export(w, itemList); err != nil {
+		h.logger.Error("write csv export", "error", err)
+		// Response headers already sent, can't change status code
+		return
+	}
 }
 
 func parseUUIDParam(w http.ResponseWriter, r *http.Request, key string) (uuid.UUID, bool) {
