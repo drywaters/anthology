@@ -159,56 +159,6 @@ func TestCSVExporter_ExportGame(t *testing.T) {
 	}
 }
 
-func TestCSVExporter_ExportWithShelfPlacement(t *testing.T) {
-	exporter := NewCSVExporter()
-	var buf bytes.Buffer
-
-	shelfID := uuid.New()
-	slotID := uuid.New()
-	createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-	updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-
-	testItems := []items.Item{
-		{
-			ID:        uuid.New(),
-			Title:     "Shelved Book",
-			Creator:   "Author",
-			ItemType:  items.ItemTypeBook,
-			CreatedAt: createdAt,
-			UpdatedAt: updatedAt,
-			ShelfPlacement: &items.ShelfPlacement{
-				ShelfID:   shelfID,
-				ShelfName: "Living Room",
-				SlotID:    slotID,
-				RowIndex:  1,
-				ColIndex:  2,
-			},
-		},
-	}
-
-	err := exporter.Export(&buf, testItems)
-	if err != nil {
-		t.Fatalf("export failed: %v", err)
-	}
-
-	reader := csv.NewReader(&buf)
-	records, err := reader.ReadAll()
-	if err != nil {
-		t.Fatalf("failed to parse CSV: %v", err)
-	}
-
-	row := records[1]
-	if row[22] != "Living Room" {
-		t.Errorf("expected shelfName 'Living Room', got %s", row[22])
-	}
-	if row[23] != "1" {
-		t.Errorf("expected shelfRowIndex '1', got %s", row[23])
-	}
-	if row[24] != "2" {
-		t.Errorf("expected shelfColIndex '2', got %s", row[24])
-	}
-}
-
 func TestCSVExporter_ExportMultipleItems(t *testing.T) {
 	exporter := NewCSVExporter()
 	var buf bytes.Buffer

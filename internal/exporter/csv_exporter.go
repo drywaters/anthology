@@ -16,6 +16,8 @@ const SchemaVersion = "1"
 
 // csvColumns defines the column order for export. These columns are a superset
 // of the import format to ensure round-trip compatibility.
+// Note: Shelf placement data is intentionally excluded as shelf import is not
+// yet supported. A separate shelf export/import feature will handle that.
 var csvColumns = []string{
 	"schemaVersion",
 	"title",
@@ -39,9 +41,6 @@ var csvColumns = []string{
 	"readingStatus",
 	"readAt",
 	"notes",
-	"shelfName",
-	"shelfRowIndex",
-	"shelfColIndex",
 	"createdAt",
 	"updatedAt",
 }
@@ -102,20 +101,8 @@ func (e *CSVExporter) itemToRow(item items.Item) []string {
 	row[19] = string(item.ReadingStatus)
 	row[20] = formatOptionalTime(item.ReadAt)
 	row[21] = item.Notes
-
-	// Shelf placement fields
-	if item.ShelfPlacement != nil {
-		row[22] = item.ShelfPlacement.ShelfName
-		row[23] = strconv.Itoa(item.ShelfPlacement.RowIndex)
-		row[24] = strconv.Itoa(item.ShelfPlacement.ColIndex)
-	} else {
-		row[22] = ""
-		row[23] = ""
-		row[24] = ""
-	}
-
-	row[25] = formatTime(item.CreatedAt)
-	row[26] = formatTime(item.UpdatedAt)
+	row[22] = formatTime(item.CreatedAt)
+	row[23] = formatTime(item.UpdatedAt)
 
 	return row
 }
