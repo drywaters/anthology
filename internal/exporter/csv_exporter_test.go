@@ -262,6 +262,50 @@ func TestCSVExporter_HeaderMatchesColumnOrder(t *testing.T) {
 	}
 }
 
+func TestCSVExporter_ZeroValuesExportAsEmpty(t *testing.T) {
+	exporter := NewCSVExporter()
+	var buf bytes.Buffer
+
+	zeroYear := 0
+	zeroPageCount := 0
+	createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+	updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	testItems := []items.Item{
+		{
+			ID:          uuid.New(),
+			Title:       "Book With Zero Year",
+			Creator:     "Author",
+			ItemType:    items.ItemTypeBook,
+			ReleaseYear: &zeroYear,
+			PageCount:   &zeroPageCount,
+			CreatedAt:   createdAt,
+			UpdatedAt:   updatedAt,
+		},
+	}
+
+	err := exporter.Export(&buf, testItems)
+	if err != nil {
+		t.Fatalf("export failed: %v", err)
+	}
+
+	reader := csv.NewReader(&buf)
+	records, err := reader.ReadAll()
+	if err != nil {
+		t.Fatalf("failed to parse CSV: %v", err)
+	}
+
+	row := records[1]
+	// releaseYear=0 should be exported as empty for round-trip compatibility
+	if row[4] != "" {
+		t.Errorf("expected releaseYear to be empty for value 0, got %s", row[4])
+	}
+	// pageCount=0 should also be exported as empty
+	if row[5] != "" {
+		t.Errorf("expected pageCount to be empty for value 0, got %s", row[5])
+	}
+}
+
 func TestCSVExporter_SpecialCharactersInFields(t *testing.T) {
 	exporter := NewCSVExporter()
 	var buf bytes.Buffer

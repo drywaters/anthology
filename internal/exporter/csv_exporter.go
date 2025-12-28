@@ -84,8 +84,8 @@ func (e *CSVExporter) itemToRow(item items.Item) []string {
 	row[1] = item.Title
 	row[2] = item.Creator
 	row[3] = string(item.ItemType)
-	row[4] = formatOptionalInt(item.ReleaseYear)
-	row[5] = formatOptionalInt(item.PageCount)
+	row[4] = formatPositiveInt(item.ReleaseYear)
+	row[5] = formatPositiveInt(item.PageCount)
 	row[6] = formatOptionalInt(item.CurrentPage)
 	row[7] = item.ISBN13
 	row[8] = item.ISBN10
@@ -123,6 +123,16 @@ func (e *CSVExporter) itemToRow(item items.Item) []string {
 // formatOptionalInt formats an optional integer pointer to a string.
 func formatOptionalInt(value *int) string {
 	if value == nil {
+		return ""
+	}
+	return strconv.Itoa(*value)
+}
+
+// formatPositiveInt formats an optional integer pointer to a string,
+// treating zero as empty to maintain round-trip compatibility with the
+// importer which rejects non-positive values.
+func formatPositiveInt(value *int) string {
+	if value == nil || *value <= 0 {
 		return ""
 	}
 	return strconv.Itoa(*value)
