@@ -8,6 +8,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"time"
 
 	"anthology/internal/catalog"
 	"anthology/internal/items"
@@ -226,16 +227,48 @@ func (i *CSVImporter) buildInput(ctx context.Context, values map[string]string) 
 		return items.CreateItemInput{}, meta, err
 	}
 
+	currentPage, err := parseOptionalNonNegativeInt(values["currentpage"], "currentPage")
+	if err != nil {
+		return items.CreateItemInput{}, meta, err
+	}
+
+	format := items.Format(strings.TrimSpace(values["format"]))
+	genre := items.Genre(strings.TrimSpace(values["genre"]))
+	rating, err := parseOptionalIntAllowAny(values["rating"], "rating")
+	if err != nil {
+		return items.CreateItemInput{}, meta, err
+	}
+	retailPriceUsd, err := parseOptionalFloat(values["retailpriceusd"], "retailPriceUsd")
+	if err != nil {
+		return items.CreateItemInput{}, meta, err
+	}
+	googleVolumeId := strings.TrimSpace(values["googlevolumeid"])
+
+	statusValue := strings.ToLower(strings.TrimSpace(values["readingstatus"]))
+	var readingStatus items.BookStatus
+	if statusValue != "" {
+		readingStatus = items.BookStatus(statusValue)
+	}
+	readAt, err := parseOptionalTime(values["readat"], "readAt")
+	if err != nil {
+		return items.CreateItemInput{}, meta, err
+	}
+
+	createdAt, err := parseOptionalTime(values["createdat"], "createdAt")
+	if err != nil {
+		return items.CreateItemInput{}, meta, err
+	}
+	updatedAt, err := parseOptionalTime(values["updatedat"], "updatedAt")
+	if err != nil {
+		return items.CreateItemInput{}, meta, err
+	}
+
 	description := strings.TrimSpace(values["description"])
 	coverImage := strings.TrimSpace(values["coverimage"])
 	notes := strings.TrimSpace(values["notes"])
 	platform := strings.TrimSpace(values["platform"])
 	ageGroup := strings.TrimSpace(values["agegroup"])
 	playerCount := strings.TrimSpace(values["playercount"])
-
-	var genre items.Genre
-	var retailPriceUsd *float64
-	var googleVolumeId string
 
 	if itemType == items.ItemTypeBook && title == "" {
 		identifier := meta.identifier
@@ -284,17 +317,24 @@ func (i *CSVImporter) buildInput(ctx context.Context, values map[string]string) 
 		ItemType:       itemType,
 		ReleaseYear:    releaseYear,
 		PageCount:      pageCount,
+		CurrentPage:    currentPage,
 		ISBN13:         isbn13,
 		ISBN10:         isbn10,
 		Description:    description,
 		CoverImage:     coverImage,
+		Format:         format,
 		Genre:          genre,
+		Rating:         rating,
 		RetailPriceUsd: retailPriceUsd,
 		GoogleVolumeId: googleVolumeId,
 		Platform:       platform,
 		AgeGroup:       ageGroup,
 		PlayerCount:    playerCount,
+		ReadingStatus:  readingStatus,
+		ReadAt:         readAt,
 		Notes:          notes,
+		CreatedAt:      createdAt,
+		UpdatedAt:      updatedAt,
 	}, meta, nil
 }
 
@@ -375,6 +415,60 @@ func parseOptionalInt(value string, field string) (*int, error) {
 	}
 	if parsed <= 0 {
 		return nil, fmt.Errorf("%s must be positive", field)
+	}
+	return &parsed, nil
+}
+
+func parseOptionalNonNegativeInt(value string, field string) (*int, error) {
+	cleaned := strings.TrimSpace(value)
+	if cleaned == "" {
+		return nil, nil
+	}
+	parsed, err := strconv.Atoi(cleaned)
+	if err != nil {
+		return nil, fmt.Errorf("%s must be a number", field)
+	}
+	if parsed < 0 {
+		return nil, fmt.Errorf("%s must be zero or greater", field)
+	}
+	return &parsed, nil
+}
+
+func parseOptionalIntAllowAny(value string, field string) (*int, error) {
+	cleaned := strings.TrimSpace(value)
+	if cleaned == "" {
+		return nil, nil
+	}
+	parsed, err := strconv.Atoi(cleaned)
+	if err != nil {
+		return nil, fmt.Errorf("%s must be a number", field)
+	}
+	return &parsed, nil
+}
+
+func parseOptionalFloat(value string, field string) (*float64, error) {
+	cleaned := strings.TrimSpace(value)
+	if cleaned == "" {
+		return nil, nil
+	}
+	parsed, err := strconv.ParseFloat(cleaned, 64)
+	if err != nil {
+		return nil, fmt.Errorf("%s must be a number", field)
+	}
+	return &parsed, nil
+}
+
+func parseOptionalTime(value string, field string) (*time.Time, error) {
+	cleaned := strings.TrimSpace(value)
+	if cleaned == "" {
+		return nil, nil
+	}
+	parsed, err := time.Parse(time.RFC3339, cleaned)
+	if err != nil {
+		parsed, err = time.Parse(time.RFC3339Nano, cleaned)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("%s must be an RFC3339 timestamp", field)
 	}
 	return &parsed, nil
 }

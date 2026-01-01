@@ -84,6 +84,28 @@ export class ItemService {
         return this.http.post<CsvImportSummary>(`${this.baseUrl}/import`, formData);
     }
 
+    exportCsv(filters?: {
+        itemType?: ItemType;
+        status?: BookStatus;
+        shelfStatus?: ShelfStatusFilter;
+    }): Observable<Blob> {
+        let params = new HttpParams();
+        if (filters?.itemType) {
+            params = params.set('type', filters.itemType);
+        }
+        if (filters?.status) {
+            params = params.set('status', filters.status);
+        }
+        if (filters?.shelfStatus && filters.shelfStatus !== ShelfStatusFilters.All) {
+            params = params.set('shelf_status', filters.shelfStatus);
+        }
+
+        return this.http.get(`${this.baseUrl}/export`, {
+            params: params.keys().length ? params : undefined,
+            responseType: 'blob',
+        });
+    }
+
     getHistogram(filters?: {
         itemType?: ItemType;
         status?: BookStatus;

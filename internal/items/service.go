@@ -91,6 +91,14 @@ func (s *Service) Create(ctx context.Context, input CreateItemInput) (Item, erro
 	}
 
 	now := time.Now().UTC()
+	createdAt := now
+	if input.CreatedAt != nil && !input.CreatedAt.IsZero() {
+		createdAt = input.CreatedAt.UTC()
+	}
+	updatedAt := createdAt
+	if input.UpdatedAt != nil && !input.UpdatedAt.IsZero() {
+		updatedAt = input.UpdatedAt.UTC()
+	}
 	item := Item{
 		ID:             uuid.New(),
 		Title:          strings.TrimSpace(input.Title),
@@ -117,8 +125,8 @@ func (s *Service) Create(ctx context.Context, input CreateItemInput) (Item, erro
 		SeriesName:     seriesName,
 		VolumeNumber:   volumeNumber,
 		TotalVolumes:   totalVolumes,
-		CreatedAt:      now,
-		UpdatedAt:      now,
+		CreatedAt:      createdAt,
+		UpdatedAt:      updatedAt,
 	}
 
 	return s.repo.Create(ctx, item)

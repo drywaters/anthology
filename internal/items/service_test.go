@@ -78,6 +78,30 @@ func TestServiceCreatePersistsItem(t *testing.T) {
 	}
 }
 
+func TestServiceCreateUsesProvidedTimestamps(t *testing.T) {
+	repo := NewInMemoryRepository(nil)
+	svc := NewService(repo)
+	createdAt := time.Date(2024, 2, 1, 12, 0, 0, 0, time.UTC)
+	updatedAt := time.Date(2024, 2, 2, 15, 30, 0, 0, time.UTC)
+
+	item, err := svc.Create(context.Background(), CreateItemInput{
+		Title:     "Timestamped",
+		ItemType:  ItemTypeBook,
+		CreatedAt: &createdAt,
+		UpdatedAt: &updatedAt,
+	})
+	if err != nil {
+		t.Fatalf("expected item to be created: %v", err)
+	}
+
+	if !item.CreatedAt.Equal(createdAt) {
+		t.Fatalf("expected createdAt to be %s", createdAt.Format(time.RFC3339))
+	}
+	if !item.UpdatedAt.Equal(updatedAt) {
+		t.Fatalf("expected updatedAt to be %s", updatedAt.Format(time.RFC3339))
+	}
+}
+
 func TestServiceCreateValidatesCurrentPage(t *testing.T) {
 	repo := NewInMemoryRepository(nil)
 	svc := NewService(repo)

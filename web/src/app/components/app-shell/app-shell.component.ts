@@ -8,6 +8,7 @@ import { AppHeaderComponent } from '../app-header/app-header.component';
 import { NavigationItem, ActionButton } from '../../models/navigation';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
+import { LibraryActionsService } from '../../services/library-actions.service';
 
 @Component({
     selector: 'app-shell',
@@ -21,6 +22,7 @@ export class AppShellComponent {
     private readonly router = inject(Router);
     private readonly authService = inject(AuthService);
     private readonly notification = inject(NotificationService);
+    private readonly libraryActions = inject(LibraryActionsService);
     private readonly destroyRef = inject(DestroyRef);
 
     readonly sidebarOpen = signal(false);
@@ -33,6 +35,7 @@ export class AppShellComponent {
             route: '/',
             actions: [
                 { id: 'add-item', label: 'Add Item', icon: 'library_add', route: '/items/add' },
+                { id: 'export-library', label: 'Export Library', icon: 'file_download' },
             ],
         },
         {
@@ -72,6 +75,11 @@ export class AppShellComponent {
             return;
         }
 
+        if (actionId === 'export-library') {
+            this.exportLibrary();
+            return;
+        }
+
         const action = this.findAction(actionId);
         if (action?.route) {
             this.router.navigateByUrl(action.route);
@@ -89,6 +97,19 @@ export class AppShellComponent {
         }
 
         return this.actionItems.find((action) => action.id === actionId);
+    }
+
+    private exportLibrary(): void {
+        const currentRoute = this.router.url.split('?')[0];
+        const navigation =
+            currentRoute === '/' ? Promise.resolve(true) : this.router.navigateByUrl('/');
+        navigation.then((navigated) => {
+            if (navigated) {
+                this.libraryActions.requestExport();
+            }
+        });
+
+        this.closeSidebar();
     }
 
     private logout(): void {
