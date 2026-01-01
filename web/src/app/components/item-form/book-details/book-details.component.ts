@@ -61,7 +61,7 @@ export class BookDetailsComponent implements OnInit {
             )
             .subscribe({
                 next: (seriesList) => {
-                    const names = seriesList
+                    const names = seriesList.series
                         .map((s) => s.seriesName)
                         .filter(Boolean)
                         .sort((a, b) => a.localeCompare(b));

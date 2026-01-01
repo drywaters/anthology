@@ -6,6 +6,7 @@ import {
     Input,
     Output,
     Signal,
+    signal,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatExpansionModule } from '@angular/material/expansion';
@@ -48,14 +49,14 @@ export class ItemsSeriesViewComponent {
     @Output() addMissingVolume = new EventEmitter<{ seriesName: string; volumeNumber: number }>();
     @Output() viewSeriesDetail = new EventEmitter<string>();
 
-    standaloneExpanded = false;
+    standaloneExpanded = signal(false);
 
     isExpanded(seriesName: string): boolean {
         return this.expandedSeries().has(seriesName);
     }
 
     toggleStandaloneExpanded(): void {
-        this.standaloneExpanded = !this.standaloneExpanded;
+        this.standaloneExpanded.update((expanded) => !expanded);
     }
 
     onPanelToggle(seriesName: string): void {
