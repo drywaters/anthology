@@ -8,14 +8,13 @@ Add Google OAuth 2.0 authentication to Anthology. Items and shelves remain share
 - **Google OAuth only**: No legacy API_TOKEN support needed (single user currently)
 - **Libraries**: `golang.org/x/oauth2` + `github.com/coreos/go-oidc/v3` (industry standard)
 
-## Multi-Environment Setup (Local Dev / Staging / Production)
+## Multi-Environment Setup (Local Dev / Production)
 
 Google OAuth requires exact redirect URI matching. Configure all environments in Google Cloud Console:
 
 **Google Cloud Console → APIs & Services → Credentials → OAuth Client:**
 Add all redirect URIs:
 - `http://localhost:8080/api/auth/google/callback` (local dev)
-- `https://staging.yourdomain.com/api/auth/google/callback` (staging)
 - `https://app.yourdomain.com/api/auth/google/callback` (production)
 
 Each deployment sets `AUTH_GOOGLE_REDIRECT_URL` to its environment-specific URI.
@@ -295,4 +294,4 @@ Add Google "G" logo for the sign-in button.
 2. Deploy database migration
 3. Deploy backend with OAuth support
 4. Deploy frontend with Google sign-in
-5. Verify login flow works in each environment (local → staging → production)
+5. Verify login flow works in each environment (local → production)

@@ -8,7 +8,7 @@ This document reflects the current API implementation under `cmd/api` and `inter
 * Runtime config from env/_FILE (see **Configuration**).
 * Supports `DATA_STORE=memory` (demo seed) or Postgres (sqlx, embedded migrations).
 * Metadata lookups proxy Google Books; CSV import reuses that pipeline.
-* Authentication: Google OAuth in non-dev, with an HttpOnly session cookie for API calls; dev mode can run unauthenticated when OAuth is not configured.
+* Authentication: Google OAuth with an HttpOnly session cookie for API calls.
 
 ### Runtime topology
 
@@ -38,13 +38,13 @@ flowchart LR
 * `ALLOWED_ORIGINS` CSV list; wildcards only allowed in `APP_ENV=development`.
 * `LOG_LEVEL` (`debug`, `info`, `warn`, `error`).
 * `GOOGLE_BOOKS_API_KEY` (required; `_FILE` supported with default `/run/secrets/anthology_google_books_api_key`).
-* `AUTH_GOOGLE_CLIENT_ID` / `AUTH_GOOGLE_CLIENT_SECRET` (required when `APP_ENV` is `staging` or `production`).
-* `AUTH_GOOGLE_ALLOWED_DOMAINS` or `AUTH_GOOGLE_ALLOWED_EMAILS` (allowlist required in non-dev).
+* `AUTH_GOOGLE_CLIENT_ID` / `AUTH_GOOGLE_CLIENT_SECRET` (required in all environments).
+* `AUTH_GOOGLE_ALLOWED_DOMAINS` or `AUTH_GOOGLE_ALLOWED_EMAILS` (allowlist required).
 * `AUTH_GOOGLE_REDIRECT_URL` (defaults to `http://localhost:8080/api/auth/google/callback`).
 * `FRONTEND_URL` (defaults to `http://localhost:4200`).
-* `APP_ENV` (`development` default unless OAuth is configured, then `production`) toggles cookie `Secure` flag and enforces OAuth outside dev.
+* `APP_ENV` (defaults to `production`) toggles cookie `Secure` flag for OAuth cookies.
 
-OAuth sessions are stored in Postgres, so non-dev deployments must use `DATA_STORE=postgres`.
+OAuth sessions are stored in Postgres, so deployments must use `DATA_STORE=postgres`.
 
 `cmd/api/main.go` loads config, builds logger, chooses repository via `buildRepositories`, applies migrations when using Postgres, then binds `http.Server` with sensible timeouts.
 
@@ -52,12 +52,12 @@ OAuth sessions are stored in Postgres, so non-dev deployments must use `DATA_STO
 
 * **OAuth**: `GET /api/auth/google` initiates the flow, and `GET /api/auth/google/callback` creates a user/session and sets `anthology_session`.
 * **Session cookie**: `anthology_session` is HttpOnly, SameSite=Lax, Secure outside dev, with a 12h TTL.
-* Auth middleware requires a valid session cookie when OAuth is enabled; otherwise 401 with `WWW-Authenticate: Bearer`.
-* In `APP_ENV=development` without OAuth configured, auth is disabled and `/api/session` reports `authenticated: true`.
+* Auth middleware requires a valid session cookie; otherwise 401 with `WWW-Authenticate: Bearer`.
+* In `APP_ENV=development`, cookies are non-secure to support localhost during OAuth.
 
 ## Endpoints (current)
 
-Base URL: `http://<host>:<port>`. When OAuth is enabled (or `APP_ENV` is non-development), `/api/*` endpoints require the session cookie. In development without OAuth configured, `/api/*` is open.
+Base URL: `http://<host>:<port>`. `/api/*` endpoints require the session cookie; `/health` remains public.
 
 | Method | Path | Description | Handler |
 | --- | --- | --- | --- |
