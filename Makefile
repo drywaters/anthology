@@ -16,6 +16,7 @@ AUTH_GOOGLE_ALLOWED_DOMAINS ?=
 AUTH_GOOGLE_ALLOWED_EMAILS ?=
 FRONTEND_URL ?= http://localhost:4200
 APP_ENV ?= development
+MIGRATION_OWNER_EMAIL ?=
 
 # Include local overrides if present (e.g., local.mk with real API keys)
 -include local.mk
@@ -55,6 +56,7 @@ api-run: ## Run the Go API (requires local.mk configuration).
 	AUTH_GOOGLE_ALLOWED_DOMAINS=$(AUTH_GOOGLE_ALLOWED_DOMAINS) \
 	AUTH_GOOGLE_ALLOWED_EMAILS=$(AUTH_GOOGLE_ALLOWED_EMAILS) \
 	FRONTEND_URL=$(FRONTEND_URL) \
+	MIGRATION_OWNER_EMAIL=$(MIGRATION_OWNER_EMAIL) \
 	APP_ENV=$(APP_ENV) \
 	go run ./cmd/api
 
