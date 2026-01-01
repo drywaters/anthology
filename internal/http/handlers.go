@@ -139,6 +139,9 @@ func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
 		ReadingStatus  string     `json:"readingStatus"`
 		ReadAt         *time.Time `json:"readAt"`
 		Notes          string     `json:"notes"`
+		SeriesName     string     `json:"seriesName"`
+		VolumeNumber   *int       `json:"volumeNumber"`
+		TotalVolumes   *int       `json:"totalVolumes"`
 	}
 
 	if err := decodeJSONBody(w, r, &payload); err != nil {
@@ -168,6 +171,9 @@ func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
 		ReadingStatus:  items.BookStatus(payload.ReadingStatus),
 		ReadAt:         payload.ReadAt,
 		Notes:          payload.Notes,
+		SeriesName:     payload.SeriesName,
+		VolumeNumber:   payload.VolumeNumber,
+		TotalVolumes:   payload.TotalVolumes,
 	})
 	if err != nil {
 		if errors.Is(err, items.ErrValidation) {
@@ -233,6 +239,9 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 		ReadingStatus  *string    `json:"readingStatus"`
 		ReadAt         *time.Time `json:"readAt"`
 		Notes          *string    `json:"notes"`
+		SeriesName     *string    `json:"seriesName"`
+		VolumeNumber   *int       `json:"volumeNumber"`
+		TotalVolumes   *int       `json:"totalVolumes"`
 	}
 
 	if err := decodeInto(raw, &payload); err != nil {
@@ -331,6 +340,18 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if _, ok := raw["readAt"]; ok {
 		value := payload.ReadAt
 		input.ReadAt = &value
+	}
+
+	if _, ok := raw["seriesName"]; ok {
+		input.SeriesName = payload.SeriesName
+	}
+	if _, ok := raw["volumeNumber"]; ok {
+		value := payload.VolumeNumber
+		input.VolumeNumber = &value
+	}
+	if _, ok := raw["totalVolumes"]; ok {
+		value := payload.TotalVolumes
+		input.TotalVolumes = &value
 	}
 
 	item, err := h.service.Update(r.Context(), id, input)

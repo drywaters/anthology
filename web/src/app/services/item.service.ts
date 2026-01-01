@@ -190,6 +190,25 @@ export class ItemService {
             }
         }
 
+        // Handle series fields
+        if ('volumeNumber' in payload) {
+            const volumeNumber = payload['volumeNumber'];
+            if (volumeNumber === '' || volumeNumber === null) {
+                payload['volumeNumber'] = null;
+            } else if (typeof volumeNumber === 'string') {
+                payload['volumeNumber'] = Number.parseInt(volumeNumber, 10);
+            }
+        }
+
+        if ('totalVolumes' in payload) {
+            const totalVolumes = payload['totalVolumes'];
+            if (totalVolumes === '' || totalVolumes === null) {
+                payload['totalVolumes'] = null;
+            } else if (typeof totalVolumes === 'string') {
+                payload['totalVolumes'] = Number.parseInt(totalVolumes, 10);
+            }
+        }
+
         // Strip book-specific fields for non-books
         if (itemType && itemType !== 'book') {
             delete payload['pageCount'];
@@ -203,6 +222,9 @@ export class ItemService {
             delete payload['googleVolumeId'];
             delete payload['readingStatus'];
             delete payload['readAt'];
+            delete payload['seriesName'];
+            delete payload['volumeNumber'];
+            delete payload['totalVolumes'];
         }
 
         // Strip game-specific fields for non-games

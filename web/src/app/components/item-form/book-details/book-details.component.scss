@@ -37,6 +37,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    padding-top: 0.5rem;
 }
 
 .description-heading {
@@ -59,4 +60,39 @@
 
 .description-field textarea {
     min-height: 140px;
+}
+
+.series-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+}
+
+.series-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+
+    h4 {
+        margin: 0;
+        font-size: 1.1rem;
+    }
+}
+
+.series-highlight {
+    width: 60px;
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--mat-sys-tertiary), var(--mat-sys-secondary));
+}
+
+.series-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+}
+
+.series-name-field {
+    grid-column: 1 / -1;
 }

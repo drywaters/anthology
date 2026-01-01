@@ -28,18 +28,22 @@ import {
     ItemTypes,
     ITEM_TYPE_LABELS,
     LetterHistogram,
+    SeriesSummary,
     SHELF_STATUS_LABELS,
     ShelfStatusFilter,
     ShelfStatusFilters,
 } from '../../models';
 import { ItemService } from '../../services/item.service';
+import { SeriesService } from '../../services/series.service';
 import { AlphaRailComponent } from '../../components/alpha-rail/alpha-rail.component';
 import {
     ItemsFilterPanelComponent,
     ItemTypeFilter,
+    ViewMode,
 } from './items-filter-panel/items-filter-panel.component';
 import { ItemsGridViewComponent } from './items-grid-view/items-grid-view.component';
 import { ItemsTableViewComponent } from './items-table-view/items-table-view.component';
+import { ItemsSeriesViewComponent } from './items-series-view/items-series-view.component';
 import { ItemsEmptyStateComponent } from './items-empty-state/items-empty-state.component';
 import { NotificationService } from '../../services/notification.service';
 
@@ -59,6 +63,7 @@ export interface LetterGroup {
         ItemsFilterPanelComponent,
         ItemsGridViewComponent,
         ItemsTableViewComponent,
+        ItemsSeriesViewComponent,
         ItemsEmptyStateComponent,
     ],
     templateUrl: './items-page.component.html',
@@ -66,6 +71,7 @@ export interface LetterGroup {
 })
 export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     private readonly itemService = inject(ItemService);
+    private readonly seriesService = inject(SeriesService);
     private readonly notification = inject(NotificationService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly router = inject(Router);
@@ -92,9 +98,12 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     readonly typeFilter = signal<ItemTypeFilter>('all');
     readonly statusFilter = signal<BookStatusFilter>(BookStatusFilters.All);
     readonly shelfStatusFilter = signal<ShelfStatusFilter>(ShelfStatusFilters.All);
-    readonly viewMode = signal<'table' | 'grid'>('table');
+    readonly viewMode = signal<ViewMode>('table');
     readonly histogram = signal<LetterHistogram>({});
     readonly activeLetter = signal<string | null>(null);
+    readonly seriesData = signal<SeriesSummary[]>([]);
+    readonly expandedSeries = signal<Set<string>>(new Set());
+    readonly seriesLoading = signal(false);
 
     readonly typeOptions: Array<{ value: ItemTypeFilter; label: string }> = [
         { value: 'all', label: 'All items' },
@@ -117,6 +126,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     ];
 
     readonly hasFilteredItems = computed(() => this.items().length > 0);
+    readonly hasSeriesData = computed(() => this.seriesData().length > 0);
     readonly isUnfiltered = computed(
         () =>
             this.typeFilter() === 'all' &&
@@ -124,6 +134,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
             this.shelfStatusFilter() === ShelfStatusFilters.All,
     );
     readonly isGridView = computed(() => this.viewMode() === 'grid');
+    readonly isSeriesView = computed(() => this.viewMode() === 'series');
     readonly showStatusFilter = computed(() => {
         const type = this.typeFilter();
         return type === 'all' || type === ItemTypes.Book;
@@ -187,6 +198,31 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
                     return this.itemService.getHistogram(filters).pipe(
                         tap((histogram) => this.histogram.set(histogram)),
                         catchError(() => EMPTY),
+                    );
+                }),
+                takeUntilDestroyed(this.destroyRef),
+            )
+            .subscribe();
+
+        // Load series data when switching to series view
+        const viewMode$ = toObservable(this.viewMode);
+        viewMode$
+            .pipe(
+                switchMap((mode) => {
+                    if (mode !== 'series') {
+                        return EMPTY;
+                    }
+                    this.seriesLoading.set(true);
+                    return this.seriesService.list({ includeItems: true }).pipe(
+                        tap((series) => {
+                            this.seriesData.set(series);
+                            this.seriesLoading.set(false);
+                        }),
+                        catchError(() => {
+                            this.seriesLoading.set(false);
+                            this.notification.error('Unable to load series data.');
+                            return EMPTY;
+                        }),
                     );
                 }),
                 takeUntilDestroyed(this.destroyRef),
@@ -328,12 +364,39 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
         this.shelfStatusFilter.set(shelfStatus);
     }
 
-    setViewMode(mode: 'table' | 'grid'): void {
+    setViewMode(mode: ViewMode): void {
         this.viewMode.set(mode);
     }
 
     viewShelfPlacementFromChild(data: { item: Item; event: MouseEvent }): void {
         this.viewShelfPlacement(data.item, data.event);
+    }
+
+    toggleSeriesExpanded(seriesName: string): void {
+        const current = this.expandedSeries();
+        const newSet = new Set(current);
+        if (newSet.has(seriesName)) {
+            newSet.delete(seriesName);
+        } else {
+            newSet.add(seriesName);
+        }
+        this.expandedSeries.set(newSet);
+    }
+
+    addMissingVolume(data: { seriesName: string; volumeNumber: number }): void {
+        this.router.navigate(['/items/add'], {
+            queryParams: {
+                prefill: 'series',
+                seriesName: data.seriesName,
+                volumeNumber: data.volumeNumber,
+            },
+        });
+    }
+
+    viewSeriesDetail(seriesName: string): void {
+        this.router.navigate(['/series'], {
+            queryParams: { name: seriesName },
+        });
     }
 
     private getFirstLetter(title: string): string {

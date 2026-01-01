@@ -48,6 +48,7 @@ func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Servic
 	handler := NewItemHandler(svc, catalogSvc, bulkImporter, logger)
 	catalogHandler := NewCatalogHandler(catalogSvc, logger)
 	shelfHandler := NewShelfHandler(shelfSvc, logger)
+	seriesHandler := NewSeriesHandler(svc, logger)
 
 	r.Route("/api", func(r chi.Router) {
 		// OAuth routes (unauthenticated)
@@ -84,6 +85,10 @@ func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Servic
 					r.Delete("/", handler.Delete)
 					r.Post("/resync", handler.Resync)
 				})
+			})
+			r.Route("/series", func(r chi.Router) {
+				r.Get("/", seriesHandler.List)
+				r.Get("/detail", seriesHandler.Get)
 			})
 			r.Route("/shelves", func(r chi.Router) {
 				r.Get("/", shelfHandler.List)

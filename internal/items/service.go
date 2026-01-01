@@ -79,6 +79,17 @@ func (s *Service) Create(ctx context.Context, input CreateItemInput) (Item, erro
 		input.PlayerCount,
 	)
 
+	// Normalize series fields (books only)
+	seriesName, volumeNumber, totalVolumes, err := normalizeSeriesFields(
+		input.ItemType,
+		input.SeriesName,
+		input.VolumeNumber,
+		input.TotalVolumes,
+	)
+	if err != nil {
+		return Item{}, err
+	}
+
 	now := time.Now().UTC()
 	item := Item{
 		ID:             uuid.New(),
@@ -103,6 +114,9 @@ func (s *Service) Create(ctx context.Context, input CreateItemInput) (Item, erro
 		ReadingStatus:  readingStatus,
 		ReadAt:         readAt,
 		Notes:          strings.TrimSpace(input.Notes),
+		SeriesName:     seriesName,
+		VolumeNumber:   volumeNumber,
+		TotalVolumes:   totalVolumes,
 		CreatedAt:      now,
 		UpdatedAt:      now,
 	}
@@ -229,6 +243,32 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, input UpdateItemInpu
 		existing.GoogleVolumeId = strings.TrimSpace(*input.GoogleVolumeId)
 	}
 
+	// Handle series fields
+	if input.SeriesName != nil {
+		existing.SeriesName = strings.TrimSpace(*input.SeriesName)
+	}
+	if input.VolumeNumber != nil {
+		existing.VolumeNumber = normalizePositiveIntPtrPtr(input.VolumeNumber)
+	}
+	if input.TotalVolumes != nil {
+		existing.TotalVolumes = normalizePositiveIntPtrPtr(input.TotalVolumes)
+	}
+
+	// Validate series fields after update
+
+	seriesName, volumeNumber, totalVolumes, err := normalizeSeriesFields(
+		existing.ItemType,
+		existing.SeriesName,
+		existing.VolumeNumber,
+		existing.TotalVolumes,
+	)
+	if err != nil {
+		return Item{}, err
+	}
+	existing.SeriesName = seriesName
+	existing.VolumeNumber = volumeNumber
+	existing.TotalVolumes = totalVolumes
+
 	readingStatus := existing.ReadingStatus
 	if input.ReadingStatus != nil {
 		readingStatus = *input.ReadingStatus
@@ -276,6 +316,127 @@ func (s *Service) Histogram(ctx context.Context, opts HistogramOptions) (LetterH
 // Identifier matching strips non-digit characters for normalization.
 func (s *Service) FindDuplicates(ctx context.Context, input DuplicateCheckInput) ([]DuplicateMatch, error) {
 	return s.repo.FindDuplicates(ctx, input)
+}
+
+// ListSeries returns all series with aggregated statistics and missing volume detection.
+func (s *Service) ListSeries(ctx context.Context, opts SeriesListOptions) ([]SeriesSummary, error) {
+	// Always include items for missing volume calculation.
+	repoOpts := SeriesRepoListOptions{
+		IncludeItems: true,
+	}
+
+	summaries, err := s.repo.ListSeries(ctx, repoOpts)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Enrich each series with missing volume detection
+	for i := range summaries {
+		summaries[i] = s.enrichSeriesSummary(summaries[i])
+		// Clear items if not requested
+		if !opts.IncludeItems {
+			summaries[i].Items = nil
+		}
+	}
+
+	// Filter by status if requested
+	if opts.Status != nil {
+		filtered := make([]SeriesSummary, 0)
+		for _, summary := range summaries {
+			if summary.Status == *opts.Status {
+				filtered = append(filtered, summary)
+			}
+		}
+		summaries = filtered
+	}
+
+	return summaries, nil
+}
+
+// GetSeriesByName returns detailed info about a single series with missing volume detection.
+func (s *Service) GetSeriesByName(ctx context.Context, name string) (SeriesSummary, error) {
+	summary, err := s.repo.GetSeriesByName(ctx, name)
+	if err != nil {
+		return SeriesSummary{}, err
+	}
+	return s.enrichSeriesSummary(summary), nil
+}
+
+// enrichSeriesSummary calculates missing volumes and status for a series.
+func (s *Service) enrichSeriesSummary(summary SeriesSummary) SeriesSummary {
+	summary.MissingVolumes = s.detectMissingVolumes(summary)
+	if summary.MissingVolumes != nil {
+		count := len(summary.MissingVolumes)
+		summary.MissingCount = &count
+	} else if summary.TotalVolumes != nil {
+		count := *summary.TotalVolumes - summary.OwnedCount
+		if count < 0 {
+			count = 0
+		}
+		summary.MissingCount = &count
+	}
+	summary.Status = s.determineSeriesStatus(summary)
+
+	return summary
+}
+
+// detectMissingVolumes identifies gaps in a series using:
+// 1. User-defined total_volumes if available
+// 2. Heuristic inference from gaps in owned volumes
+func (s *Service) detectMissingVolumes(summary SeriesSummary) []int {
+	ownedVolumes := make(map[int]bool)
+	maxOwned := 0
+
+	for _, item := range summary.Items {
+		if item.VolumeNumber != nil {
+			ownedVolumes[*item.VolumeNumber] = true
+			if *item.VolumeNumber > maxOwned {
+				maxOwned = *item.VolumeNumber
+			}
+		}
+	}
+
+	// If no volumes have numbers, we can't detect missing
+	if maxOwned == 0 {
+		return nil
+	}
+
+	// Determine upper bound
+	upperBound := maxOwned
+	if summary.TotalVolumes != nil && *summary.TotalVolumes > upperBound {
+		upperBound = *summary.TotalVolumes
+	}
+
+	// Find gaps from 1 to upper bound
+	missing := make([]int, 0)
+	for vol := 1; vol <= upperBound; vol++ {
+		if !ownedVolumes[vol] {
+			missing = append(missing, vol)
+		}
+	}
+
+	return missing
+}
+
+// determineSeriesStatus calculates the completion status of a series.
+func (s *Service) determineSeriesStatus(summary SeriesSummary) SeriesStatus {
+	if summary.TotalVolumes != nil {
+		// Total is known - we can determine complete vs incomplete
+		if summary.MissingCount != nil && *summary.MissingCount > 0 {
+			return SeriesStatusIncomplete
+		}
+		return SeriesStatusComplete
+	}
+
+	// Total is unknown
+	if len(summary.MissingVolumes) > 0 {
+		// We found gaps via heuristic - incomplete but inferred
+		return SeriesStatusIncomplete
+	}
+
+	// No gaps found and no total known - status is unknown
+	return SeriesStatusUnknown
 }
 
 // ResyncMetadata refreshes an item's metadata from Google Books.
@@ -416,6 +577,16 @@ func normalizePositiveInt(value *int) *int {
 	return &v
 }
 
+func normalizePositiveIntPtrPtr(value **int) *int {
+	if value == nil {
+		return nil
+	}
+	if *value == nil {
+		return nil
+	}
+	return normalizePositiveInt(*value)
+}
+
 func normalizeCurrentPage(value *int) (*int, error) {
 	if value == nil {
 		return nil, nil
@@ -537,6 +708,26 @@ func normalizeGameFields(itemType ItemType, platform, ageGroup, playerCount stri
 		return "", "", ""
 	}
 	return strings.TrimSpace(platform), strings.TrimSpace(ageGroup), strings.TrimSpace(playerCount)
+}
+
+// normalizeSeriesFields validates and normalizes series-specific fields.
+// For non-book items, all series fields are cleared.
+// Validates that volumeNumber does not exceed totalVolumes if both are set.
+func normalizeSeriesFields(itemType ItemType, seriesName string, volumeNumber *int, totalVolumes *int) (string, *int, *int, error) {
+	if itemType != ItemTypeBook {
+		return "", nil, nil, nil
+	}
+
+	name := strings.TrimSpace(seriesName)
+	vol := normalizePositiveInt(volumeNumber)
+	total := normalizePositiveInt(totalVolumes)
+
+	// Validate volume doesn't exceed total
+	if vol != nil && total != nil && *vol > *total {
+		return "", nil, nil, validationErr("volumeNumber cannot exceed totalVolumes")
+	}
+
+	return name, vol, total, nil
 }
 
 // normalizeFormat validates and normalizes the format enum.

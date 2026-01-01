@@ -26,6 +26,9 @@ export interface Item {
     readingStatus?: BookStatus;
     readAt?: string | null;
     notes: string;
+    seriesName?: string;
+    volumeNumber?: number | null;
+    totalVolumes?: number | null;
     createdAt: string;
     updatedAt: string;
     shelfPlacement?: ShelfPlacementSummary;
@@ -53,6 +56,9 @@ export interface ItemForm {
     readingStatus?: BookStatus;
     readAt?: string | Date | null;
     notes: string;
+    seriesName?: string;
+    volumeNumber?: number | null;
+    totalVolumes?: number | null;
 }
 
 export interface ShelfPlacementSummary {

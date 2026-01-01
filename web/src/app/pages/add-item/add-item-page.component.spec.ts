@@ -1,10 +1,15 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { fakeAsync, flush, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { Router } from '@angular/router';
-import { provideRouter, withDisabledInitialNavigation } from '@angular/router';
+import {
+    ActivatedRoute,
+    ParamMap,
+    Router,
+    provideRouter,
+    withDisabledInitialNavigation,
+} from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { of, throwError } from 'rxjs';
+import { BehaviorSubject, of, throwError } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 
 import { AddItemPageComponent } from './add-item-page.component';
@@ -18,6 +23,16 @@ describe(AddItemPageComponent.name, () => {
     let snackBarSpy: jasmine.SpyObj<MatSnackBar>;
     let itemLookupServiceSpy: jasmine.SpyObj<ItemLookupService>;
     let dialogSpy: jasmine.SpyObj<MatDialog>;
+    let queryParamMapSubject: BehaviorSubject<ParamMap>;
+
+    function createParamMap(params: Record<string, string[]>): ParamMap {
+        return {
+            keys: Object.keys(params),
+            has: (name: string) => (params[name]?.length ?? 0) > 0,
+            get: (name: string) => params[name]?.[0] ?? null,
+            getAll: (name: string) => [...(params[name] ?? [])],
+        } satisfies ParamMap;
+    }
 
     beforeEach(async () => {
         itemServiceSpy = jasmine.createSpyObj<ItemService>('ItemService', [
@@ -31,6 +46,7 @@ describe(AddItemPageComponent.name, () => {
             'lookup',
         ]);
         dialogSpy = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
+        queryParamMapSubject = new BehaviorSubject<ParamMap>(createParamMap({}));
 
         await TestBed.configureTestingModule({
             imports: [AddItemPageComponent],
@@ -41,6 +57,10 @@ describe(AddItemPageComponent.name, () => {
                 provideRouter([], withDisabledInitialNavigation()),
                 { provide: MatSnackBar, useValue: snackBarSpy },
                 { provide: MatDialog, useValue: dialogSpy },
+                {
+                    provide: ActivatedRoute,
+                    useValue: { queryParamMap: queryParamMapSubject.asObservable() },
+                },
             ],
         })
             .overrideProvider(MatSnackBar, { useValue: snackBarSpy })
@@ -208,6 +228,23 @@ describe(AddItemPageComponent.name, () => {
         expect(fixture.componentInstance.searchForm.get('query')?.value).toBe('9781234567890');
         expect(submitSpy).toHaveBeenCalledWith('scanner');
         expect(itemLookupServiceSpy.lookup).toHaveBeenCalledWith('9781234567890', 'book');
+    }));
+
+    it('prefills series draft using the last repeated query param value', fakeAsync(() => {
+        queryParamMapSubject.next(
+            createParamMap({
+                prefill: ['series'],
+                seriesName: ['First Series', 'Second Series'],
+                volumeNumber: ['1', '2'],
+            }),
+        );
+
+        const fixture = createComponent();
+        flush();
+
+        expect(fixture.componentInstance.manualDraft()?.seriesName).toBe('Second Series');
+        expect(fixture.componentInstance.manualDraft()?.volumeNumber).toBe(2);
+        expect(fixture.componentInstance.selectedTab()).toBe(1);
     }));
 
     it('navigates back when cancel is invoked while idle', () => {
