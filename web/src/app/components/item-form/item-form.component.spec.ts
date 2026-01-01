@@ -1,13 +1,20 @@
 import { SimpleChange } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
 
 import { ItemFormComponent } from './item-form.component';
 import { Item, BookStatus, Formats } from '../../models';
+import { SeriesService } from '../../services/series.service';
 
 describe(ItemFormComponent.name, () => {
+    const mockSeriesService = {
+        list: () => of([]),
+    };
+
     beforeEach(async () => {
         await TestBed.configureTestingModule({
             imports: [ItemFormComponent],
+            providers: [{ provide: SeriesService, useValue: mockSeriesService }],
         }).compileComponents();
     });
 

@@ -1,12 +1,18 @@
 import { TestBed } from '@angular/core/testing';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { of } from 'rxjs';
 
 import { BookDetailsComponent } from './book-details.component';
 import { BookStatus, Formats } from '../../../models';
+import { SeriesService } from '../../../services/series.service';
 
 describe(BookDetailsComponent.name, () => {
     let form: FormGroup;
+
+    const mockSeriesService = {
+        list: () => of([]),
+    };
 
     beforeEach(async () => {
         const fb = new FormBuilder();
@@ -31,6 +37,7 @@ describe(BookDetailsComponent.name, () => {
 
         await TestBed.configureTestingModule({
             imports: [BookDetailsComponent, NoopAnimationsModule],
+            providers: [{ provide: SeriesService, useValue: mockSeriesService }],
         }).compileComponents();
     });
 

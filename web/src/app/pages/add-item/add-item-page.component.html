@@ -11,6 +11,23 @@
             >
                 <mat-tab label="Search">
                     <div class="tab-body search-tab">
+                        <div class="series-prefill-notice" *ngIf="seriesPrefill() as prefill">
+                            <mat-icon aria-hidden="true">library_books</mat-icon>
+                            <span>
+                                Adding to series: <strong>{{ prefill.seriesName }}</strong>
+                                <span *ngIf="prefill.volumeNumber !== null">
+                                    (Volume {{ prefill.volumeNumber }})
+                                </span>
+                            </span>
+                            <button
+                                mat-icon-button
+                                type="button"
+                                (click)="clearSeriesPrefill()"
+                                aria-label="Clear series prefill"
+                            >
+                                <mat-icon>close</mat-icon>
+                            </button>
+                        </div>
                         <form
                             class="search-form"
                             [formGroup]="searchForm"

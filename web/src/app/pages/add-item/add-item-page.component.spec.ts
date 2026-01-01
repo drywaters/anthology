@@ -17,6 +17,7 @@ import { ItemService } from '../../services/item.service';
 import { Item, ItemForm } from '../../models';
 import { CsvImportSummary } from '../../models/import';
 import { ItemLookupService } from '../../services/item-lookup.service';
+import { SeriesService } from '../../services/series.service';
 
 describe(AddItemPageComponent.name, () => {
     let itemServiceSpy: jasmine.SpyObj<ItemService>;
@@ -24,6 +25,10 @@ describe(AddItemPageComponent.name, () => {
     let itemLookupServiceSpy: jasmine.SpyObj<ItemLookupService>;
     let dialogSpy: jasmine.SpyObj<MatDialog>;
     let queryParamMapSubject: BehaviorSubject<ParamMap>;
+
+    const mockSeriesService = {
+        list: () => of([]),
+    };
 
     function createParamMap(params: Record<string, string[]>): ParamMap {
         return {
@@ -54,6 +59,7 @@ describe(AddItemPageComponent.name, () => {
                 provideNoopAnimations(),
                 { provide: ItemService, useValue: itemServiceSpy },
                 { provide: ItemLookupService, useValue: itemLookupServiceSpy },
+                { provide: SeriesService, useValue: mockSeriesService },
                 provideRouter([], withDisabledInitialNavigation()),
                 { provide: MatSnackBar, useValue: snackBarSpy },
                 { provide: MatDialog, useValue: dialogSpy },
@@ -230,7 +236,7 @@ describe(AddItemPageComponent.name, () => {
         expect(itemLookupServiceSpy.lookup).toHaveBeenCalledWith('9781234567890', 'book');
     }));
 
-    it('prefills series draft using the last repeated query param value', fakeAsync(() => {
+    it('prefills series info and navigates to Search tab using the last repeated query param value', fakeAsync(() => {
         queryParamMapSubject.next(
             createParamMap({
                 prefill: ['series'],
@@ -242,8 +248,91 @@ describe(AddItemPageComponent.name, () => {
         const fixture = createComponent();
         flush();
 
-        expect(fixture.componentInstance.manualDraft()?.seriesName).toBe('Second Series');
-        expect(fixture.componentInstance.manualDraft()?.volumeNumber).toBe(2);
+        expect(fixture.componentInstance.seriesPrefill()?.seriesName).toBe('Second Series');
+        expect(fixture.componentInstance.seriesPrefill()?.volumeNumber).toBe(2);
+        expect(fixture.componentInstance.selectedTab()).toBe(0);
+    }));
+
+    it('merges series prefill into quick add result', fakeAsync(() => {
+        queryParamMapSubject.next(
+            createParamMap({
+                prefill: ['series'],
+                seriesName: ['Harry Potter'],
+                volumeNumber: ['3'],
+            }),
+        );
+
+        const mockItem = {
+            id: 'item-1',
+            title: 'Prisoner of Azkaban',
+            creator: 'J.K. Rowling',
+            itemType: 'book',
+            notes: '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        } satisfies Item;
+
+        itemServiceSpy.create.and.returnValue(of(mockItem));
+        const fixture = createComponent();
+        flush();
+
+        const router = TestBed.inject(Router);
+        spyOn(router, 'navigate').and.resolveTo(true);
+
+        const draft: ItemForm = {
+            title: 'Prisoner of Azkaban',
+            creator: 'J.K. Rowling',
+            itemType: 'book',
+            releaseYear: 1999,
+            pageCount: 317,
+            isbn13: '9780439136365',
+            isbn10: '',
+            description: '',
+            notes: '',
+            seriesName: '',
+            volumeNumber: null,
+            totalVolumes: null,
+        };
+
+        fixture.componentInstance.handleQuickAdd(draft);
+        flush();
+
+        const createCall = itemServiceSpy.create.calls.mostRecent().args[0];
+        expect(createCall.seriesName).toBe('Harry Potter');
+        expect(createCall.volumeNumber).toBe(3);
+    }));
+
+    it('merges series prefill when using lookup result for manual entry', fakeAsync(() => {
+        queryParamMapSubject.next(
+            createParamMap({
+                prefill: ['series'],
+                seriesName: ['Harry Potter'],
+                volumeNumber: ['3'],
+            }),
+        );
+
+        const fixture = createComponent();
+        flush();
+
+        const preview: ItemForm = {
+            title: 'Prisoner of Azkaban',
+            creator: 'J.K. Rowling',
+            itemType: 'book',
+            releaseYear: 1999,
+            pageCount: 317,
+            isbn13: '9780439136365',
+            isbn10: '',
+            description: '',
+            notes: '',
+            seriesName: '',
+            volumeNumber: null,
+            totalVolumes: null,
+        };
+
+        fixture.componentInstance.handleUseForManual(preview);
+
+        expect(fixture.componentInstance.manualDraft()?.seriesName).toBe('Harry Potter');
+        expect(fixture.componentInstance.manualDraft()?.volumeNumber).toBe(3);
         expect(fixture.componentInstance.selectedTab()).toBe(1);
     }));
 
