@@ -15,6 +15,7 @@ AUTH_GOOGLE_REDIRECT_URL ?= http://localhost:8080/api/auth/google/callback
 AUTH_GOOGLE_ALLOWED_DOMAINS ?=
 AUTH_GOOGLE_ALLOWED_EMAILS ?=
 FRONTEND_URL ?= http://localhost:4200
+APP_ENV ?= development
 
 # Include local overrides if present (e.g., local.mk with real API keys)
 -include local.mk
@@ -26,7 +27,7 @@ UI_IMAGE_REPO ?= anthology-ui
 LOG_LEVEL ?= info
 PLATFORMS ?= linux/amd64,linux/arm64/v8
 
-.PHONY: help configure-image ensure-image-tag api-run api-test api-lint api-build api-clean fmt tidy web-install web-start web-test web-lint web-build lint docker-build docker-build-api docker-build-ui docker-push docker-push-api docker-push-ui docker-publish docker-buildx docker-buildx-api docker-buildx-ui build run local clean
+.PHONY: help configure-image ensure-image-tag api-run api-test api-lint api-build api-clean fmt tidy web-install web-start web-test web-lint web-lint-fix web-build lint docker-build docker-build-api docker-build-ui docker-push docker-push-api docker-push-ui docker-publish docker-buildx docker-buildx-api docker-buildx-ui build run local clean
 
 help: ## Show all available targets.
 	@echo "Anthology targets"
@@ -54,6 +55,7 @@ api-run: ## Run the Go API (requires local.mk configuration).
 	AUTH_GOOGLE_ALLOWED_DOMAINS=$(AUTH_GOOGLE_ALLOWED_DOMAINS) \
 	AUTH_GOOGLE_ALLOWED_EMAILS=$(AUTH_GOOGLE_ALLOWED_EMAILS) \
 	FRONTEND_URL=$(FRONTEND_URL) \
+	APP_ENV=$(APP_ENV) \
 	go run ./cmd/api
 
 run: api-run ## Alias for api-run to match common tooling expectations.
@@ -88,6 +90,9 @@ web-test: ## Run Angular unit tests once.
 
 web-lint: ## Run Angular lint checks.
 	cd $(WEB_DIR) && npm run lint
+
+web-lint-fix: ## Run Angular lint checks with auto-fixes and formatting.
+	cd $(WEB_DIR) && npm run lint:fix
 
 web-build: ## Build the Angular production bundle.
 	cd $(WEB_DIR) && npm run build

@@ -24,6 +24,9 @@ describe(BookDetailsComponent.name, () => {
             googleVolumeId: [''],
             readingStatus: [BookStatus.None],
             readAt: [null],
+            seriesName: [''],
+            volumeNumber: [null],
+            totalVolumes: [null],
         });
 
         await TestBed.configureTestingModule({
@@ -119,5 +122,35 @@ describe(BookDetailsComponent.name, () => {
         form.patchValue({ readingStatus: BookStatus.Reading });
 
         expect(component.isReadingStatus).toBeTrue();
+    });
+
+    it('clears the series name when requested', () => {
+        const fixture = createComponent();
+        const component = fixture.componentInstance;
+        form.patchValue({ seriesName: 'Harry Potter' });
+
+        component.clearSeriesName();
+
+        expect(form.get('seriesName')?.value).toBe('');
+    });
+
+    it('clears the volume number when requested', () => {
+        const fixture = createComponent();
+        const component = fixture.componentInstance;
+        form.patchValue({ volumeNumber: 3 });
+
+        component.clearVolumeNumber();
+
+        expect(form.get('volumeNumber')?.value).toBeNull();
+    });
+
+    it('clears the total volumes when requested', () => {
+        const fixture = createComponent();
+        const component = fixture.componentInstance;
+        form.patchValue({ totalVolumes: 7 });
+
+        component.clearTotalVolumes();
+
+        expect(form.get('totalVolumes')?.value).toBeNull();
     });
 });

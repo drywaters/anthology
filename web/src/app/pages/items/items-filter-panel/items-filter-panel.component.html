@@ -31,10 +31,10 @@
             <button
                 mat-icon-button
                 type="button"
-                [class.active]="!isGridView()"
+                [class.active]="isTableView()"
                 (click)="onViewModeChange('table')"
                 aria-label="Switch to list view"
-                [attr.aria-pressed]="!isGridView()"
+                [attr.aria-pressed]="isTableView()"
             >
                 <mat-icon>list</mat-icon>
             </button>
@@ -47,6 +47,16 @@
                 [attr.aria-pressed]="isGridView()"
             >
                 <mat-icon>grid_view</mat-icon>
+            </button>
+            <button
+                mat-icon-button
+                type="button"
+                [class.active]="isSeriesView()"
+                (click)="onViewModeChange('series')"
+                aria-label="Switch to series view"
+                [attr.aria-pressed]="isSeriesView()"
+            >
+                <mat-icon>collections_bookmark</mat-icon>
             </button>
         </div>
     </div>

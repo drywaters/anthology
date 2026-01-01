@@ -159,6 +159,99 @@ func TestServiceUpdate(t *testing.T) {
 	}
 }
 
+func TestServiceUpdateSupportsExplicitNullSeriesNumbers(t *testing.T) {
+	repo := NewInMemoryRepository(nil)
+	svc := NewService(repo)
+	ctx := context.Background()
+
+	volume := 2
+	total := 5
+	book, err := svc.Create(ctx, CreateItemInput{
+		Title:        "Series Book",
+		ItemType:     ItemTypeBook,
+		SeriesName:   "Saga",
+		VolumeNumber: &volume,
+		TotalVolumes: &total,
+	})
+	if err != nil {
+		t.Fatalf("create failed: %v", err)
+	}
+
+	updated, err := svc.Update(ctx, book.ID, UpdateItemInput{VolumeNumber: ptrNilIntPtr()})
+	if err != nil {
+		t.Fatalf("update failed: %v", err)
+	}
+	if updated.VolumeNumber != nil {
+		t.Fatalf("expected volumeNumber to clear, got %d", *updated.VolumeNumber)
+	}
+	if updated.TotalVolumes == nil || *updated.TotalVolumes != total {
+		t.Fatalf("expected totalVolumes to remain %d, got %#v", total, updated.TotalVolumes)
+	}
+	if updated.SeriesName != "Saga" {
+		t.Fatalf("expected seriesName to remain Saga, got %q", updated.SeriesName)
+	}
+
+	updated, err = svc.Update(ctx, book.ID, UpdateItemInput{TotalVolumes: ptrNilIntPtr()})
+	if err != nil {
+		t.Fatalf("update failed: %v", err)
+	}
+	if updated.TotalVolumes != nil {
+		t.Fatalf("expected totalVolumes to clear, got %d", *updated.TotalVolumes)
+	}
+	if updated.SeriesName != "Saga" {
+		t.Fatalf("expected seriesName to remain Saga, got %q", updated.SeriesName)
+	}
+}
+
+func TestServiceEnrichSeriesSummarySetsMissingCountWhenCompleteWithoutVolumeNumbers(t *testing.T) {
+	repo := NewInMemoryRepository(nil)
+	svc := NewService(repo)
+
+	summary := SeriesSummary{
+		SeriesName:   "Saga",
+		OwnedCount:   3,
+		TotalVolumes: ptrInt(3),
+		Items: []Item{
+			{ItemType: ItemTypeBook, SeriesName: "Saga"},
+			{ItemType: ItemTypeBook, SeriesName: "Saga"},
+			{ItemType: ItemTypeBook, SeriesName: "Saga"},
+		},
+	}
+
+	enriched := svc.enrichSeriesSummary(summary)
+
+	if enriched.MissingCount == nil || *enriched.MissingCount != 0 {
+		t.Fatalf("expected missingCount to be 0, got %#v", enriched.MissingCount)
+	}
+	if enriched.Status != SeriesStatusComplete {
+		t.Fatalf("expected status to be complete, got %q", enriched.Status)
+	}
+}
+
+func TestServiceEnrichSeriesSummaryMarksIncompleteWhenTotalsExceedOwnedWithoutVolumeNumbers(t *testing.T) {
+	repo := NewInMemoryRepository(nil)
+	svc := NewService(repo)
+
+	summary := SeriesSummary{
+		SeriesName:   "Saga",
+		OwnedCount:   2,
+		TotalVolumes: ptrInt(4),
+		Items: []Item{
+			{ItemType: ItemTypeBook, SeriesName: "Saga"},
+			{ItemType: ItemTypeBook, SeriesName: "Saga"},
+		},
+	}
+
+	enriched := svc.enrichSeriesSummary(summary)
+
+	if enriched.MissingCount == nil || *enriched.MissingCount != 2 {
+		t.Fatalf("expected missingCount to be 2, got %#v", enriched.MissingCount)
+	}
+	if enriched.Status != SeriesStatusIncomplete {
+		t.Fatalf("expected status to be incomplete, got %q", enriched.Status)
+	}
+}
+
 func TestServiceListOrdersByCreatedAt(t *testing.T) {
 	repo := NewInMemoryRepository(nil)
 	svc := NewService(repo)
@@ -437,6 +530,11 @@ func ptrInt(value int) *int {
 
 func ptrIntPtr(value int) **int {
 	inner := ptrInt(value)
+	return &inner
+}
+
+func ptrNilIntPtr() **int {
+	var inner *int
 	return &inner
 }
 

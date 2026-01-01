@@ -80,6 +80,20 @@ export class BookDetailsComponent {
         this.form.patchValue({ retailPriceUsd: null });
     }
 
+    clearSeriesName(): void {
+        this.form.patchValue({ seriesName: '' });
+    }
+
+    clearVolumeNumber(): void {
+        this.form.patchValue({ volumeNumber: null });
+        this.form.get('volumeNumber')?.setErrors(null);
+    }
+
+    clearTotalVolumes(): void {
+        this.form.patchValue({ totalVolumes: null });
+        this.form.get('totalVolumes')?.setErrors(null);
+    }
+
     private parseInteger(value: unknown): number | null {
         if (value === null || value === undefined || value === '') {
             return null;

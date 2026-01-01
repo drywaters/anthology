@@ -4,7 +4,7 @@
         [statusFilter]="statusFilter"
         [shelfStatusFilter]="shelfStatusFilter"
         [showStatusFilter]="showStatusFilter"
-        [isGridView]="isGridView"
+        [viewMode]="viewMode"
         [typeOptions]="typeOptions"
         [statusOptions]="statusOptions"
         [shelfStatusOptions]="shelfStatusOptions"
@@ -19,25 +19,40 @@
             <mat-card>
                 <mat-progress-bar *ngIf="loading()" mode="indeterminate"></mat-progress-bar>
 
-                <ng-container *ngIf="hasFilteredItems(); else emptyState">
-                    <app-items-grid-view
-                        *ngIf="isGridView(); else tableView"
-                        [groupedItems]="groupedItems"
-                        (itemSelected)="startEdit($event)"
-                        (shelfLocationRequested)="viewShelfPlacementFromChild($event)"
-                    ></app-items-grid-view>
+                <ng-container *ngIf="isSeriesView(); else standardView">
+                    <ng-container *ngIf="hasSeriesData(); else emptyState">
+                        <app-items-series-view
+                            [seriesData]="seriesData"
+                            [expandedSeries]="expandedSeries"
+                            (seriesToggled)="toggleSeriesExpanded($event)"
+                            (itemSelected)="startEdit($event)"
+                            (addMissingVolume)="addMissingVolume($event)"
+                            (viewSeriesDetail)="viewSeriesDetail($event)"
+                        ></app-items-series-view>
+                    </ng-container>
+                </ng-container>
 
-                    <ng-template #tableView>
-                        <app-items-table-view
+                <ng-template #standardView>
+                    <ng-container *ngIf="hasFilteredItems(); else emptyState">
+                        <app-items-grid-view
+                            *ngIf="isGridView(); else tableView"
                             [groupedItems]="groupedItems"
-                            [typeFilter]="typeFilter"
-                            [displayedColumns]="displayedColumns"
                             (itemSelected)="startEdit($event)"
                             (shelfLocationRequested)="viewShelfPlacementFromChild($event)"
-                            (typeFilterRequested)="filterByType($event)"
-                        ></app-items-table-view>
-                    </ng-template>
-                </ng-container>
+                        ></app-items-grid-view>
+
+                        <ng-template #tableView>
+                            <app-items-table-view
+                                [groupedItems]="groupedItems"
+                                [typeFilter]="typeFilter"
+                                [displayedColumns]="displayedColumns"
+                                (itemSelected)="startEdit($event)"
+                                (shelfLocationRequested)="viewShelfPlacementFromChild($event)"
+                                (typeFilterRequested)="filterByType($event)"
+                            ></app-items-table-view>
+                        </ng-template>
+                    </ng-container>
+                </ng-template>
 
                 <ng-template #emptyState>
                     <app-items-empty-state

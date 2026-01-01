@@ -100,6 +100,9 @@ type Item struct {
 	ReadingStatus  BookStatus      `db:"reading_status" json:"readingStatus"`
 	ReadAt         *time.Time      `db:"read_at" json:"readAt,omitempty"`
 	Notes          string          `db:"notes" json:"notes"`
+	SeriesName     string          `db:"series_name" json:"seriesName"`
+	VolumeNumber   *int            `db:"volume_number" json:"volumeNumber,omitempty"`
+	TotalVolumes   *int            `db:"total_volumes" json:"totalVolumes,omitempty"`
 	CreatedAt      time.Time       `db:"created_at" json:"createdAt"`
 	UpdatedAt      time.Time       `db:"updated_at" json:"updatedAt"`
 	ShelfPlacement *ShelfPlacement `db:"-" json:"shelfPlacement,omitempty"`
@@ -137,6 +140,9 @@ type CreateItemInput struct {
 	ReadingStatus  BookStatus
 	ReadAt         *time.Time
 	Notes          string
+	SeriesName     string
+	VolumeNumber   *int
+	TotalVolumes   *int
 }
 
 // UpdateItemInput captures the editable fields for an existing item.
@@ -162,6 +168,9 @@ type UpdateItemInput struct {
 	ReadingStatus  *BookStatus
 	ReadAt         **time.Time
 	Notes          *string
+	SeriesName     *string
+	VolumeNumber   **int
+	TotalVolumes   **int
 }
 
 // ShelfStatus describes whether an item has been assigned to a shelf.
@@ -213,6 +222,41 @@ type DuplicateMatch struct {
 	UpdatedAt         time.Time `json:"updatedAt"`
 }
 
+// SeriesStatus indicates the completion status of a book series.
+type SeriesStatus string
+
+const (
+	// SeriesStatusComplete indicates all known volumes are owned.
+	SeriesStatusComplete SeriesStatus = "complete"
+	// SeriesStatusIncomplete indicates some volumes are missing.
+	SeriesStatusIncomplete SeriesStatus = "incomplete"
+	// SeriesStatusUnknown indicates the total number of volumes is not known.
+	SeriesStatusUnknown SeriesStatus = "unknown"
+)
+
+// SeriesSummary provides aggregated information about a book series.
+type SeriesSummary struct {
+	SeriesName     string       `json:"seriesName"`
+	OwnedCount     int          `json:"ownedCount"`
+	TotalVolumes   *int         `json:"totalVolumes,omitempty"`
+	MissingCount   *int         `json:"missingCount,omitempty"`
+	Status         SeriesStatus `json:"status"`
+	Items          []Item       `json:"items,omitempty"`
+	MissingVolumes []int        `json:"missingVolumes,omitempty"`
+}
+
+// SeriesListOptions describes service-level filters for listing series.
+type SeriesListOptions struct {
+	IncludeItems bool
+	Status       *SeriesStatus
+}
+
+// SeriesRepoListOptions describes repository options for listing series.
+// Repository-level options should not include derived fields such as SeriesStatus.
+type SeriesRepoListOptions struct {
+	IncludeItems bool
+}
+
 // Repository defines persistence operations for Items.
 type Repository interface {
 	Create(ctx context.Context, item Item) (Item, error)
@@ -222,4 +266,6 @@ type Repository interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 	Histogram(ctx context.Context, opts HistogramOptions) (LetterHistogram, error)
 	FindDuplicates(ctx context.Context, input DuplicateCheckInput) ([]DuplicateMatch, error)
+	ListSeries(ctx context.Context, opts SeriesRepoListOptions) ([]SeriesSummary, error)
+	GetSeriesByName(ctx context.Context, name string) (SeriesSummary, error)
 }

@@ -95,6 +95,9 @@ describe(ItemFormComponent.name, () => {
             readingStatus: BookStatus.None,
             readAt: null,
             notes: '',
+            seriesName: '',
+            volumeNumber: null,
+            totalVolumes: null,
         });
 
         component.submit();

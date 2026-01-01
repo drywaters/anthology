@@ -44,6 +44,9 @@ SELECT
     i.reading_status,
     i.read_at,
     i.notes,
+    i.series_name,
+    i.volume_number,
+    i.total_volumes,
     i.created_at,
     i.updated_at,
     placement.shelf_id AS placement_shelf_id,
@@ -97,8 +100,8 @@ func (row itemRow) toItem() Item {
 
 // Create inserts a new row and returns the stored representation.
 func (r *PostgresRepository) Create(ctx context.Context, item Item) (Item, error) {
-	insert := `INSERT INTO items (id, title, creator, item_type, release_year, page_count, current_page, isbn_13, isbn_10, description, cover_image, format, genre, rating, retail_price_usd, google_volume_id, platform, age_group, player_count, reading_status, read_at, notes, created_at, updated_at)
-VALUES (:id, :title, :creator, :item_type, :release_year, :page_count, :current_page, :isbn_13, :isbn_10, :description, :cover_image, :format, :genre, :rating, :retail_price_usd, :google_volume_id, :platform, :age_group, :player_count, :reading_status, :read_at, :notes, :created_at, :updated_at)`
+	insert := `INSERT INTO items (id, title, creator, item_type, release_year, page_count, current_page, isbn_13, isbn_10, description, cover_image, format, genre, rating, retail_price_usd, google_volume_id, platform, age_group, player_count, reading_status, read_at, notes, series_name, volume_number, total_volumes, created_at, updated_at)
+VALUES (:id, :title, :creator, :item_type, :release_year, :page_count, :current_page, :isbn_13, :isbn_10, :description, :cover_image, :format, :genre, :rating, :retail_price_usd, :google_volume_id, :platform, :age_group, :player_count, :reading_status, :read_at, :notes, :series_name, :volume_number, :total_volumes, :created_at, :updated_at)`
 
 	if _, err := r.db.NamedExecContext(ctx, insert, item); err != nil {
 		return Item{}, fmt.Errorf("insert item: %w", err)
@@ -223,6 +226,9 @@ SET title = :title,
     reading_status = :reading_status,
     read_at = :read_at,
     notes = :notes,
+    series_name = :series_name,
+    volume_number = :volume_number,
+    total_volumes = :total_volumes,
     updated_at = :updated_at
 WHERE id = :id`
 
@@ -360,4 +366,89 @@ func (r *PostgresRepository) FindDuplicates(ctx context.Context, input Duplicate
 	}
 
 	return matches, nil
+}
+
+// ListSeries returns all unique series with their items grouped.
+func (r *PostgresRepository) ListSeries(ctx context.Context, opts SeriesRepoListOptions) ([]SeriesSummary, error) {
+	query := baseSelect + ` WHERE i.series_name != '' AND i.item_type = 'book' ORDER BY i.series_name, i.volume_number NULLS LAST, i.title`
+
+	rows := []itemRow{}
+	if err := r.db.SelectContext(ctx, &rows, query); err != nil {
+		return nil, fmt.Errorf("list series: %w", err)
+	}
+
+	// Group items by series name
+	seriesMap := make(map[string][]Item)
+	seriesOrder := []string{}
+
+	for _, row := range rows {
+		item := row.toItem()
+		if _, exists := seriesMap[item.SeriesName]; !exists {
+			seriesOrder = append(seriesOrder, item.SeriesName)
+		}
+		seriesMap[item.SeriesName] = append(seriesMap[item.SeriesName], item)
+	}
+
+	// Build summaries
+	summaries := make([]SeriesSummary, 0, len(seriesOrder))
+	for _, name := range seriesOrder {
+		items := seriesMap[name]
+		summary := SeriesSummary{
+			SeriesName: name,
+			OwnedCount: len(items),
+		}
+
+		if opts.IncludeItems {
+			summary.Items = items
+		}
+
+		// Find max total_volumes from items
+		for _, item := range items {
+			if item.TotalVolumes != nil {
+				if summary.TotalVolumes == nil || *item.TotalVolumes > *summary.TotalVolumes {
+					summary.TotalVolumes = item.TotalVolumes
+				}
+			}
+		}
+
+		summaries = append(summaries, summary)
+	}
+
+	return summaries, nil
+}
+
+// GetSeriesByName returns detailed info about a single series.
+func (r *PostgresRepository) GetSeriesByName(ctx context.Context, name string) (SeriesSummary, error) {
+	query := baseSelect + ` WHERE i.series_name = $1 AND i.item_type = 'book' ORDER BY i.volume_number NULLS LAST, i.title`
+
+	rows := []itemRow{}
+	if err := r.db.SelectContext(ctx, &rows, query, name); err != nil {
+		return SeriesSummary{}, fmt.Errorf("get series: %w", err)
+	}
+
+	if len(rows) == 0 {
+		return SeriesSummary{}, ErrNotFound
+	}
+
+	items := make([]Item, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, row.toItem())
+	}
+
+	summary := SeriesSummary{
+		SeriesName: name,
+		OwnedCount: len(items),
+		Items:      items,
+	}
+
+	// Find max total_volumes from items
+	for _, item := range items {
+		if item.TotalVolumes != nil {
+			if summary.TotalVolumes == nil || *item.TotalVolumes > *summary.TotalVolumes {
+				summary.TotalVolumes = item.TotalVolumes
+			}
+		}
+	}
+
+	return summary, nil
 }

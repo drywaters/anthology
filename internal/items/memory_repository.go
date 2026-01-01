@@ -344,3 +344,126 @@ func itemToDuplicateMatch(item Item) DuplicateMatch {
 
 	return match
 }
+
+// ListSeries returns all unique series with their items grouped.
+func (r *InMemoryRepository) ListSeries(_ context.Context, opts SeriesRepoListOptions) ([]SeriesSummary, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	// Group items by series name
+	seriesMap := make(map[string][]Item)
+	seriesOrder := []string{}
+
+	for _, id := range r.order {
+		item, ok := r.data[id]
+		if !ok {
+			continue
+		}
+
+		// Only include books with series
+		if item.ItemType != ItemTypeBook || item.SeriesName == "" {
+			continue
+		}
+
+		if _, exists := seriesMap[item.SeriesName]; !exists {
+			seriesOrder = append(seriesOrder, item.SeriesName)
+		}
+		seriesMap[item.SeriesName] = append(seriesMap[item.SeriesName], item)
+	}
+
+	// Build summaries
+	summaries := make([]SeriesSummary, 0, len(seriesOrder))
+	for _, name := range seriesOrder {
+		items := seriesMap[name]
+
+		// Sort items by volume number
+		slices.SortFunc(items, func(a, b Item) int {
+			if a.VolumeNumber == nil && b.VolumeNumber == nil {
+				return strings.Compare(a.Title, b.Title)
+			}
+			if a.VolumeNumber == nil {
+				return 1
+			}
+			if b.VolumeNumber == nil {
+				return -1
+			}
+			return *a.VolumeNumber - *b.VolumeNumber
+		})
+
+		summary := SeriesSummary{
+			SeriesName: name,
+			OwnedCount: len(items),
+		}
+
+		if opts.IncludeItems {
+			summary.Items = items
+		}
+
+		// Find max total_volumes from items
+		for _, item := range items {
+			if item.TotalVolumes != nil {
+				if summary.TotalVolumes == nil || *item.TotalVolumes > *summary.TotalVolumes {
+					summary.TotalVolumes = item.TotalVolumes
+				}
+			}
+		}
+
+		summaries = append(summaries, summary)
+	}
+
+	return summaries, nil
+}
+
+// GetSeriesByName returns detailed info about a single series.
+func (r *InMemoryRepository) GetSeriesByName(_ context.Context, name string) (SeriesSummary, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	var items []Item
+
+	for _, id := range r.order {
+		item, ok := r.data[id]
+		if !ok {
+			continue
+		}
+
+		if item.ItemType == ItemTypeBook && item.SeriesName == name {
+			items = append(items, item)
+		}
+	}
+
+	if len(items) == 0 {
+		return SeriesSummary{}, ErrNotFound
+	}
+
+	// Sort items by volume number
+	slices.SortFunc(items, func(a, b Item) int {
+		if a.VolumeNumber == nil && b.VolumeNumber == nil {
+			return strings.Compare(a.Title, b.Title)
+		}
+		if a.VolumeNumber == nil {
+			return 1
+		}
+		if b.VolumeNumber == nil {
+			return -1
+		}
+		return *a.VolumeNumber - *b.VolumeNumber
+	})
+
+	summary := SeriesSummary{
+		SeriesName: name,
+		OwnedCount: len(items),
+		Items:      items,
+	}
+
+	// Find max total_volumes from items
+	for _, item := range items {
+		if item.TotalVolumes != nil {
+			if summary.TotalVolumes == nil || *item.TotalVolumes > *summary.TotalVolumes {
+				summary.TotalVolumes = item.TotalVolumes
+			}
+		}
+	}
+
+	return summary, nil
+}

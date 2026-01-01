@@ -49,6 +49,13 @@ export const routes: Routes = [
                         (m) => m.EditItemPageComponent,
                     ),
             },
+            {
+                path: 'series',
+                loadComponent: () =>
+                    import('./pages/series/series-detail-page.component').then(
+                        (m) => m.SeriesDetailPageComponent,
+                    ),
+            },
         ],
     },
     {

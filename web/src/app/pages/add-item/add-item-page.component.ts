@@ -5,6 +5,7 @@ import {
     DestroyRef,
     ElementRef,
     NgZone,
+    OnInit,
     ViewChild,
     computed,
     inject,
@@ -15,7 +16,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, ParamMap, Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -76,7 +77,7 @@ interface SearchCategoryConfig {
     templateUrl: './add-item-page.component.html',
     styleUrl: './add-item-page.component.scss',
 })
-export class AddItemPageComponent {
+export class AddItemPageComponent implements OnInit {
     private static readonly SEARCH_CATEGORIES: SearchCategoryConfig[] = [
         {
             value: 'book',
@@ -136,6 +137,7 @@ export class AddItemPageComponent {
     private readonly itemService = inject(ItemService);
     private readonly itemLookupService = inject(ItemLookupService);
     private readonly router = inject(Router);
+    private readonly route = inject(ActivatedRoute);
     private readonly notification = inject(NotificationService);
     private readonly dialog = inject(MatDialog);
     private readonly destroyRef = inject(DestroyRef);
@@ -181,6 +183,53 @@ export class AddItemPageComponent {
 
     constructor() {
         this.destroyRef.onDestroy(() => this.stopBarcodeScanner());
+    }
+
+    ngOnInit(): void {
+        this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+            const prefill = this.getLastQueryParam(params, 'prefill');
+            if (prefill === 'series') {
+                this.handleSeriesPrefill(params);
+            }
+        });
+    }
+
+    private getLastQueryParam(params: ParamMap, key: string): string | null {
+        const values = params.getAll(key);
+        return values.length > 0 ? values[values.length - 1] : null;
+    }
+
+    private handleSeriesPrefill(params: ParamMap): void {
+        const seriesName = this.getLastQueryParam(params, 'seriesName') ?? '';
+        const volumeNumberStr = this.getLastQueryParam(params, 'volumeNumber');
+        const volumeNumber = volumeNumberStr ? parseInt(volumeNumberStr, 10) : null;
+
+        const draft: ItemForm = {
+            title: '',
+            creator: '',
+            itemType: 'book',
+            releaseYear: null,
+            pageCount: null,
+            isbn13: '',
+            isbn10: '',
+            description: '',
+            coverImage: '',
+            platform: '',
+            ageGroup: '',
+            playerCount: '',
+            notes: '',
+            seriesName,
+            volumeNumber:
+                volumeNumber !== null && !Number.isNaN(volumeNumber) ? volumeNumber : null,
+            totalVolumes: null,
+        };
+
+        this.manualDraft.set(draft);
+        this.manualDraftSource.set({
+            query: seriesName,
+            label: 'Series',
+        });
+        this.selectedTab.set(AddItemPageComponent.MANUAL_ENTRY_TAB_INDEX);
     }
 
     readonly activeCategory = computed(() => {
@@ -557,6 +606,9 @@ export class AddItemPageComponent {
             ageGroup: partial.ageGroup ?? '',
             playerCount: partial.playerCount ?? '',
             notes: partial.notes ?? '',
+            seriesName: partial.seriesName ?? '',
+            volumeNumber: partial.volumeNumber ?? null,
+            totalVolumes: partial.totalVolumes ?? null,
         };
     }
 }

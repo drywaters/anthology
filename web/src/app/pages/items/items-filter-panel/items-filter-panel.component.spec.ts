@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { signal } from '@angular/core';
-import { ItemsFilterPanelComponent } from './items-filter-panel.component';
+import { ItemsFilterPanelComponent, ViewMode } from './items-filter-panel.component';
 import { BookStatusFilters, ItemTypes, ShelfStatusFilters } from '../../../models';
 
 describe('ItemsFilterPanelComponent', () => {
@@ -19,7 +19,7 @@ describe('ItemsFilterPanelComponent', () => {
         component.statusFilter = signal(BookStatusFilters.All);
         component.shelfStatusFilter = signal(ShelfStatusFilters.All);
         component.showStatusFilter = signal(true);
-        component.isGridView = signal(false);
+        component.viewMode = signal<ViewMode>('table');
         component.typeOptions = [
             { value: 'all', label: 'All items' },
             { value: ItemTypes.Book, label: 'Book' },
@@ -64,19 +64,37 @@ describe('ItemsFilterPanelComponent', () => {
         expect(compiled.querySelector('.status-select')).toBeFalsy();
     });
 
-    it('should show active class on table button when not grid view', () => {
+    it('should show active class on table button when table view', () => {
         const compiled = fixture.nativeElement as HTMLElement;
         const buttons = compiled.querySelectorAll('.view-toggle button');
         expect(buttons[0].classList.contains('active')).toBeTrue();
         expect(buttons[1].classList.contains('active')).toBeFalse();
+        expect(buttons[2].classList.contains('active')).toBeFalse();
     });
 
     it('should show active class on grid button when grid view', () => {
-        component.isGridView = signal(true);
+        component.viewMode = signal<ViewMode>('grid');
         fixture.detectChanges();
         const compiled = fixture.nativeElement as HTMLElement;
         const buttons = compiled.querySelectorAll('.view-toggle button');
         expect(buttons[0].classList.contains('active')).toBeFalse();
         expect(buttons[1].classList.contains('active')).toBeTrue();
+        expect(buttons[2].classList.contains('active')).toBeFalse();
+    });
+
+    it('should show active class on series button when series view', () => {
+        component.viewMode = signal<ViewMode>('series');
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+        const buttons = compiled.querySelectorAll('.view-toggle button');
+        expect(buttons[0].classList.contains('active')).toBeFalse();
+        expect(buttons[1].classList.contains('active')).toBeFalse();
+        expect(buttons[2].classList.contains('active')).toBeTrue();
+    });
+
+    it('should emit viewModeChange with series when series button clicked', () => {
+        const spy = spyOn(component.viewModeChange, 'emit');
+        component.onViewModeChange('series');
+        expect(spy).toHaveBeenCalledWith('series');
     });
 });

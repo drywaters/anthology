@@ -112,6 +112,9 @@ export class ItemFormComponent implements OnChanges, OnInit {
         readingStatus: [BookStatus.None],
         readAt: [null],
         notes: ['', [Validators.maxLength(500)]],
+        seriesName: ['', [Validators.maxLength(200)]],
+        volumeNumber: [null, [Validators.min(1)]],
+        totalVolumes: [null, [Validators.min(1)]],
     });
 
     get isBook(): boolean {
@@ -152,6 +155,9 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 readingStatus: BookStatus.None,
                 readAt: null,
                 notes: '',
+                seriesName: '',
+                volumeNumber: null,
+                totalVolumes: null,
             };
 
             if (this.draft) {
@@ -206,6 +212,9 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 next.readingStatus =
                     this.normalizeStatus(this.draft.readingStatus) ?? next.readingStatus;
                 next.readAt = this.normalizeDateInput(this.draft.readAt) ?? next.readAt;
+                next.seriesName = this.draft.seriesName ?? next.seriesName;
+                next.volumeNumber = this.parseInteger(this.draft.volumeNumber) ?? next.volumeNumber;
+                next.totalVolumes = this.parseInteger(this.draft.totalVolumes) ?? next.totalVolumes;
             }
 
             if (this.item) {
@@ -231,6 +240,9 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 next.readingStatus =
                     this.normalizeStatus(this.item.readingStatus) ?? next.readingStatus;
                 next.readAt = this.normalizeDateInput(this.item.readAt) ?? next.readAt;
+                next.seriesName = this.item.seriesName ?? '';
+                next.volumeNumber = this.item.volumeNumber ?? null;
+                next.totalVolumes = this.item.totalVolumes ?? null;
             }
 
             if (next.readingStatus !== BookStatus.Read) {
@@ -275,6 +287,17 @@ export class ItemFormComponent implements OnChanges, OnInit {
             this.ensureCurrentPageWithinTotal(null, null);
         }
 
+        // Validate volumeNumber <= totalVolumes for books
+        if (value.itemType === 'book') {
+            const volumeNumber = this.parseInteger(value.volumeNumber);
+            const totalVolumes = this.parseInteger(value.totalVolumes);
+            if (volumeNumber !== null && totalVolumes !== null && volumeNumber > totalVolumes) {
+                this.form.get('volumeNumber')?.setErrors({ exceedsTotal: true });
+                this.form.get('volumeNumber')?.markAsTouched();
+                return;
+            }
+        }
+
         const readingStatus =
             value.itemType === 'book' ? (value.readingStatus ?? BookStatus.None) : undefined;
         const readAt = value.itemType === 'book' ? this.normalizeDateOutput(value.readAt) : null;
@@ -308,6 +331,11 @@ export class ItemFormComponent implements OnChanges, OnInit {
             playerCount: value.playerCount ?? '',
             readingStatus,
             readAt,
+            seriesName: value.itemType === 'book' ? (value.seriesName ?? '') : undefined,
+            volumeNumber:
+                value.itemType === 'book' ? this.parseInteger(value.volumeNumber) : undefined,
+            totalVolumes:
+                value.itemType === 'book' ? this.parseInteger(value.totalVolumes) : undefined,
         });
     }
 
@@ -354,9 +382,14 @@ export class ItemFormComponent implements OnChanges, OnInit {
                 rating: null,
                 retailPriceUsd: null,
                 googleVolumeId: '',
+                seriesName: '',
+                volumeNumber: null,
+                totalVolumes: null,
             });
             this.form.get('readAt')?.setErrors(null);
             this.form.get('currentPage')?.setErrors(null);
+            this.form.get('volumeNumber')?.setErrors(null);
+            this.form.get('totalVolumes')?.setErrors(null);
         }
     }
 

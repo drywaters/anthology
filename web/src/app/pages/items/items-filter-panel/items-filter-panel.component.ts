@@ -15,6 +15,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { BookStatusFilter, ItemType, ShelfStatusFilter } from '../../../models';
 
 export type ItemTypeFilter = ItemType | 'all';
+export type ViewMode = 'table' | 'grid' | 'series';
 
 @Component({
     selector: 'app-items-filter-panel',
@@ -29,7 +30,7 @@ export class ItemsFilterPanelComponent {
     @Input({ required: true }) statusFilter!: Signal<BookStatusFilter>;
     @Input({ required: true }) shelfStatusFilter!: Signal<ShelfStatusFilter>;
     @Input({ required: true }) showStatusFilter!: Signal<boolean>;
-    @Input({ required: true }) isGridView!: Signal<boolean>;
+    @Input({ required: true }) viewMode!: Signal<ViewMode>;
     @Input() typeOptions: Array<{ value: ItemTypeFilter; label: string }> = [];
     @Input() statusOptions: Array<{ value: BookStatusFilter; label: string }> = [];
     @Input() shelfStatusOptions: Array<{ value: ShelfStatusFilter; label: string }> = [];
@@ -37,7 +38,7 @@ export class ItemsFilterPanelComponent {
     @Output() typeFilterChange = new EventEmitter<ItemTypeFilter>();
     @Output() statusFilterChange = new EventEmitter<BookStatusFilter>();
     @Output() shelfStatusFilterChange = new EventEmitter<ShelfStatusFilter>();
-    @Output() viewModeChange = new EventEmitter<'table' | 'grid'>();
+    @Output() viewModeChange = new EventEmitter<ViewMode>();
 
     onTypeChange(value: ItemTypeFilter): void {
         this.typeFilterChange.emit(value);
@@ -51,7 +52,19 @@ export class ItemsFilterPanelComponent {
         this.shelfStatusFilterChange.emit(value);
     }
 
-    onViewModeChange(mode: 'table' | 'grid'): void {
+    onViewModeChange(mode: ViewMode): void {
         this.viewModeChange.emit(mode);
+    }
+
+    isTableView(): boolean {
+        return this.viewMode() === 'table';
+    }
+
+    isGridView(): boolean {
+        return this.viewMode() === 'grid';
+    }
+
+    isSeriesView(): boolean {
+        return this.viewMode() === 'series';
     }
 }
