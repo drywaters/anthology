@@ -168,6 +168,9 @@ export class AddItemPageComponent implements OnInit {
     readonly scannerProcessing = computed(() => this.barcodeScanner.scannerProcessing());
     readonly scannerFlash = computed(() => this.barcodeScanner.scannerFlash());
     readonly scannerReady = computed(() => this.barcodeScanner.scannerReady());
+    readonly seriesPrefill = signal<{ seriesName: string; volumeNumber: number | null } | null>(
+        null,
+    );
 
     readonly searchCategories = AddItemPageComponent.SEARCH_CATEGORIES;
     readonly csvFields = AddItemPageComponent.CSV_FIELDS;
@@ -201,35 +204,27 @@ export class AddItemPageComponent implements OnInit {
 
     private handleSeriesPrefill(params: ParamMap): void {
         const seriesName = this.getLastQueryParam(params, 'seriesName') ?? '';
-        const volumeNumberStr = this.getLastQueryParam(params, 'volumeNumber');
-        const volumeNumber = volumeNumberStr ? parseInt(volumeNumberStr, 10) : null;
+        const volumeNumber = Number.parseInt(
+            this.getLastQueryParam(params, 'volumeNumber') ?? '',
+            10,
+        );
+        const normalizedVolumeNumber = Number.isNaN(volumeNumber) ? null : volumeNumber;
 
-        const draft: ItemForm = {
-            title: '',
-            creator: '',
-            itemType: 'book',
-            releaseYear: null,
-            pageCount: null,
-            isbn13: '',
-            isbn10: '',
-            description: '',
-            coverImage: '',
-            platform: '',
-            ageGroup: '',
-            playerCount: '',
-            notes: '',
+        // Store series info for later merging when a search result is selected
+        this.seriesPrefill.set({
             seriesName,
-            volumeNumber:
-                volumeNumber !== null && !Number.isNaN(volumeNumber) ? volumeNumber : null,
-            totalVolumes: null,
-        };
-
-        this.manualDraft.set(draft);
-        this.manualDraftSource.set({
-            query: seriesName,
-            label: 'Series',
+            volumeNumber: normalizedVolumeNumber,
         });
-        this.selectedTab.set(AddItemPageComponent.MANUAL_ENTRY_TAB_INDEX);
+
+        // Navigate to Search tab (index 0) instead of Manual Entry
+        this.selectedTab.set(0);
+
+        // Show a hint to the user about what they're adding
+        const volumeHint =
+            normalizedVolumeNumber !== null ? ` (Volume ${normalizedVolumeNumber})` : '';
+        this.lastLookupSummary.set(
+            `Adding to series: "${seriesName}"${volumeHint}. Search for the book below.`,
+        );
     }
 
     readonly activeCategory = computed(() => {
@@ -382,6 +377,7 @@ export class AddItemPageComponent implements OnInit {
                 this.itemService.create(formValue).pipe(takeUntilDestroyed(this.destroyRef)),
             );
             if (item) {
+                this.seriesPrefill.set(null);
                 this.notification.success(`Saved "${item.title}"`);
                 await this.router.navigate(['/']);
             }
@@ -517,6 +513,26 @@ export class AddItemPageComponent implements OnInit {
         this.manualDraft.set(null);
         this.manualDraftSource.set(null);
         this.lookupResults.set([]);
+        this.seriesPrefill.set(null);
+        this.lastLookupSummary.set(null);
+    }
+
+    clearSeriesPrefill(): void {
+        this.seriesPrefill.set(null);
+        this.lastLookupSummary.set(null);
+    }
+
+    private mergeSeriesPrefill(draft: ItemForm): ItemForm {
+        const prefill = this.seriesPrefill();
+        if (!prefill) {
+            return draft;
+        }
+
+        return {
+            ...draft,
+            seriesName: draft.seriesName || prefill.seriesName,
+            volumeNumber: draft.volumeNumber ?? prefill.volumeNumber,
+        };
     }
 
     handleQuickAdd(preview: ItemForm): void {
@@ -524,8 +540,11 @@ export class AddItemPageComponent implements OnInit {
             return;
         }
 
+        // Merge series prefill if present
+        const mergedPreview = this.mergeSeriesPrefill({ ...preview });
+
         // handleSave already handles duplicate checking
-        this.handleSave({ ...preview });
+        this.handleSave(mergedPreview);
     }
 
     handleUseForManual(preview: ItemForm): void {
@@ -533,11 +552,22 @@ export class AddItemPageComponent implements OnInit {
             return;
         }
 
-        const source = this.manualDraftSource();
-        this.manualDraft.set({ ...preview });
-        if (source) {
-            this.manualDraftSource.set({ ...source });
+        // Merge series prefill if present
+        const mergedPreview = this.mergeSeriesPrefill({ ...preview });
+
+        const prefill = this.seriesPrefill();
+        this.manualDraft.set(mergedPreview);
+
+        // Update source to reflect series prefill if present
+        if (prefill) {
+            const volumeHint =
+                prefill.volumeNumber !== null ? ` (Vol. ${prefill.volumeNumber})` : '';
+            this.manualDraftSource.set({
+                query: prefill.seriesName,
+                label: `Series${volumeHint}`,
+            });
         }
+
         this.selectedTab.set(AddItemPageComponent.MANUAL_ENTRY_TAB_INDEX);
     }
 

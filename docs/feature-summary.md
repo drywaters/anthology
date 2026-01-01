@@ -5,7 +5,7 @@ This document summarizes application features based on the current API and UI co
 ## Catalog items
 - Track four item types: books, games, movies, and music.
 - Capture core metadata: title, creator, release year, description, ISBN-13/ISBN-10, cover image, notes.
-- Book-specific fields include page count, current page, format, genre, rating, retail price, Google volume id, reading status, and read date.
+- Book-specific fields include page count, current page, format, genre, rating, retail price, Google volume id, reading status, read date, and series metadata (name, volume number, total volumes).
 - Game-specific fields include platform, age group, and player count.
 - Items can optionally include shelf placement metadata for shelf-aware views.
 
@@ -13,6 +13,11 @@ This document summarizes application features based on the current API and UI co
 - List view and grid view for the catalog, with sorting by title for display.
 - Filters by item type, reading status (books), shelf status (on/off shelf), and search query.
 - Alphabet rail with a histogram endpoint for A-Z and non-letter counts.
+
+## Series handling
+- Series view groups book items by series with owned counts, missing volume detection, and completion status.
+- Series detail page lists volumes in order and highlights missing entries.
+- Add Item supports series-prefill flows to quickly add missing volumes.
 
 ## Add and edit items
 - Manual entry form for all supported fields.
@@ -28,10 +33,11 @@ This document summarizes application features based on the current API and UI co
 - Duplicate check endpoint that matches by title, ISBN-10, or ISBN-13.
 - Add Item UI prompts with a duplicate dialog before creating an item.
 
-## CSV import
+## CSV import and export
 - CSV importer accepts bulk uploads up to 5 MB.
 - Import workflow detects duplicates, tracks skipped and failed rows, and enriches missing book data via Google Books when possible.
 - UI provides a downloadable CSV template and an import summary with counts.
+- CSV exporter outputs the catalog as a downloadable CSV for backups or analysis.
 
 ## Shelf management
 - Create shelves with a name, description, and photo (stored as a data URL in the UI flow).

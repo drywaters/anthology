@@ -121,6 +121,29 @@ mat-card {
     color: var(--mat-sys-on-surface-variant);
 }
 
+.series-prefill-notice {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    background: var(--mat-sys-primary-container);
+    color: var(--mat-sys-on-primary-container);
+
+    mat-icon:first-child {
+        flex-shrink: 0;
+    }
+
+    span {
+        flex: 1;
+    }
+
+    button {
+        flex-shrink: 0;
+        margin: -0.5rem -0.5rem -0.5rem 0;
+    }
+}
+
 .manual-entry {
     gap: 1.5rem;
 }

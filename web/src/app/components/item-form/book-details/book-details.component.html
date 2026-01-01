@@ -155,7 +155,30 @@
         <div class="series-grid">
             <mat-form-field appearance="fill" class="series-name-field">
                 <mat-label>Series name</mat-label>
-                <input matInput formControlName="seriesName" maxlength="200" />
+                <input
+                    matInput
+                    formControlName="seriesName"
+                    maxlength="200"
+                    [matAutocomplete]="seriesAutocomplete"
+                />
+                <mat-autocomplete #seriesAutocomplete="matAutocomplete">
+                    <mat-option *ngIf="loadingSeriesNames()" disabled>
+                        Loading series...
+                    </mat-option>
+                    <mat-option *ngFor="let name of filteredSeriesNames()" [value]="name">
+                        {{ name }}
+                    </mat-option>
+                    <mat-option
+                        *ngIf="
+                            !loadingSeriesNames() &&
+                            filteredSeriesNames().length === 0 &&
+                            form.get('seriesName')?.value
+                        "
+                        disabled
+                    >
+                        No matching series (new series will be created)
+                    </mat-option>
+                </mat-autocomplete>
                 <button
                     mat-icon-button
                     matSuffix
