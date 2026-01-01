@@ -43,7 +43,13 @@ func NewShelfHandler(svc *shelves.Service, logger *slog.Logger) *ShelfHandler {
 
 // List returns shelf summaries.
 func (h *ShelfHandler) List(w http.ResponseWriter, r *http.Request) {
-	shelvesList, err := h.svc.ListShelves(r.Context())
+	user := UserFromContext(r.Context())
+	if user == nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	shelvesList, err := h.svc.ListShelves(r.Context(), user.ID)
 	if err != nil {
 		h.logger.Error("list shelves", "error", err)
 		writeError(w, http.StatusInternalServerError, "Unable to list shelves")
@@ -55,13 +61,19 @@ func (h *ShelfHandler) List(w http.ResponseWriter, r *http.Request) {
 
 // Create registers a new shelf with a default layout.
 func (h *ShelfHandler) Create(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+	if user == nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
 	var input shelves.CreateShelfInput
 	if err := decodeJSONBody(w, r, &input); err != nil {
 		writeJSONError(w, err)
 		return
 	}
 
-	created, err := h.svc.CreateShelf(r.Context(), input)
+	created, err := h.svc.CreateShelf(r.Context(), input, user.ID)
 	if err != nil {
 		h.handleShelfError(w, err)
 		return
@@ -72,13 +84,19 @@ func (h *ShelfHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 // Get returns a shelf and its layout.
 func (h *ShelfHandler) Get(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+	if user == nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
 	shelfID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid shelf id")
 		return
 	}
 
-	shelf, err := h.svc.GetShelf(r.Context(), shelfID)
+	shelf, err := h.svc.GetShelf(r.Context(), shelfID, user.ID)
 	if err != nil {
 		h.handleShelfError(w, err)
 		return
@@ -89,6 +107,12 @@ func (h *ShelfHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 // UpdateLayout applies a new layout and returns displaced items.
 func (h *ShelfHandler) UpdateLayout(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+	if user == nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
 	shelfID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid shelf id")
@@ -101,7 +125,7 @@ func (h *ShelfHandler) UpdateLayout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, displaced, err := h.svc.UpdateLayout(r.Context(), shelfID, input)
+	updated, displaced, err := h.svc.UpdateLayout(r.Context(), shelfID, user.ID, input)
 	if err != nil {
 		h.handleShelfError(w, err)
 		return
@@ -115,6 +139,12 @@ func (h *ShelfHandler) UpdateLayout(w http.ResponseWriter, r *http.Request) {
 
 // AssignItem assigns an item to a slot on the shelf.
 func (h *ShelfHandler) AssignItem(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+	if user == nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
 	shelfID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid shelf id")
@@ -143,7 +173,7 @@ func (h *ShelfHandler) AssignItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shelf, err := h.svc.AssignItem(r.Context(), shelfID, slotID, itemID)
+	shelf, err := h.svc.AssignItem(r.Context(), shelfID, slotID, itemID, user.ID)
 	if err != nil {
 		h.handleShelfError(w, err)
 		return
@@ -154,6 +184,12 @@ func (h *ShelfHandler) AssignItem(w http.ResponseWriter, r *http.Request) {
 
 // RemoveItem removes an item placement from a slot.
 func (h *ShelfHandler) RemoveItem(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+	if user == nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
 	shelfID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid shelf id")
@@ -170,7 +206,7 @@ func (h *ShelfHandler) RemoveItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shelf, err := h.svc.RemoveItem(r.Context(), shelfID, slotID, itemID)
+	shelf, err := h.svc.RemoveItem(r.Context(), shelfID, slotID, itemID, user.ID)
 	if err != nil {
 		h.handleShelfError(w, err)
 		return
@@ -181,6 +217,12 @@ func (h *ShelfHandler) RemoveItem(w http.ResponseWriter, r *http.Request) {
 
 // ScanAndAssign scans an ISBN and assigns the item to a slot.
 func (h *ShelfHandler) ScanAndAssign(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+	if user == nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
 	shelfID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid shelf id")
@@ -204,7 +246,7 @@ func (h *ShelfHandler) ScanAndAssign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.svc.ScanAndAssign(r.Context(), shelfID, slotID, payload.ISBN)
+	result, err := h.svc.ScanAndAssign(r.Context(), shelfID, slotID, payload.ISBN, user.ID)
 	if err != nil {
 		h.handleShelfError(w, err)
 		return

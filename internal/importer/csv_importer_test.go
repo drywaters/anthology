@@ -14,6 +14,9 @@ import (
 	"anthology/internal/items"
 )
 
+// testOwnerID is a fixed UUID for tests
+var testOwnerID = uuid.MustParse("00000000-0000-0000-0000-000000000001")
+
 type stubStore struct {
 	items         []items.Item
 	createErr     error
@@ -51,12 +54,12 @@ func (s *stubCatalog) Lookup(ctx context.Context, query string, category catalog
 }
 
 func TestCSVImporter_ImportCreatesItemsAndSkipsDuplicates(t *testing.T) {
-	store := &stubStore{items: []items.Item{{Title: "Existing Title"}}}
+	store := &stubStore{items: []items.Item{{Title: "Existing Title", OwnerID: testOwnerID}}}
 	importer := NewCSVImporter(store, &stubCatalog{})
 	csv := "title,creator,itemType,releaseYear,pageCount,isbn13,isbn10,description,coverImage,notes\n" +
 		"New Book,Author,book,2020,320,9780000000001,0000000001,Desc,,Note\n" +
 		"Existing Title,Someone,book,,,,,,,,\n"
-	summary, err := importer.Import(context.Background(), bytes.NewBufferString(csv))
+	summary, err := importer.Import(context.Background(), bytes.NewBufferString(csv), testOwnerID)
 	if err != nil {
 		t.Fatalf("import failed: %v", err)
 	}
@@ -79,7 +82,7 @@ func TestCSVImporter_PopulatesBookFromLookup(t *testing.T) {
 	importer := NewCSVImporter(store, catalog)
 	csv := "title,creator,itemType,releaseYear,pageCount,isbn13,isbn10,description,coverImage,notes\n" +
 		",,book,, ,9780000000000,,,,,\n"
-	summary, err := importer.Import(context.Background(), bytes.NewBufferString(csv))
+	summary, err := importer.Import(context.Background(), bytes.NewBufferString(csv), testOwnerID)
 	if err != nil {
 		t.Fatalf("import failed: %v", err)
 	}
@@ -93,7 +96,7 @@ func TestCSVImporter_ReturnsRowErrors(t *testing.T) {
 	importer := NewCSVImporter(store, &stubCatalog{})
 	csv := "title,creator,itemType,releaseYear,pageCount,isbn13,isbn10,description,coverImage,notes\n" +
 		"Bad Year,Author,book,year,100,,,,,\n"
-	summary, err := importer.Import(context.Background(), bytes.NewBufferString(csv))
+	summary, err := importer.Import(context.Background(), bytes.NewBufferString(csv), testOwnerID)
 	if err != nil {
 		t.Fatalf("import failed: %v", err)
 	}
@@ -106,7 +109,7 @@ func TestCSVImporter_MissingColumns(t *testing.T) {
 	store := &stubStore{}
 	importer := NewCSVImporter(store, &stubCatalog{})
 	csv := "title,itemType\nTest,book\n"
-	_, err := importer.Import(context.Background(), strings.NewReader(csv))
+	_, err := importer.Import(context.Background(), strings.NewReader(csv), testOwnerID)
 	if err == nil {
 		t.Fatal("expected error for missing columns")
 	}
@@ -125,7 +128,7 @@ func TestCSVImporter_RejectsOversizedUploadBeforeWriting(t *testing.T) {
 		fmt.Fprintf(&builder, "Title %d,Creator %d,book,2024,100,,,,,\n", idx, idx)
 	}
 
-	_, err := importer.Import(context.Background(), strings.NewReader(builder.String()))
+	_, err := importer.Import(context.Background(), strings.NewReader(builder.String()), testOwnerID)
 	if err == nil {
 		t.Fatal("expected error for oversized CSV")
 	}
@@ -140,7 +143,7 @@ func TestCSVImporter_ImportsExtendedFields(t *testing.T) {
 	csv := "title,creator,itemType,releaseYear,pageCount,currentPage,isbn13,isbn10,description,coverImage,format,genre,rating,retailPriceUsd,googleVolumeId,platform,ageGroup,playerCount,readingStatus,readAt,notes,createdAt,updatedAt\n" +
 		"Exported Book,Author,book,2020,300,42,9780000000001,0000000001,Desc,https://example.com/cover.jpg,HARDCOVER,FICTION,8,19.99,vol123,,,,read,2024-01-10T00:00:00Z,Note,2024-01-01T00:00:00Z,2024-01-02T00:00:00Z\n"
 
-	summary, err := importer.Import(context.Background(), bytes.NewBufferString(csv))
+	summary, err := importer.Import(context.Background(), bytes.NewBufferString(csv), testOwnerID)
 	if err != nil {
 		t.Fatalf("import failed: %v", err)
 	}
@@ -152,6 +155,9 @@ func TestCSVImporter_ImportsExtendedFields(t *testing.T) {
 	}
 
 	input := store.createdInputs[0]
+	if input.OwnerID != testOwnerID {
+		t.Fatalf("expected ownerID to be %s, got %s", testOwnerID, input.OwnerID)
+	}
 	if input.CurrentPage == nil || *input.CurrentPage != 42 {
 		t.Fatalf("expected currentPage to be 42")
 	}

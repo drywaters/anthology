@@ -43,6 +43,7 @@ type ScanAndAssignResult struct {
 // Shelf represents a physical shelf image and metadata.
 type Shelf struct {
 	ID          uuid.UUID `db:"id" json:"id"`
+	OwnerID     uuid.UUID `db:"owner_id" json:"-"`
 	Name        string    `db:"name" json:"name"`
 	Description string    `db:"description" json:"description"`
 	PhotoURL    string    `db:"photo_url" json:"photoUrl"`
@@ -134,11 +135,11 @@ type LayoutSlotInput struct {
 // Repository defines persistence for shelves and layouts.
 type Repository interface {
 	CreateShelf(ctx context.Context, shelf Shelf, rows []ShelfRow, columns []ShelfColumn, slots []ShelfSlot) (ShelfWithLayout, error)
-	ListShelves(ctx context.Context) ([]ShelfSummary, error)
-	GetShelf(ctx context.Context, shelfID uuid.UUID) (ShelfWithLayout, error)
-	SaveLayout(ctx context.Context, shelfID uuid.UUID, rows []ShelfRow, columns []ShelfColumn, slots []ShelfSlot, removedSlotIDs []uuid.UUID) error
-	AssignItemToSlot(ctx context.Context, shelfID uuid.UUID, slotID uuid.UUID, itemID uuid.UUID) (ItemPlacement, error)
-	RemoveItemFromSlot(ctx context.Context, shelfID uuid.UUID, slotID uuid.UUID, itemID uuid.UUID) error
-	ListPlacements(ctx context.Context, shelfID uuid.UUID) ([]ItemPlacement, error)
-	UpsertUnplaced(ctx context.Context, shelfID uuid.UUID, itemID uuid.UUID) (ItemPlacement, error)
+	ListShelves(ctx context.Context, ownerID uuid.UUID) ([]ShelfSummary, error)
+	GetShelf(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID) (ShelfWithLayout, error)
+	SaveLayout(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID, rows []ShelfRow, columns []ShelfColumn, slots []ShelfSlot, removedSlotIDs []uuid.UUID) error
+	AssignItemToSlot(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID, slotID uuid.UUID, itemID uuid.UUID) (ItemPlacement, error)
+	RemoveItemFromSlot(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID, slotID uuid.UUID, itemID uuid.UUID) error
+	ListPlacements(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID) ([]ItemPlacement, error)
+	UpsertUnplaced(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID, itemID uuid.UUID) (ItemPlacement, error)
 }

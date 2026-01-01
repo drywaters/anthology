@@ -17,9 +17,13 @@ import (
 
 	"github.com/google/uuid"
 
+	"anthology/internal/auth"
 	"anthology/internal/importer"
 	"anthology/internal/items"
 )
+
+// testOwnerID is a fixed UUID for tests
+var testOwnerID = uuid.MustParse("00000000-0000-0000-0000-000000000001")
 
 func TestDecodeJSONBody_AllowsPayloadWithinLimit(t *testing.T) {
 	body := strings.NewReader(`{"name":"anthology"}`)
@@ -67,6 +71,7 @@ func TestItemHandlerImportCSVSuccess(t *testing.T) {
 		"Title A,Creator,book,2020,300,9780000000001,0000000001,Desc,,Notes",
 		"Title B,Director,movie,,,,,,,",
 	}, "\n"))
+	req = reqWithUser(req)
 	rec := httptest.NewRecorder()
 
 	handler.ImportCSV(rec, req)
@@ -95,6 +100,7 @@ func TestItemHandlerImportCSVValidationError(t *testing.T) {
 	importerSvc := importer.NewCSVImporter(store, nil)
 	handler := NewItemHandler(nil, nil, importerSvc, logger)
 	req := newMultipartCSVRequest(t, "title,itemType\nbad,csv\n")
+	req = reqWithUser(req)
 	rec := httptest.NewRecorder()
 
 	handler.ImportCSV(rec, req)
@@ -107,6 +113,7 @@ func TestItemHandlerImportCSVValidationError(t *testing.T) {
 func TestItemHandlerImportCSVUnavailable(t *testing.T) {
 	handler := NewItemHandler(nil, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	req := newMultipartCSVRequest(t, "title\nA\n")
+	req = reqWithUser(req)
 	rec := httptest.NewRecorder()
 
 	handler.ImportCSV(rec, req)
@@ -123,6 +130,7 @@ func TestItemHandlerExportCSV(t *testing.T) {
 		Title:     "Old Title",
 		Creator:   "Old Creator",
 		ItemType:  items.ItemTypeBook,
+		OwnerID:   testOwnerID,
 		CreatedAt: now.Add(-24 * time.Hour),
 		UpdatedAt: now.Add(-24 * time.Hour),
 	}
@@ -131,6 +139,7 @@ func TestItemHandlerExportCSV(t *testing.T) {
 		Title:     "New Title",
 		Creator:   "New Creator",
 		ItemType:  items.ItemTypeBook,
+		OwnerID:   testOwnerID,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -145,6 +154,7 @@ func TestItemHandlerExportCSV(t *testing.T) {
 		"/api/items/export?type=book&status=reading&shelf_status=on&limit=25",
 		nil,
 	)
+	req = reqWithUser(req)
 	rec := httptest.NewRecorder()
 
 	handler.ExportCSV(rec, req)
@@ -209,6 +219,16 @@ func newMultipartCSVRequest(t *testing.T, csv string) *http.Request {
 	return req
 }
 
+// reqWithUser adds test user context to a request
+func reqWithUser(req *http.Request) *http.Request {
+	user := &auth.User{
+		ID:    testOwnerID,
+		Email: "test@example.com",
+	}
+	ctx := context.WithValue(req.Context(), userContextKey, user)
+	return req.WithContext(ctx)
+}
+
 type csvStoreStub struct {
 	items []items.Item
 }
@@ -234,7 +254,7 @@ func (s *exportRepoStub) Create(ctx context.Context, item items.Item) (items.Ite
 	return item, nil
 }
 
-func (s *exportRepoStub) Get(ctx context.Context, id uuid.UUID) (items.Item, error) {
+func (s *exportRepoStub) Get(ctx context.Context, id uuid.UUID, ownerID uuid.UUID) (items.Item, error) {
 	return items.Item{}, items.ErrNotFound
 }
 
@@ -249,7 +269,7 @@ func (s *exportRepoStub) Update(ctx context.Context, item items.Item) (items.Ite
 	return item, nil
 }
 
-func (s *exportRepoStub) Delete(ctx context.Context, id uuid.UUID) error {
+func (s *exportRepoStub) Delete(ctx context.Context, id uuid.UUID, ownerID uuid.UUID) error {
 	return nil
 }
 
@@ -257,14 +277,14 @@ func (s *exportRepoStub) Histogram(ctx context.Context, opts items.HistogramOpti
 	return items.LetterHistogram{}, nil
 }
 
-func (s *exportRepoStub) FindDuplicates(ctx context.Context, input items.DuplicateCheckInput) ([]items.DuplicateMatch, error) {
+func (s *exportRepoStub) FindDuplicates(ctx context.Context, input items.DuplicateCheckInput, ownerID uuid.UUID) ([]items.DuplicateMatch, error) {
 	return nil, nil
 }
 
-func (s *exportRepoStub) ListSeries(ctx context.Context, opts items.SeriesRepoListOptions) ([]items.SeriesSummary, error) {
+func (s *exportRepoStub) ListSeries(ctx context.Context, opts items.SeriesRepoListOptions, ownerID uuid.UUID) ([]items.SeriesSummary, error) {
 	return nil, nil
 }
 
-func (s *exportRepoStub) GetSeriesByName(ctx context.Context, name string) (items.SeriesSummary, error) {
+func (s *exportRepoStub) GetSeriesByName(ctx context.Context, name string, ownerID uuid.UUID) (items.SeriesSummary, error) {
 	return items.SeriesSummary{}, items.ErrNotFound
 }

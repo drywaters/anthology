@@ -39,15 +39,19 @@ func (m *inMemoryRepository) CreateShelf(ctx context.Context, shelf Shelf, rows 
 	m.slots[shelf.ID] = slices.Clone(slots)
 	m.placements[shelf.ID] = make(map[uuid.UUID]ItemPlacement)
 
-	return m.buildLayout(ctx, shelf.ID)
+	return m.buildLayout(ctx, shelf.ID, shelf.OwnerID)
 }
 
-func (m *inMemoryRepository) ListShelves(ctx context.Context) ([]ShelfSummary, error) {
+func (m *inMemoryRepository) ListShelves(ctx context.Context, ownerID uuid.UUID) ([]ShelfSummary, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	summaries := make([]ShelfSummary, 0, len(m.shelves))
 	for id, shelf := range m.shelves {
+		// Filter by owner_id
+		if shelf.OwnerID != ownerID {
+			continue
+		}
 		placementMap := m.placements[id]
 		placed := 0
 		for _, placement := range placementMap {
@@ -76,22 +80,32 @@ func (m *inMemoryRepository) ListShelves(ctx context.Context) ([]ShelfSummary, e
 	return summaries, nil
 }
 
-func (m *inMemoryRepository) GetShelf(ctx context.Context, shelfID uuid.UUID) (ShelfWithLayout, error) {
+func (m *inMemoryRepository) GetShelf(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID) (ShelfWithLayout, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	if _, ok := m.shelves[shelfID]; !ok {
+	shelf, ok := m.shelves[shelfID]
+	if !ok {
+		return ShelfWithLayout{}, ErrNotFound
+	}
+	// Check owner matches (return 404 to prevent enumeration attacks)
+	if shelf.OwnerID != ownerID {
 		return ShelfWithLayout{}, ErrNotFound
 	}
 
-	return m.buildLayout(ctx, shelfID)
+	return m.buildLayout(ctx, shelfID, ownerID)
 }
 
-func (m *inMemoryRepository) SaveLayout(ctx context.Context, shelfID uuid.UUID, rows []ShelfRow, columns []ShelfColumn, slots []ShelfSlot, removedSlotIDs []uuid.UUID) error {
+func (m *inMemoryRepository) SaveLayout(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID, rows []ShelfRow, columns []ShelfColumn, slots []ShelfSlot, removedSlotIDs []uuid.UUID) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if _, ok := m.shelves[shelfID]; !ok {
+	shelf, ok := m.shelves[shelfID]
+	if !ok {
+		return ErrNotFound
+	}
+	// Check owner matches (return 404 to prevent enumeration attacks)
+	if shelf.OwnerID != ownerID {
 		return ErrNotFound
 	}
 
@@ -118,11 +132,16 @@ func (m *inMemoryRepository) SaveLayout(ctx context.Context, shelfID uuid.UUID, 
 	return nil
 }
 
-func (m *inMemoryRepository) AssignItemToSlot(ctx context.Context, shelfID uuid.UUID, slotID uuid.UUID, itemID uuid.UUID) (ItemPlacement, error) {
+func (m *inMemoryRepository) AssignItemToSlot(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID, slotID uuid.UUID, itemID uuid.UUID) (ItemPlacement, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if _, ok := m.shelves[shelfID]; !ok {
+	shelf, ok := m.shelves[shelfID]
+	if !ok {
+		return ItemPlacement{}, ErrNotFound
+	}
+	// Check owner matches (return 404 to prevent enumeration attacks)
+	if shelf.OwnerID != ownerID {
 		return ItemPlacement{}, ErrNotFound
 	}
 
@@ -159,11 +178,16 @@ func (m *inMemoryRepository) AssignItemToSlot(ctx context.Context, shelfID uuid.
 	return placement, nil
 }
 
-func (m *inMemoryRepository) RemoveItemFromSlot(ctx context.Context, shelfID uuid.UUID, slotID uuid.UUID, itemID uuid.UUID) error {
+func (m *inMemoryRepository) RemoveItemFromSlot(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID, slotID uuid.UUID, itemID uuid.UUID) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if _, ok := m.shelves[shelfID]; !ok {
+	shelf, ok := m.shelves[shelfID]
+	if !ok {
+		return ErrNotFound
+	}
+	// Check owner matches (return 404 to prevent enumeration attacks)
+	if shelf.OwnerID != ownerID {
 		return ErrNotFound
 	}
 
@@ -181,11 +205,16 @@ func (m *inMemoryRepository) RemoveItemFromSlot(ctx context.Context, shelfID uui
 	return nil
 }
 
-func (m *inMemoryRepository) ListPlacements(ctx context.Context, shelfID uuid.UUID) ([]ItemPlacement, error) {
+func (m *inMemoryRepository) ListPlacements(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID) ([]ItemPlacement, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	if _, ok := m.shelves[shelfID]; !ok {
+	shelf, ok := m.shelves[shelfID]
+	if !ok {
+		return nil, ErrNotFound
+	}
+	// Check owner matches (return 404 to prevent enumeration attacks)
+	if shelf.OwnerID != ownerID {
 		return nil, ErrNotFound
 	}
 
@@ -196,11 +225,16 @@ func (m *inMemoryRepository) ListPlacements(ctx context.Context, shelfID uuid.UU
 	return placements, nil
 }
 
-func (m *inMemoryRepository) UpsertUnplaced(ctx context.Context, shelfID uuid.UUID, itemID uuid.UUID) (ItemPlacement, error) {
+func (m *inMemoryRepository) UpsertUnplaced(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID, itemID uuid.UUID) (ItemPlacement, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if _, ok := m.shelves[shelfID]; !ok {
+	shelf, ok := m.shelves[shelfID]
+	if !ok {
+		return ItemPlacement{}, ErrNotFound
+	}
+	// Check owner matches (return 404 to prevent enumeration attacks)
+	if shelf.OwnerID != ownerID {
 		return ItemPlacement{}, ErrNotFound
 	}
 
@@ -221,7 +255,7 @@ func (m *inMemoryRepository) UpsertUnplaced(ctx context.Context, shelfID uuid.UU
 	return placement, nil
 }
 
-func (m *inMemoryRepository) buildLayout(ctx context.Context, shelfID uuid.UUID) (ShelfWithLayout, error) {
+func (m *inMemoryRepository) buildLayout(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID) (ShelfWithLayout, error) {
 	shelf := m.shelves[shelfID]
 	rows := slices.Clone(m.rows[shelfID])
 	cols := slices.Clone(m.columns[shelfID])

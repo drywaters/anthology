@@ -23,6 +23,7 @@ func NewPostgresRepository(db *sqlx.DB) *PostgresRepository {
 const baseSelect = `
 SELECT
     i.id,
+    i.owner_id,
     i.title,
     i.creator,
     i.item_type,
@@ -100,20 +101,20 @@ func (row itemRow) toItem() Item {
 
 // Create inserts a new row and returns the stored representation.
 func (r *PostgresRepository) Create(ctx context.Context, item Item) (Item, error) {
-	insert := `INSERT INTO items (id, title, creator, item_type, release_year, page_count, current_page, isbn_13, isbn_10, description, cover_image, format, genre, rating, retail_price_usd, google_volume_id, platform, age_group, player_count, reading_status, read_at, notes, series_name, volume_number, total_volumes, created_at, updated_at)
-VALUES (:id, :title, :creator, :item_type, :release_year, :page_count, :current_page, :isbn_13, :isbn_10, :description, :cover_image, :format, :genre, :rating, :retail_price_usd, :google_volume_id, :platform, :age_group, :player_count, :reading_status, :read_at, :notes, :series_name, :volume_number, :total_volumes, :created_at, :updated_at)`
+	insert := `INSERT INTO items (id, owner_id, title, creator, item_type, release_year, page_count, current_page, isbn_13, isbn_10, description, cover_image, format, genre, rating, retail_price_usd, google_volume_id, platform, age_group, player_count, reading_status, read_at, notes, series_name, volume_number, total_volumes, created_at, updated_at)
+VALUES (:id, :owner_id, :title, :creator, :item_type, :release_year, :page_count, :current_page, :isbn_13, :isbn_10, :description, :cover_image, :format, :genre, :rating, :retail_price_usd, :google_volume_id, :platform, :age_group, :player_count, :reading_status, :read_at, :notes, :series_name, :volume_number, :total_volumes, :created_at, :updated_at)`
 
 	if _, err := r.db.NamedExecContext(ctx, insert, item); err != nil {
 		return Item{}, fmt.Errorf("insert item: %w", err)
 	}
 
-	return r.Get(ctx, item.ID)
+	return r.Get(ctx, item.ID, item.OwnerID)
 }
 
-// Get retrieves a row by primary key.
-func (r *PostgresRepository) Get(ctx context.Context, id uuid.UUID) (Item, error) {
+// Get retrieves a row by primary key and owner.
+func (r *PostgresRepository) Get(ctx context.Context, id uuid.UUID, ownerID uuid.UUID) (Item, error) {
 	var row itemRow
-	if err := r.db.GetContext(ctx, &row, baseSelect+" WHERE i.id = $1", id); err != nil {
+	if err := r.db.GetContext(ctx, &row, baseSelect+" WHERE i.id = $1 AND i.owner_id = $2", id, ownerID); err != nil {
 		if err == sql.ErrNoRows {
 			return Item{}, ErrNotFound
 		}
@@ -127,6 +128,10 @@ func (r *PostgresRepository) List(ctx context.Context, opts ListOptions) ([]Item
 	query := baseSelect
 	clauses := []string{}
 	args := []any{}
+
+	// Always filter by owner_id first
+	clauses = append(clauses, fmt.Sprintf("i.owner_id = $%d", len(args)+1))
+	args = append(args, opts.OwnerID)
 
 	if opts.ItemType != nil {
 		clauses = append(clauses, fmt.Sprintf("i.item_type = $%d", len(args)+1))
@@ -230,7 +235,7 @@ SET title = :title,
     volume_number = :volume_number,
     total_volumes = :total_volumes,
     updated_at = :updated_at
-WHERE id = :id`
+WHERE id = :id AND owner_id = :owner_id`
 
 	res, err := r.db.NamedExecContext(ctx, query, item)
 	if err != nil {
@@ -241,12 +246,12 @@ WHERE id = :id`
 		return Item{}, ErrNotFound
 	}
 
-	return r.Get(ctx, item.ID)
+	return r.Get(ctx, item.ID, item.OwnerID)
 }
 
 // Delete removes an item.
-func (r *PostgresRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	res, err := r.db.ExecContext(ctx, "DELETE FROM items WHERE id = $1", id)
+func (r *PostgresRepository) Delete(ctx context.Context, id uuid.UUID, ownerID uuid.UUID) error {
+	res, err := r.db.ExecContext(ctx, "DELETE FROM items WHERE id = $1 AND owner_id = $2", id, ownerID)
 	if err != nil {
 		return fmt.Errorf("delete item: %w", err)
 	}
@@ -274,6 +279,10 @@ FROM items`
 
 	clauses := []string{}
 	args := []any{}
+
+	// Always filter by owner_id first
+	clauses = append(clauses, fmt.Sprintf("owner_id = $%d", len(args)+1))
+	args = append(args, opts.OwnerID)
 
 	if opts.ItemType != nil {
 		clauses = append(clauses, fmt.Sprintf("item_type = $%d", len(args)+1))
@@ -324,7 +333,7 @@ FROM items`
 // FindDuplicates searches for items matching the given title or identifiers.
 // Title matching is case-insensitive. Identifier matching normalizes by stripping non-digits.
 // Returns up to 5 matches.
-func (r *PostgresRepository) FindDuplicates(ctx context.Context, input DuplicateCheckInput) ([]DuplicateMatch, error) {
+func (r *PostgresRepository) FindDuplicates(ctx context.Context, input DuplicateCheckInput, ownerID uuid.UUID) ([]DuplicateMatch, error) {
 	normalizedTitle := NormalizeTitle(input.Title)
 	normalizedISBN13 := NormalizeIdentifier(input.ISBN13)
 	normalizedISBN10 := NormalizeIdentifier(input.ISBN10)
@@ -352,7 +361,11 @@ func (r *PostgresRepository) FindDuplicates(ctx context.Context, input Duplicate
 		return []DuplicateMatch{}, nil
 	}
 
-	query := baseSelect + " WHERE (" + strings.Join(clauses, " OR ") + ") ORDER BY i.updated_at DESC LIMIT 5"
+	// Add owner_id filter
+	ownerClause := fmt.Sprintf("i.owner_id = $%d", len(args)+1)
+	args = append(args, ownerID)
+
+	query := baseSelect + " WHERE " + ownerClause + " AND (" + strings.Join(clauses, " OR ") + ") ORDER BY i.updated_at DESC LIMIT 5"
 
 	rows := []itemRow{}
 	if err := r.db.SelectContext(ctx, &rows, query, args...); err != nil {
@@ -369,11 +382,11 @@ func (r *PostgresRepository) FindDuplicates(ctx context.Context, input Duplicate
 }
 
 // ListSeries returns all unique series with their items grouped.
-func (r *PostgresRepository) ListSeries(ctx context.Context, opts SeriesRepoListOptions) ([]SeriesSummary, error) {
-	query := baseSelect + ` WHERE i.series_name != '' AND i.item_type = 'book' ORDER BY i.series_name, i.volume_number NULLS LAST, i.title`
+func (r *PostgresRepository) ListSeries(ctx context.Context, opts SeriesRepoListOptions, ownerID uuid.UUID) ([]SeriesSummary, error) {
+	query := baseSelect + ` WHERE i.owner_id = $1 AND i.series_name != '' AND i.item_type = 'book' ORDER BY i.series_name, i.volume_number NULLS LAST, i.title`
 
 	rows := []itemRow{}
-	if err := r.db.SelectContext(ctx, &rows, query); err != nil {
+	if err := r.db.SelectContext(ctx, &rows, query, ownerID); err != nil {
 		return nil, fmt.Errorf("list series: %w", err)
 	}
 
@@ -418,11 +431,11 @@ func (r *PostgresRepository) ListSeries(ctx context.Context, opts SeriesRepoList
 }
 
 // GetSeriesByName returns detailed info about a single series.
-func (r *PostgresRepository) GetSeriesByName(ctx context.Context, name string) (SeriesSummary, error) {
-	query := baseSelect + ` WHERE i.series_name = $1 AND i.item_type = 'book' ORDER BY i.volume_number NULLS LAST, i.title`
+func (r *PostgresRepository) GetSeriesByName(ctx context.Context, name string, ownerID uuid.UUID) (SeriesSummary, error) {
+	query := baseSelect + ` WHERE i.owner_id = $1 AND i.series_name = $2 AND i.item_type = 'book' ORDER BY i.volume_number NULLS LAST, i.title`
 
 	rows := []itemRow{}
-	if err := r.db.SelectContext(ctx, &rows, query, name); err != nil {
+	if err := r.db.SelectContext(ctx, &rows, query, ownerID, name); err != nil {
 		return SeriesSummary{}, fmt.Errorf("get series: %w", err)
 	}
 

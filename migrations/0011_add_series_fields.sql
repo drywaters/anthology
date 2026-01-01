@@ -10,3 +10,4 @@ CREATE INDEX IF NOT EXISTS idx_items_series_name ON items (series_name) WHERE se
 -- Composite index for series + volume ordering
 CREATE INDEX IF NOT EXISTS idx_items_series_volume ON items (series_name, volume_number) WHERE series_name != '';
 
+

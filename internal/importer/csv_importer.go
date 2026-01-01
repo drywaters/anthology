@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"anthology/internal/catalog"
 	"anthology/internal/items"
 )
@@ -77,12 +79,12 @@ func NewCSVImporter(items ItemStore, catalog CatalogLookup) *CSVImporter {
 	return &CSVImporter{items: items, catalog: catalog}
 }
 
-func (i *CSVImporter) Import(ctx context.Context, reader io.Reader) (Summary, error) {
+func (i *CSVImporter) Import(ctx context.Context, reader io.Reader, ownerID uuid.UUID) (Summary, error) {
 	if i.items == nil {
 		return Summary{}, fmt.Errorf("%w: item store is not configured", ErrInvalidCSV)
 	}
 
-	existing, err := i.items.List(ctx, items.ListOptions{})
+	existing, err := i.items.List(ctx, items.ListOptions{OwnerID: ownerID})
 	if err != nil {
 		return Summary{}, err
 	}
@@ -144,7 +146,7 @@ func (i *CSVImporter) Import(ctx context.Context, reader io.Reader) (Summary, er
 
 	for _, row := range rows {
 		values := row.values
-		input, meta, rowErr := i.buildInput(ctx, values)
+		input, meta, rowErr := i.buildInput(ctx, values, ownerID)
 		if rowErr != nil {
 			if len(summary.Failed) < MaxFailedRecords {
 				summary.Failed = append(summary.Failed, FailedRecord{
@@ -199,7 +201,7 @@ type rowMeta struct {
 	identifier string
 }
 
-func (i *CSVImporter) buildInput(ctx context.Context, values map[string]string) (items.CreateItemInput, rowMeta, error) {
+func (i *CSVImporter) buildInput(ctx context.Context, values map[string]string, ownerID uuid.UUID) (items.CreateItemInput, rowMeta, error) {
 	meta := rowMeta{}
 
 	rawType := strings.ToLower(values["itemtype"])
@@ -312,6 +314,7 @@ func (i *CSVImporter) buildInput(ctx context.Context, values map[string]string) 
 	}
 
 	return items.CreateItemInput{
+		OwnerID:        ownerID,
 		Title:          title,
 		Creator:        creator,
 		ItemType:       itemType,
