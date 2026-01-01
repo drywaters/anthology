@@ -27,23 +27,6 @@
             </mat-select>
         </mat-form-field>
 
-        <button
-            mat-stroked-button
-            type="button"
-            class="export-button"
-            [disabled]="exportBusy"
-            (click)="onExport()"
-            aria-label="Export library to CSV"
-        >
-            <mat-icon *ngIf="!exportBusy" aria-hidden="true">file_download</mat-icon>
-            <mat-progress-spinner
-                *ngIf="exportBusy"
-                diameter="18"
-                mode="indeterminate"
-            ></mat-progress-spinner>
-            <span>Export</span>
-        </button>
-
         <div class="view-toggle" role="group" aria-label="Change view">
             <button
                 mat-icon-button

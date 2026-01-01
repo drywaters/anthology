@@ -38,7 +38,7 @@ Anthology is a two-tier catalogue: a Go 1.24 API (under `cmd/api` + `internal/`)
 - Backend tests live next to their code (`*_test.go`); cover validation, repository behaviour, importer edge cases, catalog lookups, shelf layout validation, and displacement/placement flows.
 - Frontend specs (`*.spec.ts`) mirror component paths, covering search flow, manual entry, CSV imports, and UI copy.
 - Run `go test ./...`, `npm test -- --watch=false`, and `npm run lint` before every PR. Hook `githooks/pre-commit` into `.git/hooks` to enforce `golangci-lint run ./...` plus `npm run lint` unless `SKIP_PRECOMMIT_LINT=1` is set.
-- Always validate UI work in the running Angular app via the Playwright MCP: grab at least one screenshot (include scrolled states if relevant) from `http://localhost:4200`, and log any console or network errors.
+- Validate UI work in the running Angular app when feasible (for example, if local auth is configured): grab at least one screenshot (include scrolled states if relevant) from `http://localhost:4200`, and log any console or network errors.
 
 ## Commit & Pull Request Guidelines
 - Keep commits short, imperative, and scoped (e.g., “Add Google OAuth login”). Reference issues in the body when helpful.

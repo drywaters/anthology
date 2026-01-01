@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"io"
 	"mime/multipart"
@@ -10,6 +11,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"log/slog"
 
@@ -114,6 +116,82 @@ func TestItemHandlerImportCSVUnavailable(t *testing.T) {
 	}
 }
 
+func TestItemHandlerExportCSV(t *testing.T) {
+	now := time.Date(2024, 1, 2, 3, 4, 5, 0, time.UTC)
+	itemOld := items.Item{
+		ID:        uuid.New(),
+		Title:     "Old Title",
+		Creator:   "Old Creator",
+		ItemType:  items.ItemTypeBook,
+		CreatedAt: now.Add(-24 * time.Hour),
+		UpdatedAt: now.Add(-24 * time.Hour),
+	}
+	itemNew := items.Item{
+		ID:        uuid.New(),
+		Title:     "New Title",
+		Creator:   "New Creator",
+		ItemType:  items.ItemTypeBook,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	repo := &exportRepoStub{
+		items: []items.Item{itemOld, itemNew},
+	}
+	service := items.NewService(repo)
+	handler := NewItemHandler(service, nil, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/api/items/export?type=book&status=reading&shelf_status=on&limit=25",
+		nil,
+	)
+	rec := httptest.NewRecorder()
+
+	handler.ExportCSV(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+
+	if repo.lastOpts.ItemType == nil || *repo.lastOpts.ItemType != items.ItemTypeBook {
+		t.Fatalf("expected item type filter to be book, got %+v", repo.lastOpts.ItemType)
+	}
+	if repo.lastOpts.ReadingStatus == nil || *repo.lastOpts.ReadingStatus != items.BookStatusReading {
+		t.Fatalf("expected reading status filter to be reading, got %+v", repo.lastOpts.ReadingStatus)
+	}
+	if repo.lastOpts.ShelfStatus == nil || *repo.lastOpts.ShelfStatus != items.ShelfStatusOn {
+		t.Fatalf("expected shelf status filter to be on, got %+v", repo.lastOpts.ShelfStatus)
+	}
+	if repo.lastOpts.Limit != nil {
+		t.Fatalf("expected export to remove limit filter, got %+v", *repo.lastOpts.Limit)
+	}
+
+	if contentType := rec.Header().Get("Content-Type"); contentType != "text/csv; charset=utf-8" {
+		t.Fatalf("expected content type to be csv, got %q", contentType)
+	}
+
+	contentDisposition := rec.Header().Get("Content-Disposition")
+	if !strings.HasPrefix(contentDisposition, "attachment; filename=\"anthology-export-") ||
+		!strings.HasSuffix(contentDisposition, ".csv\"") {
+		t.Fatalf("unexpected content disposition: %q", contentDisposition)
+	}
+
+	reader := csv.NewReader(strings.NewReader(rec.Body.String()))
+	rows, err := reader.ReadAll()
+	if err != nil {
+		t.Fatalf("failed to read csv: %v", err)
+	}
+	if len(rows) != 3 {
+		t.Fatalf("expected 3 rows, got %d", len(rows))
+	}
+	if rows[0][0] != "schemaVersion" {
+		t.Fatalf("expected header row, got %v", rows[0])
+	}
+	if rows[1][1] != "New Title" {
+		t.Fatalf("expected newest item first, got %v", rows[1])
+	}
+}
+
 func newMultipartCSVRequest(t *testing.T, csv string) *http.Request {
 	t.Helper()
 	body := &bytes.Buffer{}
@@ -145,4 +223,48 @@ func (s *csvStoreStub) List(ctx context.Context, opts items.ListOptions) ([]item
 	itemsCopy := make([]items.Item, len(s.items))
 	copy(itemsCopy, s.items)
 	return itemsCopy, nil
+}
+
+type exportRepoStub struct {
+	items    []items.Item
+	lastOpts items.ListOptions
+}
+
+func (s *exportRepoStub) Create(ctx context.Context, item items.Item) (items.Item, error) {
+	return item, nil
+}
+
+func (s *exportRepoStub) Get(ctx context.Context, id uuid.UUID) (items.Item, error) {
+	return items.Item{}, items.ErrNotFound
+}
+
+func (s *exportRepoStub) List(ctx context.Context, opts items.ListOptions) ([]items.Item, error) {
+	s.lastOpts = opts
+	itemsCopy := make([]items.Item, len(s.items))
+	copy(itemsCopy, s.items)
+	return itemsCopy, nil
+}
+
+func (s *exportRepoStub) Update(ctx context.Context, item items.Item) (items.Item, error) {
+	return item, nil
+}
+
+func (s *exportRepoStub) Delete(ctx context.Context, id uuid.UUID) error {
+	return nil
+}
+
+func (s *exportRepoStub) Histogram(ctx context.Context, opts items.HistogramOptions) (items.LetterHistogram, error) {
+	return items.LetterHistogram{}, nil
+}
+
+func (s *exportRepoStub) FindDuplicates(ctx context.Context, input items.DuplicateCheckInput) ([]items.DuplicateMatch, error) {
+	return nil, nil
+}
+
+func (s *exportRepoStub) ListSeries(ctx context.Context, opts items.SeriesRepoListOptions) ([]items.SeriesSummary, error) {
+	return nil, nil
+}
+
+func (s *exportRepoStub) GetSeriesByName(ctx context.Context, name string) (items.SeriesSummary, error) {
+	return items.SeriesSummary{}, items.ErrNotFound
 }

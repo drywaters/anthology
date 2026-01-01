@@ -46,6 +46,7 @@ import { ItemsTableViewComponent } from './items-table-view/items-table-view.com
 import { ItemsSeriesViewComponent } from './items-series-view/items-series-view.component';
 import { ItemsEmptyStateComponent } from './items-empty-state/items-empty-state.component';
 import { NotificationService } from '../../services/notification.service';
+import { LibraryActionsService } from '../../services/library-actions.service';
 
 export interface LetterGroup {
     letter: string;
@@ -73,6 +74,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     private readonly itemService = inject(ItemService);
     private readonly seriesService = inject(SeriesService);
     private readonly notification = inject(NotificationService);
+    private readonly libraryActions = inject(LibraryActionsService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly router = inject(Router);
     private readonly injector = inject(Injector);
@@ -167,6 +169,10 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
 
     constructor() {
         const filters$ = toObservable(computed(() => this.currentFilters()));
+
+        this.libraryActions.exportRequested$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => this.exportToCsv());
 
         // Load items when filters change
         filters$
@@ -401,8 +407,11 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
         const link = document.createElement('a');
         link.href = url;
         link.download = filename;
+        link.style.display = 'none';
+        document.body.appendChild(link);
         link.click();
-        window.URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+        window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
     }
 
     private generateExportFilename(): string {

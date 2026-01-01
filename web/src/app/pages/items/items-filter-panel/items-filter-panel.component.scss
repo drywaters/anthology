@@ -44,22 +44,6 @@
     min-width: 180px;
 }
 
-.export-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    mat-icon {
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-    }
-
-    mat-progress-spinner {
-        display: inline-block;
-    }
-}
-
 @media (width <= 680px) {
     .filters {
         flex-direction: column;

@@ -143,6 +143,8 @@ type CreateItemInput struct {
 	SeriesName     string
 	VolumeNumber   *int
 	TotalVolumes   *int
+	CreatedAt      *time.Time
+	UpdatedAt      *time.Time
 }
 
 // UpdateItemInput captures the editable fields for an existing item.
