@@ -47,8 +47,7 @@ This document summarizes application features based on the current API and UI co
 - Scan ISBNs to create or move items into shelf slots, with status feedback (created, moved, present).
 
 ## Authentication and sessions
-- Google OAuth is required outside development; OAuth sets an HttpOnly session cookie for API access.
-- In development without OAuth configured, sessions are treated as authenticated.
+- Google OAuth is required in all environments; OAuth sets an HttpOnly session cookie for API access.
 - Session endpoints support status, current user, and logout.
 
 ## API utilities

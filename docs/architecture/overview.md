@@ -23,10 +23,10 @@ Anthology is a split-stack application with a stateless Go API and an Angular Ma
 ## Request flows
 
 ### Authentication
-1. In non-dev environments, the UI renders `LoginPageComponent` and starts Google OAuth.
+1. The UI renders `LoginPageComponent` and starts Google OAuth.
 2. The browser completes the OAuth flow and hits `/api/auth/google/callback`.
 3. `internal/http/oauth_handler.go` validates the callback, creates a user/session, and sets an HttpOnly cookie so subsequent API calls are authenticated automatically.
-4. In `APP_ENV=development` without OAuth configured, auth is disabled and the UI proceeds without login.
+4. In `APP_ENV=development`, cookies are non-secure to support localhost during OAuth.
 
 ### Metadata search
 1. `AddItemPageComponent` submits `GET /api/catalog/lookup?query=...&category=...` when the Search tab runs.

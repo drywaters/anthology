@@ -171,4 +171,4 @@ npm install
 npm start   # dev server on http://localhost:4200
 ```
 
-Ensure the API is running (default at `http://localhost:8080/api`). In non-dev environments, configure the Google OAuth env vars so the login flow works. In development without OAuth configured, `/api/session` reports authenticated and the guard allows access without logging in. To point at a different backend, set `NG_APP_API_URL` in `web/src/assets/runtime-config.js` at build/start time or update the meta tag in `web/src/index.html`.
+Ensure the API is running (default at `http://localhost:8080/api`). Configure the Google OAuth env vars so the login flow works. In `APP_ENV=development`, cookies are non-secure for localhost. To point at a different backend, set `NG_APP_API_URL` in `web/src/assets/runtime-config.js` at build/start time or update the meta tag in `web/src/index.html`.

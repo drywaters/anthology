@@ -26,8 +26,8 @@ If you are new to the project, start with [`docs/architecture/overview.md`](docs
 * Metadata lookups (`internal/catalog`) call the Google Books API. `/api/catalog/lookup` proxies those queries so the Angular UI can search by ISBN or keyword without exposing API tokens.
 * Bulk imports use `internal/importer`, which accepts CSV uploads, fetches metadata for incomplete rows, deduplicates based on title/ISBN, and returns a structured summary so the UI can visualize success vs. warnings.
 * Configuration is environment-driven (`DATA_STORE`, `DATABASE_URL`, `PORT`, `LOG_LEVEL`, `ALLOWED_ORIGINS`, `APP_ENV`, `GOOGLE_BOOKS_API_KEY`, `AUTH_GOOGLE_CLIENT_ID`, `AUTH_GOOGLE_CLIENT_SECRET`, `AUTH_GOOGLE_REDIRECT_URL`, `AUTH_GOOGLE_ALLOWED_DOMAINS`, `AUTH_GOOGLE_ALLOWED_EMAILS`, `FRONTEND_URL`). When `DATA_STORE=memory` (the default), the API boots with a seeded in-memory catalogue to help demo the experience quickly. Secrets can be provided via environment variables, `<NAME>_FILE` pointers, or the default Docker Swarm secret paths under `/run/secrets/anthology_*`.
-* Google OAuth is required when `APP_ENV` is `production` (configure the Google client ID/secret plus an allowlist). OAuth sessions are stored in Postgres, so non-dev deployments must use `DATA_STORE=postgres`.
-* In `APP_ENV=development` without OAuth configured, auth is disabled and `/api/*` endpoints are open. Requests to `/health` remain public in all environments.
+* Google OAuth is required in all environments (configure the Google client ID/secret plus an allowlist). OAuth sessions are stored in Postgres, so deployments must use `DATA_STORE=postgres`.
+* In `APP_ENV=development`, cookies are non-secure for localhost; `/health` remains public in all environments.
 * CORS is enabled via [`github.com/go-chi/cors`](https://github.com/go-chi/cors) and defaults to allowing `http://localhost:4200` and `http://localhost:8080`. Override with `ALLOWED_ORIGINS="https://example.com,https://admin.example.com"` when deploying.
 * Postgres persistence is implemented with `sqlx`; see `migrations/` (current schema requires up to `0007_make_no_status_explicit.sql`).
 
@@ -43,7 +43,7 @@ export GOOGLE_BOOKS_API_KEY="super-google-books-key"
 go run ./cmd/api
 ```
 
-In development without OAuth configured, the API treats requests as authenticated. To exercise OAuth locally, use Postgres and set `AUTH_GOOGLE_CLIENT_ID`, `AUTH_GOOGLE_CLIENT_SECRET`, and either `AUTH_GOOGLE_ALLOWED_DOMAINS` or `AUTH_GOOGLE_ALLOWED_EMAILS` (keep `APP_ENV=development` to avoid enforcing prod-only constraints).
+OAuth is required in development. Use Postgres and set `AUTH_GOOGLE_CLIENT_ID`, `AUTH_GOOGLE_CLIENT_SECRET`, and either `AUTH_GOOGLE_ALLOWED_DOMAINS` or `AUTH_GOOGLE_ALLOWED_EMAILS` (keep `APP_ENV=development` so cookies remain non-secure for localhost).
 
 The API listens on `http://localhost:8080` and exposes JSON-only endpoints (the Angular bundle is served by the separate UI container):
 
@@ -64,7 +64,7 @@ The API listens on `http://localhost:8080` and exposes JSON-only endpoints (the 
 
 ### Using Postgres
 
-OAuth requires Postgres. When `APP_ENV` is `production`, configure the Google OAuth env vars and allowlist.
+OAuth requires Postgres. Configure the Google OAuth env vars and allowlist in all environments.
 
 ```bash
 export DATA_STORE=postgres
@@ -97,7 +97,7 @@ The Go test suite covers the metadata lookup pipeline (`internal/catalog`) and t
 
 * Angular 20 standalone application located in `web/`.
 * Styling is powered by [`@angular/material`](https://www.npmjs.com/package/@angular/material) and its Material 3 design tokens. The global theme lives in [`web/src/styles.scss`](web/src/styles.scss).
-* The main page (`ItemsPageComponent`) provides a responsive catalogue view, inline editing, and CRUD actions that call the Go API. A dedicated login screen initiates Google OAuth (non-dev) and relies on an HttpOnly session cookie so browsers send it automatically without exposing it to JavaScript.
+* The main page (`ItemsPageComponent`) provides a responsive catalogue view, inline editing, and CRUD actions that call the Go API. A dedicated login screen initiates Google OAuth and relies on an HttpOnly session cookie so browsers send it automatically without exposing it to JavaScript.
 * API base URL is resolved from the `<meta name="anthology-api">` tag (defaults to `http://localhost:8080/api`).
   Deployments can override this without rebuilding by setting `window.NG_APP_API_URL` before the Angular bundle loads (the shipped `assets/runtime-config.js` file is replaced at container start when `NG_APP_API_URL` is defined).
 * The UI seed data and layout offer a curated catalogue dashboard out of the box.
@@ -112,7 +112,7 @@ npm start                           # ng serve --open
 
 The dev server runs on `http://localhost:4200` and proxies requests directly to the API URL specified in the meta tag. To point at a different backend, update the meta tag in `web/src/index.html` or adjust `web/src/assets/runtime-config.js` before serving. Running `make local` will start both the Go API and Angular dev server together for local testing so you can exercise the split-stack workflow end-to-end.
 
-In non-dev environments you will be redirected to the login screen and asked to continue with Google. The OAuth callback sets an HttpOnly session cookie so the browser stays authenticated; use the “Log out” button in the toolbar to clear it at any time. In development without OAuth configured, the session endpoint reports authenticated and the UI does not require a login.
+You will be redirected to the login screen and asked to continue with Google. The OAuth callback sets an HttpOnly session cookie so the browser stays authenticated; use the “Log out” button in the toolbar to clear it at any time. In `APP_ENV=development`, cookies are non-secure for localhost.
 
 ### Add items faster
 
@@ -182,7 +182,7 @@ npm run build
 
 ### Docker secrets quickstart
 
-The container expects these Docker secrets (add the OAuth secrets in non-dev deployments):
+The container expects these Docker secrets (add the OAuth secrets for all deployments):
 
 | Secret name                       | Environment variable | Description                                      |
 | --------------------------------- | -------------------- | ------------------------------------------------ |
