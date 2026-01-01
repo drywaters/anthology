@@ -75,7 +75,10 @@ type UpdateLayoutInput struct {
 }
 
 // CreateShelf creates a shelf with an initial single-slot layout.
-func (s *Service) CreateShelf(ctx context.Context, input CreateShelfInput) (ShelfWithLayout, error) {
+func (s *Service) CreateShelf(ctx context.Context, input CreateShelfInput, ownerID uuid.UUID) (ShelfWithLayout, error) {
+	if ownerID == (uuid.UUID{}) {
+		return ShelfWithLayout{}, fmt.Errorf("%w: ownerID is required", ErrValidation)
+	}
 	name := strings.TrimSpace(input.Name)
 	if name == "" {
 		return ShelfWithLayout{}, fmt.Errorf("%w: name is required", ErrValidation)
@@ -91,6 +94,7 @@ func (s *Service) CreateShelf(ctx context.Context, input CreateShelfInput) (Shel
 	now := time.Now().UTC()
 	shelf := Shelf{
 		ID:          uuid.New(),
+		OwnerID:     ownerID,
 		Name:        name,
 		Description: strings.TrimSpace(input.Description),
 		PhotoURL:    photoURL,
@@ -138,27 +142,27 @@ func (s *Service) CreateShelf(ctx context.Context, input CreateShelfInput) (Shel
 }
 
 // ListShelves returns shelf summaries.
-func (s *Service) ListShelves(ctx context.Context) ([]ShelfSummary, error) {
-	return s.repo.ListShelves(ctx)
+func (s *Service) ListShelves(ctx context.Context, ownerID uuid.UUID) ([]ShelfSummary, error) {
+	return s.repo.ListShelves(ctx, ownerID)
 }
 
 // GetShelf returns a shelf with layout and placements hydrated with item details.
-func (s *Service) GetShelf(ctx context.Context, shelfID uuid.UUID) (ShelfWithLayout, error) {
-	layout, err := s.repo.GetShelf(ctx, shelfID)
+func (s *Service) GetShelf(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID) (ShelfWithLayout, error) {
+	layout, err := s.repo.GetShelf(ctx, shelfID, ownerID)
 	if err != nil {
 		return ShelfWithLayout{}, err
 	}
 
-	return s.attachItems(ctx, layout)
+	return s.attachItems(ctx, layout, ownerID)
 }
 
 // UpdateLayout replaces the layout while keeping stable slot IDs when possible.
-func (s *Service) UpdateLayout(ctx context.Context, shelfID uuid.UUID, input UpdateLayoutInput) (ShelfWithLayout, []PlacementWithItem, error) {
+func (s *Service) UpdateLayout(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID, input UpdateLayoutInput) (ShelfWithLayout, []PlacementWithItem, error) {
 	if len(input.Slots) == 0 {
 		return ShelfWithLayout{}, nil, fmt.Errorf("%w: at least one slot is required", ErrValidation)
 	}
 
-	existing, err := s.repo.GetShelf(ctx, shelfID)
+	existing, err := s.repo.GetShelf(ctx, shelfID, ownerID)
 	if err != nil {
 		return ShelfWithLayout{}, nil, err
 	}
@@ -201,16 +205,16 @@ func (s *Service) UpdateLayout(ctx context.Context, shelfID uuid.UUID, input Upd
 			}
 		}
 	}
-	if err := s.repo.SaveLayout(ctx, shelfID, slices.Clone(normalizedRows), slices.Clone(normalizedColumns), normalizedSlots, removedSlotIDs); err != nil {
+	if err := s.repo.SaveLayout(ctx, shelfID, ownerID, slices.Clone(normalizedRows), slices.Clone(normalizedColumns), normalizedSlots, removedSlotIDs); err != nil {
 		return ShelfWithLayout{}, nil, err
 	}
 
-	updated, err := s.repo.GetShelf(ctx, shelfID)
+	updated, err := s.repo.GetShelf(ctx, shelfID, ownerID)
 	if err != nil {
 		return ShelfWithLayout{}, nil, err
 	}
 
-	hydrated, err := s.attachItems(ctx, updated)
+	hydrated, err := s.attachItems(ctx, updated, ownerID)
 	if err != nil {
 		return ShelfWithLayout{}, nil, err
 	}
@@ -232,21 +236,21 @@ func (s *Service) UpdateLayout(ctx context.Context, shelfID uuid.UUID, input Upd
 }
 
 // AssignItem assigns an item to a slot, clearing any previous placement on the shelf.
-func (s *Service) AssignItem(ctx context.Context, shelfID, slotID, itemID uuid.UUID) (ShelfWithLayout, error) {
-	if _, err := s.itemsRepo.Get(ctx, itemID); err != nil {
+func (s *Service) AssignItem(ctx context.Context, shelfID, slotID, itemID uuid.UUID, ownerID uuid.UUID) (ShelfWithLayout, error) {
+	if _, err := s.itemsRepo.Get(ctx, itemID, ownerID); err != nil {
 		return ShelfWithLayout{}, err
 	}
 
-	if _, err := s.repo.AssignItemToSlot(ctx, shelfID, slotID, itemID); err != nil {
+	if _, err := s.repo.AssignItemToSlot(ctx, shelfID, ownerID, slotID, itemID); err != nil {
 		return ShelfWithLayout{}, err
 	}
 
-	updated, err := s.repo.GetShelf(ctx, shelfID)
+	updated, err := s.repo.GetShelf(ctx, shelfID, ownerID)
 	if err != nil {
 		return ShelfWithLayout{}, err
 	}
 
-	hydrated, err := s.attachItems(ctx, updated)
+	hydrated, err := s.attachItems(ctx, updated, ownerID)
 	if err != nil {
 		return ShelfWithLayout{}, err
 	}
@@ -259,17 +263,17 @@ func (s *Service) AssignItem(ctx context.Context, shelfID, slotID, itemID uuid.U
 }
 
 // RemoveItem removes an item from a slot, leaving it unplaced on the shelf.
-func (s *Service) RemoveItem(ctx context.Context, shelfID, slotID, itemID uuid.UUID) (ShelfWithLayout, error) {
-	if err := s.repo.RemoveItemFromSlot(ctx, shelfID, slotID, itemID); err != nil {
+func (s *Service) RemoveItem(ctx context.Context, shelfID, slotID, itemID uuid.UUID, ownerID uuid.UUID) (ShelfWithLayout, error) {
+	if err := s.repo.RemoveItemFromSlot(ctx, shelfID, ownerID, slotID, itemID); err != nil {
 		return ShelfWithLayout{}, err
 	}
 
-	updated, err := s.repo.GetShelf(ctx, shelfID)
+	updated, err := s.repo.GetShelf(ctx, shelfID, ownerID)
 	if err != nil {
 		return ShelfWithLayout{}, err
 	}
 
-	hydrated, err := s.attachItems(ctx, updated)
+	hydrated, err := s.attachItems(ctx, updated, ownerID)
 	if err != nil {
 		return ShelfWithLayout{}, err
 	}
@@ -409,8 +413,8 @@ func normalizeSlots(
 	return rows, columns, normalizedSlots, nil
 }
 
-func (s *Service) attachItems(ctx context.Context, layout ShelfWithLayout) (ShelfWithLayout, error) {
-	itemsList, err := s.itemsRepo.List(ctx, items.ListOptions{})
+func (s *Service) attachItems(ctx context.Context, layout ShelfWithLayout, ownerID uuid.UUID) (ShelfWithLayout, error) {
+	itemsList, err := s.itemsRepo.List(ctx, items.ListOptions{OwnerID: ownerID})
 	if err != nil {
 		return ShelfWithLayout{}, err
 	}
@@ -555,14 +559,14 @@ func sanitizePhotoURL(raw string) (string, error) {
 }
 
 // ScanAndAssign scans an ISBN, creates the item if needed, and assigns it to a slot.
-func (s *Service) ScanAndAssign(ctx context.Context, shelfID, slotID uuid.UUID, isbn string) (ScanAndAssignResult, error) {
+func (s *Service) ScanAndAssign(ctx context.Context, shelfID, slotID uuid.UUID, isbn string, ownerID uuid.UUID) (ScanAndAssignResult, error) {
 	isbn = strings.TrimSpace(isbn)
 	if isbn == "" {
 		return ScanAndAssignResult{}, fmt.Errorf("%w: isbn is required", ErrValidation)
 	}
 
 	// Verify shelf and slot exist
-	shelf, err := s.repo.GetShelf(ctx, shelfID)
+	shelf, err := s.repo.GetShelf(ctx, shelfID, ownerID)
 	if err != nil {
 		return ScanAndAssignResult{}, err
 	}
@@ -579,7 +583,7 @@ func (s *Service) ScanAndAssign(ctx context.Context, shelfID, slotID uuid.UUID, 
 	}
 
 	// Check if item already exists with this ISBN
-	existingItems, err := s.itemsRepo.List(ctx, items.ListOptions{})
+	existingItems, err := s.itemsRepo.List(ctx, items.ListOptions{OwnerID: ownerID})
 	if err != nil {
 		return ScanAndAssignResult{}, err
 	}
@@ -627,6 +631,7 @@ func (s *Service) ScanAndAssign(ctx context.Context, shelfID, slotID uuid.UUID, 
 
 		// Create the item
 		createInput := items.CreateItemInput{
+			OwnerID:        ownerID,
 			Title:          meta.Title,
 			Creator:        meta.Creator,
 			ItemType:       items.ItemType(meta.ItemType),
@@ -651,17 +656,17 @@ func (s *Service) ScanAndAssign(ctx context.Context, shelfID, slotID uuid.UUID, 
 	}
 
 	// Assign item to slot
-	if _, err := s.repo.AssignItemToSlot(ctx, shelfID, slotID, itemID); err != nil {
+	if _, err := s.repo.AssignItemToSlot(ctx, shelfID, ownerID, slotID, itemID); err != nil {
 		return ScanAndAssignResult{}, err
 	}
 
 	// Get the updated shelf
-	updated, err := s.repo.GetShelf(ctx, shelfID)
+	updated, err := s.repo.GetShelf(ctx, shelfID, ownerID)
 	if err != nil {
 		return ScanAndAssignResult{}, err
 	}
 
-	hydrated, err := s.attachItems(ctx, updated)
+	hydrated, err := s.attachItems(ctx, updated, ownerID)
 	if err != nil {
 		return ScanAndAssignResult{}, err
 	}
@@ -671,7 +676,7 @@ func (s *Service) ScanAndAssign(ctx context.Context, shelfID, slotID uuid.UUID, 
 	}
 
 	// Get the final item to return
-	finalItem, err := s.itemsRepo.Get(ctx, itemID)
+	finalItem, err := s.itemsRepo.Get(ctx, itemID, ownerID)
 	if err != nil {
 		return ScanAndAssignResult{}, err
 	}

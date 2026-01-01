@@ -22,9 +22,11 @@ func NewSeriesHandler(service *items.Service, logger *slog.Logger) *SeriesHandle
 
 // List returns all series with summaries.
 func (h *SeriesHandler) List(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+
 	opts := parseSeriesListOptions(r)
 
-	series, err := h.service.ListSeries(r.Context(), opts)
+	series, err := h.service.ListSeries(r.Context(), opts, user.ID)
 	if err != nil {
 		h.logger.Error("list series", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to list series")
@@ -36,13 +38,15 @@ func (h *SeriesHandler) List(w http.ResponseWriter, r *http.Request) {
 
 // Get returns details for a single series.
 func (h *SeriesHandler) Get(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+
 	name := strings.TrimSpace(r.URL.Query().Get("name"))
 	if name == "" {
 		writeError(w, http.StatusBadRequest, "series name is required")
 		return
 	}
 
-	summary, err := h.service.GetSeriesByName(r.Context(), name)
+	summary, err := h.service.GetSeriesByName(r.Context(), name, user.ID)
 	if err != nil {
 		if errors.Is(err, items.ErrNotFound) {
 			writeError(w, http.StatusNotFound, "series not found")

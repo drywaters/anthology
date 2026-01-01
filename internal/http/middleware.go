@@ -38,7 +38,7 @@ type contextKey string
 const userContextKey contextKey = "user"
 
 // UserFromContext extracts the authenticated user from the request context.
-// Returns nil if using legacy token auth or if not authenticated.
+// Returns nil if the auth middleware hasn't populated the context.
 func UserFromContext(ctx context.Context) *auth.User {
 	user, _ := ctx.Value(userContextKey).(*auth.User)
 	return user

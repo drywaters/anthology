@@ -41,6 +41,9 @@ func NewService(repo Repository) *Service {
 
 // Create validates and persists a new item.
 func (s *Service) Create(ctx context.Context, input CreateItemInput) (Item, error) {
+	if input.OwnerID == (uuid.UUID{}) {
+		return Item{}, validationErr("ownerID is required")
+	}
 	if err := validateItemInput(input.Title, input.ItemType); err != nil {
 		return Item{}, err
 	}
@@ -101,6 +104,7 @@ func (s *Service) Create(ctx context.Context, input CreateItemInput) (Item, erro
 	}
 	item := Item{
 		ID:             uuid.New(),
+		OwnerID:        input.OwnerID,
 		Title:          strings.TrimSpace(input.Title),
 		Creator:        strings.TrimSpace(input.Creator),
 		ItemType:       input.ItemType,
@@ -148,14 +152,14 @@ func (s *Service) List(ctx context.Context, opts ListOptions) ([]Item, error) {
 	return items, nil
 }
 
-// Get retrieves an item by ID.
-func (s *Service) Get(ctx context.Context, id uuid.UUID) (Item, error) {
-	return s.repo.Get(ctx, id)
+// Get retrieves an item by ID and owner.
+func (s *Service) Get(ctx context.Context, id uuid.UUID, ownerID uuid.UUID) (Item, error) {
+	return s.repo.Get(ctx, id, ownerID)
 }
 
 // Update applies modifications to an item.
-func (s *Service) Update(ctx context.Context, id uuid.UUID, input UpdateItemInput) (Item, error) {
-	existing, err := s.repo.Get(ctx, id)
+func (s *Service) Update(ctx context.Context, id uuid.UUID, ownerID uuid.UUID, input UpdateItemInput) (Item, error) {
+	existing, err := s.repo.Get(ctx, id, ownerID)
 	if err != nil {
 		return Item{}, err
 	}
@@ -299,9 +303,9 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, input UpdateItemInpu
 	return s.repo.Update(ctx, existing)
 }
 
-// Delete removes an item by ID.
-func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
-	return s.repo.Delete(ctx, id)
+// Delete removes an item by ID and owner.
+func (s *Service) Delete(ctx context.Context, id uuid.UUID, ownerID uuid.UUID) error {
+	return s.repo.Delete(ctx, id, ownerID)
 }
 
 // Histogram returns a count of items grouped by first letter of title.
@@ -322,18 +326,18 @@ func (s *Service) Histogram(ctx context.Context, opts HistogramOptions) (LetterH
 // FindDuplicates searches for items matching the given title or identifiers.
 // Title matching is case-insensitive with whitespace trimmed.
 // Identifier matching strips non-digit characters for normalization.
-func (s *Service) FindDuplicates(ctx context.Context, input DuplicateCheckInput) ([]DuplicateMatch, error) {
-	return s.repo.FindDuplicates(ctx, input)
+func (s *Service) FindDuplicates(ctx context.Context, input DuplicateCheckInput, ownerID uuid.UUID) ([]DuplicateMatch, error) {
+	return s.repo.FindDuplicates(ctx, input, ownerID)
 }
 
 // ListSeries returns all series with aggregated statistics and missing volume detection.
-func (s *Service) ListSeries(ctx context.Context, opts SeriesListOptions) ([]SeriesSummary, error) {
+func (s *Service) ListSeries(ctx context.Context, opts SeriesListOptions, ownerID uuid.UUID) ([]SeriesSummary, error) {
 	// Always include items for missing volume calculation.
 	repoOpts := SeriesRepoListOptions{
 		IncludeItems: true,
 	}
 
-	summaries, err := s.repo.ListSeries(ctx, repoOpts)
+	summaries, err := s.repo.ListSeries(ctx, repoOpts, ownerID)
 
 	if err != nil {
 		return nil, err
@@ -363,8 +367,8 @@ func (s *Service) ListSeries(ctx context.Context, opts SeriesListOptions) ([]Ser
 }
 
 // GetSeriesByName returns detailed info about a single series with missing volume detection.
-func (s *Service) GetSeriesByName(ctx context.Context, name string) (SeriesSummary, error) {
-	summary, err := s.repo.GetSeriesByName(ctx, name)
+func (s *Service) GetSeriesByName(ctx context.Context, name string, ownerID uuid.UUID) (SeriesSummary, error) {
+	summary, err := s.repo.GetSeriesByName(ctx, name, ownerID)
 	if err != nil {
 		return SeriesSummary{}, err
 	}
@@ -451,8 +455,8 @@ func (s *Service) determineSeriesStatus(summary SeriesSummary) SeriesStatus {
 // Uses googleVolumeId if available, otherwise falls back to ISBN lookup.
 // Only updates fields that Google provides (genre, retailPriceUsd, googleVolumeId).
 // Does NOT overwrite user-entered fields like format and rating.
-func (s *Service) ResyncMetadata(ctx context.Context, id uuid.UUID, catalogSvc *catalog.Service) (Item, error) {
-	existing, err := s.repo.Get(ctx, id)
+func (s *Service) ResyncMetadata(ctx context.Context, id uuid.UUID, ownerID uuid.UUID, catalogSvc *catalog.Service) (Item, error) {
+	existing, err := s.repo.Get(ctx, id, ownerID)
 	if err != nil {
 		return Item{}, err
 	}

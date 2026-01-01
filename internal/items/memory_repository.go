@@ -37,13 +37,17 @@ func (r *InMemoryRepository) Create(_ context.Context, item Item) (Item, error) 
 	return item, nil
 }
 
-// Get returns an item by ID.
-func (r *InMemoryRepository) Get(_ context.Context, id uuid.UUID) (Item, error) {
+// Get returns an item by ID and owner.
+func (r *InMemoryRepository) Get(_ context.Context, id uuid.UUID, ownerID uuid.UUID) (Item, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
 	item, ok := r.data[id]
 	if !ok {
+		return Item{}, ErrNotFound
+	}
+	// Check owner matches (return 404 to prevent enumeration attacks)
+	if item.OwnerID != ownerID {
 		return Item{}, ErrNotFound
 	}
 	return item, nil
@@ -62,6 +66,10 @@ func (r *InMemoryRepository) List(_ context.Context, opts ListOptions) ([]Item, 
 
 	for _, id := range r.order {
 		if item, ok := r.data[id]; ok {
+			// Always filter by owner_id
+			if item.OwnerID != opts.OwnerID {
+				continue
+			}
 			if opts.ItemType != nil && item.ItemType != *opts.ItemType {
 				continue
 			}
@@ -149,19 +157,28 @@ func (r *InMemoryRepository) Update(_ context.Context, item Item) (Item, error) 
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if _, ok := r.data[item.ID]; !ok {
+	existing, ok := r.data[item.ID]
+	if !ok {
+		return Item{}, ErrNotFound
+	}
+	if existing.OwnerID != item.OwnerID {
 		return Item{}, ErrNotFound
 	}
 	r.data[item.ID] = item
 	return item, nil
 }
 
-// Delete removes an item by ID.
-func (r *InMemoryRepository) Delete(_ context.Context, id uuid.UUID) error {
+// Delete removes an item by ID and owner.
+func (r *InMemoryRepository) Delete(_ context.Context, id uuid.UUID, ownerID uuid.UUID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if _, ok := r.data[id]; !ok {
+	item, ok := r.data[id]
+	if !ok {
+		return ErrNotFound
+	}
+	// Check owner matches (return 404 to prevent enumeration attacks)
+	if item.OwnerID != ownerID {
 		return ErrNotFound
 	}
 	delete(r.data, id)
@@ -205,6 +222,11 @@ func (r *InMemoryRepository) Histogram(_ context.Context, opts HistogramOptions)
 	for _, id := range r.order {
 		item, ok := r.data[id]
 		if !ok {
+			continue
+		}
+
+		// Always filter by owner_id
+		if item.OwnerID != opts.OwnerID {
 			continue
 		}
 
@@ -256,7 +278,7 @@ func extractFirstLetter(title string) string {
 // FindDuplicates searches for items matching the given title or identifiers.
 // Title matching is case-insensitive. Identifier matching normalizes by stripping non-digits.
 // Returns up to 5 matches.
-func (r *InMemoryRepository) FindDuplicates(_ context.Context, input DuplicateCheckInput) ([]DuplicateMatch, error) {
+func (r *InMemoryRepository) FindDuplicates(_ context.Context, input DuplicateCheckInput, ownerID uuid.UUID) ([]DuplicateMatch, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -277,6 +299,11 @@ func (r *InMemoryRepository) FindDuplicates(_ context.Context, input DuplicateCh
 
 		item, ok := r.data[id]
 		if !ok {
+			continue
+		}
+
+		// Filter by owner_id
+		if item.OwnerID != ownerID {
 			continue
 		}
 
@@ -346,7 +373,7 @@ func itemToDuplicateMatch(item Item) DuplicateMatch {
 }
 
 // ListSeries returns all unique series with their items grouped.
-func (r *InMemoryRepository) ListSeries(_ context.Context, opts SeriesRepoListOptions) ([]SeriesSummary, error) {
+func (r *InMemoryRepository) ListSeries(_ context.Context, opts SeriesRepoListOptions, ownerID uuid.UUID) ([]SeriesSummary, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -357,6 +384,11 @@ func (r *InMemoryRepository) ListSeries(_ context.Context, opts SeriesRepoListOp
 	for _, id := range r.order {
 		item, ok := r.data[id]
 		if !ok {
+			continue
+		}
+
+		// Filter by owner_id
+		if item.OwnerID != ownerID {
 			continue
 		}
 
@@ -415,7 +447,7 @@ func (r *InMemoryRepository) ListSeries(_ context.Context, opts SeriesRepoListOp
 }
 
 // GetSeriesByName returns detailed info about a single series.
-func (r *InMemoryRepository) GetSeriesByName(_ context.Context, name string) (SeriesSummary, error) {
+func (r *InMemoryRepository) GetSeriesByName(_ context.Context, name string, ownerID uuid.UUID) (SeriesSummary, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -424,6 +456,11 @@ func (r *InMemoryRepository) GetSeriesByName(_ context.Context, name string) (Se
 	for _, id := range r.order {
 		item, ok := r.data[id]
 		if !ok {
+			continue
+		}
+
+		// Filter by owner_id
+		if item.OwnerID != ownerID {
 			continue
 		}
 

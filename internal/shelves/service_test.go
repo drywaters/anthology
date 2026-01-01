@@ -10,6 +10,9 @@ import (
 	"anthology/internal/items"
 )
 
+// testOwnerID is a fixed UUID for tests
+var testOwnerID = uuid.MustParse("00000000-0000-0000-0000-000000000001")
+
 func TestUpdateLayoutReturnsOnlyDisplacedItems(t *testing.T) {
 	t.Parallel()
 
@@ -28,6 +31,7 @@ func TestUpdateLayoutReturnsOnlyDisplacedItems(t *testing.T) {
 		ID:        shelfID,
 		Name:      "Shelf",
 		PhotoURL:  "https://example.com/shelf.jpg",
+		OwnerID:   testOwnerID,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -77,6 +81,7 @@ func TestUpdateLayoutReturnsOnlyDisplacedItems(t *testing.T) {
 		ID:        uuid.New(),
 		Title:     "Placed Book",
 		ItemType:  items.ItemTypeBook,
+		OwnerID:   testOwnerID,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -84,6 +89,7 @@ func TestUpdateLayoutReturnsOnlyDisplacedItems(t *testing.T) {
 		ID:        uuid.New(),
 		Title:     "Already Unplaced",
 		ItemType:  items.ItemTypeBook,
+		OwnerID:   testOwnerID,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -92,10 +98,10 @@ func TestUpdateLayoutReturnsOnlyDisplacedItems(t *testing.T) {
 	itemSvc := items.NewService(itemsRepo)
 	svc := NewService(repo, itemsRepo, nil, itemSvc)
 
-	if _, err := repo.AssignItemToSlot(ctx, shelfID, slotRightID, displacedItem.ID); err != nil {
+	if _, err := repo.AssignItemToSlot(ctx, shelfID, testOwnerID, slotRightID, displacedItem.ID); err != nil {
 		t.Fatalf("assign displaced item: %v", err)
 	}
-	if _, err := repo.UpsertUnplaced(ctx, shelfID, preexistingUnplaced.ID); err != nil {
+	if _, err := repo.UpsertUnplaced(ctx, shelfID, testOwnerID, preexistingUnplaced.ID); err != nil {
 		t.Fatalf("seed unplaced item: %v", err)
 	}
 
@@ -113,7 +119,7 @@ func TestUpdateLayoutReturnsOnlyDisplacedItems(t *testing.T) {
 		},
 	}
 
-	updated, displaced, err := svc.UpdateLayout(ctx, shelfID, input)
+	updated, displaced, err := svc.UpdateLayout(ctx, shelfID, testOwnerID, input)
 	if err != nil {
 		t.Fatalf("update layout: %v", err)
 	}
@@ -158,6 +164,7 @@ func TestAssignItemUpdatesItemPlacementInMemoryRepo(t *testing.T) {
 		ID:        shelfID,
 		Name:      "Demo Shelf",
 		PhotoURL:  "https://example.com/shelf.jpg",
+		OwnerID:   testOwnerID,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -180,16 +187,16 @@ func TestAssignItemUpdatesItemPlacementInMemoryRepo(t *testing.T) {
 		t.Fatalf("create shelf: %v", err)
 	}
 
-	item := items.Item{ID: uuid.New(), Title: "Book", ItemType: items.ItemTypeBook, CreatedAt: now, UpdatedAt: now}
+	item := items.Item{ID: uuid.New(), Title: "Book", ItemType: items.ItemTypeBook, OwnerID: testOwnerID, CreatedAt: now, UpdatedAt: now}
 	itemsRepo := items.NewInMemoryRepository([]items.Item{item})
 	itemSvc := items.NewService(itemsRepo)
 	svc := NewService(repo, itemsRepo, nil, itemSvc)
 
-	if _, err := svc.AssignItem(ctx, shelfID, slotID, item.ID); err != nil {
+	if _, err := svc.AssignItem(ctx, shelfID, slotID, item.ID, testOwnerID); err != nil {
 		t.Fatalf("assign item: %v", err)
 	}
 
-	stored, err := itemsRepo.Get(ctx, item.ID)
+	stored, err := itemsRepo.Get(ctx, item.ID, testOwnerID)
 	if err != nil {
 		t.Fatalf("get item: %v", err)
 	}
@@ -203,10 +210,10 @@ func TestAssignItemUpdatesItemPlacementInMemoryRepo(t *testing.T) {
 		t.Fatalf("expected row/col to match slot")
 	}
 
-	if _, err := svc.RemoveItem(ctx, shelfID, slotID, item.ID); err != nil {
+	if _, err := svc.RemoveItem(ctx, shelfID, slotID, item.ID, testOwnerID); err != nil {
 		t.Fatalf("remove item: %v", err)
 	}
-	stored, err = itemsRepo.Get(ctx, item.ID)
+	stored, err = itemsRepo.Get(ctx, item.ID, testOwnerID)
 	if err != nil {
 		t.Fatalf("get item after remove: %v", err)
 	}

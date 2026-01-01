@@ -43,11 +43,14 @@ func NewItemHandler(service *items.Service, catalogSvc *catalog.Service, importe
 
 // List returns all items.
 func (h *ItemHandler) List(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+
 	opts, err := parseListOptions(r.URL.Query())
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	opts.OwnerID = user.ID
 
 	items, err := h.service.List(r.Context(), opts)
 	if err != nil {
@@ -125,6 +128,8 @@ func parseListOptions(values url.Values) (items.ListOptions, error) {
 
 // Create stores a new item.
 func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+
 	var payload struct {
 		Title          string     `json:"title"`
 		Creator        string     `json:"creator"`
@@ -158,6 +163,7 @@ func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item, err := h.service.Create(r.Context(), items.CreateItemInput{
+		OwnerID:        user.ID,
 		Title:          payload.Title,
 		Creator:        payload.Creator,
 		ItemType:       items.ItemType(payload.ItemType),
@@ -198,12 +204,14 @@ func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 // Get returns a single item.
 func (h *ItemHandler) Get(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+
 	id, ok := parseUUIDParam(w, r, "id")
 	if !ok {
 		return
 	}
 
-	item, err := h.service.Get(r.Context(), id)
+	item, err := h.service.Get(r.Context(), id, user.ID)
 	if err != nil {
 		handleServiceError(w, err, h.logger)
 		return
@@ -214,6 +222,8 @@ func (h *ItemHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 // Update modifies an item.
 func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+
 	id, ok := parseUUIDParam(w, r, "id")
 	if !ok {
 		return
@@ -362,7 +372,7 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 		input.TotalVolumes = &value
 	}
 
-	item, err := h.service.Update(r.Context(), id, input)
+	item, err := h.service.Update(r.Context(), id, user.ID, input)
 	if err != nil {
 		handleServiceError(w, err, h.logger)
 		return
@@ -373,12 +383,14 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 // Delete removes an item.
 func (h *ItemHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+
 	id, ok := parseUUIDParam(w, r, "id")
 	if !ok {
 		return
 	}
 
-	if err := h.service.Delete(r.Context(), id); err != nil {
+	if err := h.service.Delete(r.Context(), id, user.ID); err != nil {
 		handleServiceError(w, err, h.logger)
 		return
 	}
@@ -388,6 +400,8 @@ func (h *ItemHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 // Resync refreshes metadata from Google Books for an existing item.
 func (h *ItemHandler) Resync(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+
 	id, ok := parseUUIDParam(w, r, "id")
 	if !ok {
 		return
@@ -398,7 +412,7 @@ func (h *ItemHandler) Resync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := h.service.ResyncMetadata(r.Context(), id, h.catalogSvc)
+	item, err := h.service.ResyncMetadata(r.Context(), id, user.ID, h.catalogSvc)
 	if err != nil {
 		handleServiceError(w, err, h.logger)
 		return
@@ -411,6 +425,8 @@ const maxCSVUploadBytes int64 = 5 << 20
 
 // Duplicates checks for potential duplicate items by title or identifier.
 func (h *ItemHandler) Duplicates(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+
 	title := strings.TrimSpace(r.URL.Query().Get("title"))
 	isbn13 := strings.TrimSpace(r.URL.Query().Get("isbn13"))
 	isbn10 := strings.TrimSpace(r.URL.Query().Get("isbn10"))
@@ -426,7 +442,7 @@ func (h *ItemHandler) Duplicates(w http.ResponseWriter, r *http.Request) {
 		ISBN10: isbn10,
 	}
 
-	matches, err := h.service.FindDuplicates(r.Context(), input)
+	matches, err := h.service.FindDuplicates(r.Context(), input, user.ID)
 	if err != nil {
 		h.logger.Error("find duplicates", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to check for duplicates")
@@ -442,11 +458,14 @@ func (h *ItemHandler) Duplicates(w http.ResponseWriter, r *http.Request) {
 
 // Histogram returns letter counts for the alphabet rail.
 func (h *ItemHandler) Histogram(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+
 	opts, err := parseHistogramOptions(r.URL.Query())
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	opts.OwnerID = user.ID
 
 	histogram, total, err := h.service.Histogram(r.Context(), opts)
 	if err != nil {
@@ -489,6 +508,8 @@ func parseHistogramOptions(values url.Values) (items.HistogramOptions, error) {
 
 // ImportCSV ingests a CSV file of catalog items.
 func (h *ItemHandler) ImportCSV(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+
 	if h.importer == nil {
 		writeError(w, http.StatusNotImplemented, "CSV import is not available")
 		return
@@ -517,7 +538,7 @@ func (h *ItemHandler) ImportCSV(w http.ResponseWriter, r *http.Request) {
 	}
 	defer func() { _ = file.Close() }()
 
-	summary, err := h.importer.Import(r.Context(), file)
+	summary, err := h.importer.Import(r.Context(), file, user.ID)
 	if err != nil {
 		if errors.Is(err, importer.ErrInvalidCSV) {
 			writeError(w, http.StatusBadRequest, err.Error())
@@ -533,11 +554,14 @@ func (h *ItemHandler) ImportCSV(w http.ResponseWriter, r *http.Request) {
 
 // ExportCSV exports all items matching the given filters to CSV format.
 func (h *ItemHandler) ExportCSV(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+
 	opts, err := parseListOptions(r.URL.Query())
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	opts.OwnerID = user.ID
 
 	// Remove limit for export - we want all matching items
 	opts.Limit = nil

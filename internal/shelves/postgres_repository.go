@@ -28,8 +28,8 @@ func (r *postgresRepository) CreateShelf(ctx context.Context, shelf Shelf, rows 
 	defer func() { _ = tx.Rollback() }()
 
 	if _, err := tx.NamedExecContext(ctx, `
-        INSERT INTO shelves (id, name, description, photo_url, created_at, updated_at)
-        VALUES (:id, :name, :description, :photo_url, :created_at, :updated_at)
+        INSERT INTO shelves (id, owner_id, name, description, photo_url, created_at, updated_at)
+        VALUES (:id, :owner_id, :name, :description, :photo_url, :created_at, :updated_at)
     `, shelf); err != nil {
 		return ShelfWithLayout{}, err
 	}
@@ -48,12 +48,12 @@ func (r *postgresRepository) CreateShelf(ctx context.Context, shelf Shelf, rows 
 		return ShelfWithLayout{}, err
 	}
 
-	return r.GetShelf(ctx, shelf.ID)
+	return r.GetShelf(ctx, shelf.ID, shelf.OwnerID)
 }
 
-func (r *postgresRepository) ListShelves(ctx context.Context) ([]ShelfSummary, error) {
+func (r *postgresRepository) ListShelves(ctx context.Context, ownerID uuid.UUID) ([]ShelfSummary, error) {
 	rows, err := r.db.QueryxContext(ctx, `
-        SELECT s.id, s.name, s.description, s.photo_url, s.created_at, s.updated_at,
+        SELECT s.id, s.owner_id, s.name, s.description, s.photo_url, s.created_at, s.updated_at,
                COALESCE(COUNT(isl.id), 0) AS item_count,
                COALESCE(SUM(CASE WHEN isl.shelf_slot_id IS NOT NULL THEN 1 ELSE 0 END), 0) AS placed_count,
                COALESCE(slot_counts.slot_count, 0) AS slot_count
@@ -62,9 +62,10 @@ func (r *postgresRepository) ListShelves(ctx context.Context) ([]ShelfSummary, e
         LEFT JOIN (
             SELECT shelf_id, COUNT(*) AS slot_count FROM shelf_slots GROUP BY shelf_id
         ) AS slot_counts ON slot_counts.shelf_id = s.id
-        GROUP BY s.id, s.name, s.description, s.photo_url, s.created_at, s.updated_at, slot_counts.slot_count
+        WHERE s.owner_id = $1
+        GROUP BY s.id, s.owner_id, s.name, s.description, s.photo_url, s.created_at, s.updated_at, slot_counts.slot_count
         ORDER BY s.created_at DESC
-    `)
+    `, ownerID)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +75,7 @@ func (r *postgresRepository) ListShelves(ctx context.Context) ([]ShelfSummary, e
 	for rows.Next() {
 		var shelf Shelf
 		var itemCount, placedCount, slotCount int
-		if err := rows.Scan(&shelf.ID, &shelf.Name, &shelf.Description, &shelf.PhotoURL, &shelf.CreatedAt, &shelf.UpdatedAt, &itemCount, &placedCount, &slotCount); err != nil {
+		if err := rows.Scan(&shelf.ID, &shelf.OwnerID, &shelf.Name, &shelf.Description, &shelf.PhotoURL, &shelf.CreatedAt, &shelf.UpdatedAt, &itemCount, &placedCount, &slotCount); err != nil {
 			return nil, err
 		}
 		summaries = append(summaries, ShelfSummary{Shelf: shelf, ItemCount: itemCount, PlacedCount: placedCount, SlotCount: slotCount})
@@ -85,9 +86,9 @@ func (r *postgresRepository) ListShelves(ctx context.Context) ([]ShelfSummary, e
 	return summaries, nil
 }
 
-func (r *postgresRepository) GetShelf(ctx context.Context, shelfID uuid.UUID) (ShelfWithLayout, error) {
+func (r *postgresRepository) GetShelf(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID) (ShelfWithLayout, error) {
 	var shelf Shelf
-	if err := r.db.GetContext(ctx, &shelf, `SELECT * FROM shelves WHERE id = $1`, shelfID); err != nil {
+	if err := r.db.GetContext(ctx, &shelf, `SELECT * FROM shelves WHERE id = $1 AND owner_id = $2`, shelfID, ownerID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ShelfWithLayout{}, ErrNotFound
 		}
@@ -106,7 +107,7 @@ func (r *postgresRepository) GetShelf(ctx context.Context, shelfID uuid.UUID) (S
 	if err != nil {
 		return ShelfWithLayout{}, err
 	}
-	placements, err := r.ListPlacements(ctx, shelfID)
+	placements, err := r.ListPlacements(ctx, shelfID, ownerID)
 	if err != nil {
 		return ShelfWithLayout{}, err
 	}
@@ -134,7 +135,7 @@ func (r *postgresRepository) GetShelf(ctx context.Context, shelfID uuid.UUID) (S
 	}, nil
 }
 
-func (r *postgresRepository) SaveLayout(ctx context.Context, shelfID uuid.UUID, rows []ShelfRow, columns []ShelfColumn, slots []ShelfSlot, removedSlotIDs []uuid.UUID) error {
+func (r *postgresRepository) SaveLayout(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID, rows []ShelfRow, columns []ShelfColumn, slots []ShelfSlot, removedSlotIDs []uuid.UUID) error {
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
@@ -142,7 +143,7 @@ func (r *postgresRepository) SaveLayout(ctx context.Context, shelfID uuid.UUID, 
 	defer func() { _ = tx.Rollback() }()
 
 	var exists bool
-	if err := tx.GetContext(ctx, &exists, `SELECT EXISTS(SELECT 1 FROM shelves WHERE id=$1)`, shelfID); err != nil {
+	if err := tx.GetContext(ctx, &exists, `SELECT EXISTS(SELECT 1 FROM shelves WHERE id=$1 AND owner_id=$2)`, shelfID, ownerID); err != nil {
 		return err
 	}
 	if !exists {
@@ -194,7 +195,7 @@ func (r *postgresRepository) SaveLayout(ctx context.Context, shelfID uuid.UUID, 
 	return tx.Commit()
 }
 
-func (r *postgresRepository) AssignItemToSlot(ctx context.Context, shelfID uuid.UUID, slotID uuid.UUID, itemID uuid.UUID) (ItemPlacement, error) {
+func (r *postgresRepository) AssignItemToSlot(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID, slotID uuid.UUID, itemID uuid.UUID) (ItemPlacement, error) {
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return ItemPlacement{}, err
@@ -202,7 +203,7 @@ func (r *postgresRepository) AssignItemToSlot(ctx context.Context, shelfID uuid.
 	defer func() { _ = tx.Rollback() }()
 
 	var shelfExists bool
-	if err := tx.GetContext(ctx, &shelfExists, `SELECT EXISTS(SELECT 1 FROM shelves WHERE id=$1)`, shelfID); err != nil {
+	if err := tx.GetContext(ctx, &shelfExists, `SELECT EXISTS(SELECT 1 FROM shelves WHERE id=$1 AND owner_id=$2)`, shelfID, ownerID); err != nil {
 		return ItemPlacement{}, err
 	}
 	if !shelfExists {
@@ -245,7 +246,16 @@ func (r *postgresRepository) AssignItemToSlot(ctx context.Context, shelfID uuid.
 	return placement, nil
 }
 
-func (r *postgresRepository) RemoveItemFromSlot(ctx context.Context, shelfID uuid.UUID, slotID uuid.UUID, itemID uuid.UUID) error {
+func (r *postgresRepository) RemoveItemFromSlot(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID, slotID uuid.UUID, itemID uuid.UUID) error {
+	// First verify shelf belongs to owner
+	var shelfExists bool
+	if err := r.db.GetContext(ctx, &shelfExists, `SELECT EXISTS(SELECT 1 FROM shelves WHERE id=$1 AND owner_id=$2)`, shelfID, ownerID); err != nil {
+		return err
+	}
+	if !shelfExists {
+		return ErrNotFound
+	}
+
 	result, err := r.db.ExecContext(ctx, `
         UPDATE item_shelf_locations
         SET shelf_slot_id = NULL
@@ -261,7 +271,16 @@ func (r *postgresRepository) RemoveItemFromSlot(ctx context.Context, shelfID uui
 	return nil
 }
 
-func (r *postgresRepository) ListPlacements(ctx context.Context, shelfID uuid.UUID) ([]ItemPlacement, error) {
+func (r *postgresRepository) ListPlacements(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID) ([]ItemPlacement, error) {
+	// Verify shelf belongs to owner
+	var shelfExists bool
+	if err := r.db.GetContext(ctx, &shelfExists, `SELECT EXISTS(SELECT 1 FROM shelves WHERE id=$1 AND owner_id=$2)`, shelfID, ownerID); err != nil {
+		return nil, err
+	}
+	if !shelfExists {
+		return nil, ErrNotFound
+	}
+
 	var placements []ItemPlacement
 	if err := r.db.SelectContext(ctx, &placements, `SELECT * FROM item_shelf_locations WHERE shelf_id=$1`, shelfID); err != nil {
 		return nil, err
@@ -269,7 +288,22 @@ func (r *postgresRepository) ListPlacements(ctx context.Context, shelfID uuid.UU
 	return placements, nil
 }
 
-func (r *postgresRepository) UpsertUnplaced(ctx context.Context, shelfID uuid.UUID, itemID uuid.UUID) (ItemPlacement, error) {
+func (r *postgresRepository) UpsertUnplaced(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID, itemID uuid.UUID) (ItemPlacement, error) {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return ItemPlacement{}, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// Verify shelf belongs to owner
+	var shelfExists bool
+	if err := tx.GetContext(ctx, &shelfExists, `SELECT EXISTS(SELECT 1 FROM shelves WHERE id=$1 AND owner_id=$2)`, shelfID, ownerID); err != nil {
+		return ItemPlacement{}, err
+	}
+	if !shelfExists {
+		return ItemPlacement{}, ErrNotFound
+	}
+
 	placement := ItemPlacement{
 		ID:          uuid.New(),
 		ItemID:      itemID,
@@ -278,14 +312,17 @@ func (r *postgresRepository) UpsertUnplaced(ctx context.Context, shelfID uuid.UU
 		CreatedAt:   time.Now().UTC(),
 	}
 
-	if _, err := r.db.ExecContext(ctx, `DELETE FROM item_shelf_locations WHERE shelf_id=$1 AND item_id=$2`, shelfID, itemID); err != nil {
+	if err := tx.GetContext(ctx, &placement, `
+        INSERT INTO item_shelf_locations (id, item_id, shelf_id, shelf_slot_id, created_at)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (shelf_id, item_id)
+        DO UPDATE SET shelf_slot_id = NULL, created_at = EXCLUDED.created_at
+        RETURNING id, item_id, shelf_id, shelf_slot_id, created_at
+    `, placement.ID, placement.ItemID, placement.ShelfID, placement.ShelfSlotID, placement.CreatedAt); err != nil {
 		return ItemPlacement{}, err
 	}
 
-	if _, err := r.db.NamedExecContext(ctx, `
-        INSERT INTO item_shelf_locations (id, item_id, shelf_id, shelf_slot_id, created_at)
-        VALUES (:id, :item_id, :shelf_id, :shelf_slot_id, :created_at)
-    `, placement); err != nil {
+	if err := tx.Commit(); err != nil {
 		return ItemPlacement{}, err
 	}
 	return placement, nil

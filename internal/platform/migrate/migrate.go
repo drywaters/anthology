@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"os"
 	"sort"
 	"strings"
 
@@ -14,7 +15,11 @@ import (
 	"anthology/migrations"
 )
 
-const schemaMigrationsTable = "schema_migrations"
+const (
+	schemaMigrationsTable          = "schema_migrations"
+	migrationOwnerEmailEnv         = "MIGRATION_OWNER_EMAIL"
+	migrationOwnerEmailPlaceholder = "{{MIGRATION_OWNER_EMAIL}}"
+)
 
 // Apply runs any pending SQL migrations bundled with the binary.
 func Apply(ctx context.Context, db *sqlx.DB, logger *slog.Logger) error {
@@ -58,7 +63,12 @@ func Apply(ctx context.Context, db *sqlx.DB, logger *slog.Logger) error {
 			return fmt.Errorf("migrate: read %s: %w", name, err)
 		}
 
-		if _, err := tx.ExecContext(ctx, string(src)); err != nil {
+		content, err := hydrateMigration(name, src)
+		if err != nil {
+			return err
+		}
+
+		if _, err := tx.ExecContext(ctx, content); err != nil {
 			return fmt.Errorf("migrate: exec %s: %w", name, err)
 		}
 
@@ -122,4 +132,23 @@ func readMigrationFiles() ([]string, error) {
 
 	sort.Strings(files)
 	return files, nil
+}
+
+func hydrateMigration(name string, src []byte) (string, error) {
+	content := string(src)
+	if !strings.Contains(content, migrationOwnerEmailPlaceholder) {
+		return content, nil
+	}
+
+	ownerEmail := strings.TrimSpace(os.Getenv(migrationOwnerEmailEnv))
+	if ownerEmail == "" {
+		return "", fmt.Errorf("migrate: %s requires %s to be set", name, migrationOwnerEmailEnv)
+	}
+
+	content = strings.ReplaceAll(content, migrationOwnerEmailPlaceholder, escapeSQLLiteral(ownerEmail))
+	return content, nil
+}
+
+func escapeSQLLiteral(value string) string {
+	return strings.ReplaceAll(value, "'", "''")
 }

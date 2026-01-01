@@ -11,11 +11,14 @@ import (
 	"github.com/google/uuid"
 )
 
+// testOwnerID is a fixed UUID for tests
+var testOwnerID = uuid.MustParse("00000000-0000-0000-0000-000000000001")
+
 func TestServiceCreateValidatesInput(t *testing.T) {
 	repo := NewInMemoryRepository(nil)
 	svc := NewService(repo)
 
-	_, err := svc.Create(context.Background(), CreateItemInput{})
+	_, err := svc.Create(context.Background(), CreateItemInput{OwnerID: testOwnerID})
 	if err == nil {
 		t.Fatalf("expected validation error when title missing")
 	}
@@ -28,6 +31,7 @@ func TestServiceCreatePersistsItem(t *testing.T) {
 	pages := 352
 
 	item, err := svc.Create(context.Background(), CreateItemInput{
+		OwnerID:     testOwnerID,
 		Title:       "The Pragmatic Programmer",
 		Creator:     "Andrew Hunt",
 		ItemType:    ItemTypeBook,
@@ -85,6 +89,7 @@ func TestServiceCreateUsesProvidedTimestamps(t *testing.T) {
 	updatedAt := time.Date(2024, 2, 2, 15, 30, 0, 0, time.UTC)
 
 	item, err := svc.Create(context.Background(), CreateItemInput{
+		OwnerID:   testOwnerID,
 		Title:     "Timestamped",
 		ItemType:  ItemTypeBook,
 		CreatedAt: &createdAt,
@@ -110,6 +115,7 @@ func TestServiceCreateValidatesCurrentPage(t *testing.T) {
 	current := 250
 
 	_, err := svc.Create(ctx, CreateItemInput{
+		OwnerID:       testOwnerID,
 		Title:         "Progress",
 		ItemType:      ItemTypeBook,
 		PageCount:     &pageCount,
@@ -122,6 +128,7 @@ func TestServiceCreateValidatesCurrentPage(t *testing.T) {
 
 	current = -1
 	_, err = svc.Create(ctx, CreateItemInput{
+		OwnerID:       testOwnerID,
 		Title:         "Negative",
 		ItemType:      ItemTypeBook,
 		ReadingStatus: BookStatusReading,
@@ -136,7 +143,7 @@ func TestServiceUpdate(t *testing.T) {
 	repo := NewInMemoryRepository(nil)
 	svc := NewService(repo)
 
-	created, err := svc.Create(context.Background(), CreateItemInput{Title: "Initial", ItemType: ItemTypeGame})
+	created, err := svc.Create(context.Background(), CreateItemInput{OwnerID: testOwnerID, Title: "Initial", ItemType: ItemTypeGame})
 	if err != nil {
 		t.Fatalf("create failed: %v", err)
 	}
@@ -150,7 +157,7 @@ func TestServiceUpdate(t *testing.T) {
 	pageCountValue := 640
 	pageCountPtr := &pageCountValue
 
-	updated, err := svc.Update(context.Background(), created.ID, UpdateItemInput{
+	updated, err := svc.Update(context.Background(), created.ID, testOwnerID, UpdateItemInput{
 		Title:       &title,
 		Notes:       &notes,
 		ItemType:    &itemType,
@@ -191,6 +198,7 @@ func TestServiceUpdateSupportsExplicitNullSeriesNumbers(t *testing.T) {
 	volume := 2
 	total := 5
 	book, err := svc.Create(ctx, CreateItemInput{
+		OwnerID:      testOwnerID,
 		Title:        "Series Book",
 		ItemType:     ItemTypeBook,
 		SeriesName:   "Saga",
@@ -201,7 +209,7 @@ func TestServiceUpdateSupportsExplicitNullSeriesNumbers(t *testing.T) {
 		t.Fatalf("create failed: %v", err)
 	}
 
-	updated, err := svc.Update(ctx, book.ID, UpdateItemInput{VolumeNumber: ptrNilIntPtr()})
+	updated, err := svc.Update(ctx, book.ID, testOwnerID, UpdateItemInput{VolumeNumber: ptrNilIntPtr()})
 	if err != nil {
 		t.Fatalf("update failed: %v", err)
 	}
@@ -215,7 +223,7 @@ func TestServiceUpdateSupportsExplicitNullSeriesNumbers(t *testing.T) {
 		t.Fatalf("expected seriesName to remain Saga, got %q", updated.SeriesName)
 	}
 
-	updated, err = svc.Update(ctx, book.ID, UpdateItemInput{TotalVolumes: ptrNilIntPtr()})
+	updated, err = svc.Update(ctx, book.ID, testOwnerID, UpdateItemInput{TotalVolumes: ptrNilIntPtr()})
 	if err != nil {
 		t.Fatalf("update failed: %v", err)
 	}
@@ -282,11 +290,11 @@ func TestServiceListOrdersByCreatedAt(t *testing.T) {
 
 	ctx := context.Background()
 
-	_, _ = svc.Create(ctx, CreateItemInput{Title: "First", ItemType: ItemTypeBook})
+	_, _ = svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "First", ItemType: ItemTypeBook})
 	time.Sleep(10 * time.Millisecond)
-	second, _ := svc.Create(ctx, CreateItemInput{Title: "Second", ItemType: ItemTypeBook})
+	second, _ := svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "Second", ItemType: ItemTypeBook})
 
-	items, err := svc.List(ctx, ListOptions{})
+	items, err := svc.List(ctx, ListOptions{OwnerID: testOwnerID})
 	if err != nil {
 		t.Fatalf("list failed: %v", err)
 	}
@@ -305,16 +313,16 @@ func TestServiceListAppliesFilters(t *testing.T) {
 
 	ctx := context.Background()
 
-	_, _ = svc.Create(ctx, CreateItemInput{Title: "Alpha", ItemType: ItemTypeBook})
-	_, _ = svc.Create(ctx, CreateItemInput{Title: "Zulu", ItemType: ItemTypeGame})
-	_, _ = svc.Create(ctx, CreateItemInput{Title: "99 Luftballons", ItemType: ItemTypeMusic})
+	_, _ = svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "Alpha", ItemType: ItemTypeBook})
+	_, _ = svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "Zulu", ItemType: ItemTypeGame})
+	_, _ = svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "99 Luftballons", ItemType: ItemTypeMusic})
 
 	finishedDate := time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC)
-	finished, _ := svc.Create(ctx, CreateItemInput{Title: "Finished Book", ItemType: ItemTypeBook, ReadingStatus: BookStatusRead, ReadAt: &finishedDate})
-	_, _ = svc.Create(ctx, CreateItemInput{Title: "In Progress", ItemType: ItemTypeBook, ReadingStatus: BookStatusReading})
+	finished, _ := svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "Finished Book", ItemType: ItemTypeBook, ReadingStatus: BookStatusRead, ReadAt: &finishedDate})
+	_, _ = svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "In Progress", ItemType: ItemTypeBook, ReadingStatus: BookStatusReading})
 
 	letter := "A"
-	items, err := svc.List(ctx, ListOptions{Initial: &letter})
+	items, err := svc.List(ctx, ListOptions{OwnerID: testOwnerID, Initial: &letter})
 	if err != nil {
 		t.Fatalf("list with initial failed: %v", err)
 	}
@@ -324,7 +332,7 @@ func TestServiceListAppliesFilters(t *testing.T) {
 
 	itemType := ItemTypeMusic
 	hash := "#"
-	items, err = svc.List(ctx, ListOptions{ItemType: &itemType, Initial: &hash})
+	items, err = svc.List(ctx, ListOptions{OwnerID: testOwnerID, ItemType: &itemType, Initial: &hash})
 	if err != nil {
 		t.Fatalf("list with combined filters failed: %v", err)
 	}
@@ -333,7 +341,7 @@ func TestServiceListAppliesFilters(t *testing.T) {
 	}
 
 	status := BookStatusRead
-	items, err = svc.List(ctx, ListOptions{ReadingStatus: &status})
+	items, err = svc.List(ctx, ListOptions{OwnerID: testOwnerID, ReadingStatus: &status})
 	if err != nil {
 		t.Fatalf("list with status filter failed: %v", err)
 	}
@@ -348,14 +356,14 @@ func TestServiceListSupportsSearchAndLimit(t *testing.T) {
 
 	ctx := context.Background()
 
-	_, _ = svc.Create(ctx, CreateItemInput{Title: "The Pragmatic Programmer", ItemType: ItemTypeBook})
-	_, _ = svc.Create(ctx, CreateItemInput{Title: "Children of Dune", ItemType: ItemTypeBook})
+	_, _ = svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "The Pragmatic Programmer", ItemType: ItemTypeBook})
+	_, _ = svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "Children of Dune", ItemType: ItemTypeBook})
 	time.Sleep(10 * time.Millisecond)
-	latest, _ := svc.Create(ctx, CreateItemInput{Title: "Dune", ItemType: ItemTypeBook})
+	latest, _ := svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "Dune", ItemType: ItemTypeBook})
 
 	query := "dune"
 	limit := 1
-	items, err := svc.List(ctx, ListOptions{Query: &query, Limit: &limit})
+	items, err := svc.List(ctx, ListOptions{OwnerID: testOwnerID, Query: &query, Limit: &limit})
 	if err != nil {
 		t.Fatalf("list with search failed: %v", err)
 	}
@@ -377,6 +385,7 @@ func TestServiceCreateTrimsInputAndNormalizesYear(t *testing.T) {
 	isbn10 := " 0441172717"
 	description := "  Classic sci-fi  "
 	item, err := svc.Create(context.Background(), CreateItemInput{
+		OwnerID:     testOwnerID,
 		Title:       "  Dune  ",
 		Creator:     "  Frank Herbert ",
 		ItemType:    ItemTypeBook,
@@ -421,7 +430,7 @@ func TestServiceUpdateRejectsBlankTitleOrItemType(t *testing.T) {
 	repo := NewInMemoryRepository(nil)
 	svc := NewService(repo)
 
-	item, err := svc.Create(context.Background(), CreateItemInput{Title: "Initial", ItemType: ItemTypeBook})
+	item, err := svc.Create(context.Background(), CreateItemInput{OwnerID: testOwnerID, Title: "Initial", ItemType: ItemTypeBook})
 	if err != nil {
 		t.Fatalf("create failed: %v", err)
 	}
@@ -429,13 +438,13 @@ func TestServiceUpdateRejectsBlankTitleOrItemType(t *testing.T) {
 	ctx := context.Background()
 
 	blank := "   "
-	_, err = svc.Update(ctx, item.ID, UpdateItemInput{Title: &blank})
+	_, err = svc.Update(ctx, item.ID, testOwnerID, UpdateItemInput{Title: &blank})
 	if err == nil || !strings.Contains(err.Error(), "title is required") {
 		t.Fatalf("expected title validation error, got %v", err)
 	}
 
 	emptyType := ItemType("")
-	_, err = svc.Update(ctx, item.ID, UpdateItemInput{ItemType: &emptyType})
+	_, err = svc.Update(ctx, item.ID, testOwnerID, UpdateItemInput{ItemType: &emptyType})
 	if err == nil || !strings.Contains(err.Error(), "itemType is required") {
 		t.Fatalf("expected itemType validation error, got %v", err)
 	}
@@ -446,14 +455,14 @@ func TestServiceRejectsOversizedCoverImage(t *testing.T) {
 	svc := NewService(repo)
 
 	bigPayload := makeDataURICoverBytes(maxCoverImageBytes + 1)
-	_, err := svc.Create(context.Background(), CreateItemInput{Title: "Big Cover", ItemType: ItemTypeBook, CoverImage: bigPayload})
+	_, err := svc.Create(context.Background(), CreateItemInput{OwnerID: testOwnerID, Title: "Big Cover", ItemType: ItemTypeBook, CoverImage: bigPayload})
 	if err == nil {
 		t.Fatalf("expected oversized cover image to be rejected")
 	}
 
 	updatePayload := bigPayload
-	item, _ := svc.Create(context.Background(), CreateItemInput{Title: "Small cover", ItemType: ItemTypeBook, CoverImage: "data:image/png;base64,aA=="})
-	_, err = svc.Update(context.Background(), item.ID, UpdateItemInput{CoverImage: &updatePayload})
+	item, _ := svc.Create(context.Background(), CreateItemInput{OwnerID: testOwnerID, Title: "Small cover", ItemType: ItemTypeBook, CoverImage: "data:image/png;base64,aA=="})
+	_, err = svc.Update(context.Background(), item.ID, testOwnerID, UpdateItemInput{CoverImage: &updatePayload})
 	if err == nil {
 		t.Fatalf("expected oversized cover image to be rejected on update")
 	}
@@ -465,7 +474,7 @@ func TestServiceRejectsNonImageDataURI(t *testing.T) {
 
 	// Attempt to use a non-image MIME type (e.g., text/html for XSS)
 	htmlPayload := "data:text/html;base64," + base64.StdEncoding.EncodeToString([]byte("<script>alert(1)</script>"))
-	_, err := svc.Create(context.Background(), CreateItemInput{Title: "XSS Attempt", ItemType: ItemTypeBook, CoverImage: htmlPayload})
+	_, err := svc.Create(context.Background(), CreateItemInput{OwnerID: testOwnerID, Title: "XSS Attempt", ItemType: ItemTypeBook, CoverImage: htmlPayload})
 	if err == nil {
 		t.Fatalf("expected non-image data URI to be rejected")
 	}
@@ -475,7 +484,7 @@ func TestServiceRejectsNonImageDataURI(t *testing.T) {
 
 	// Attempt with application/javascript
 	jsPayload := "data:application/javascript;base64," + base64.StdEncoding.EncodeToString([]byte("alert(1)"))
-	_, err = svc.Create(context.Background(), CreateItemInput{Title: "JS Attempt", ItemType: ItemTypeBook, CoverImage: jsPayload})
+	_, err = svc.Create(context.Background(), CreateItemInput{OwnerID: testOwnerID, Title: "JS Attempt", ItemType: ItemTypeBook, CoverImage: jsPayload})
 	if err == nil {
 		t.Fatalf("expected non-image data URI to be rejected")
 	}
@@ -486,18 +495,18 @@ func TestServiceValidatesBookStatusTransitions(t *testing.T) {
 	svc := NewService(repo)
 
 	pageCount := 400
-	book, err := svc.Create(context.Background(), CreateItemInput{Title: "Status", ItemType: ItemTypeBook, PageCount: &pageCount})
+	book, err := svc.Create(context.Background(), CreateItemInput{OwnerID: testOwnerID, Title: "Status", ItemType: ItemTypeBook, PageCount: &pageCount})
 	if err != nil {
 		t.Fatalf("create failed: %v", err)
 	}
 
-	_, err = svc.Update(context.Background(), book.ID, UpdateItemInput{ReadingStatus: ptrBookStatus(BookStatusRead)})
+	_, err = svc.Update(context.Background(), book.ID, testOwnerID, UpdateItemInput{ReadingStatus: ptrBookStatus(BookStatusRead)})
 	if err == nil {
 		t.Fatalf("expected read status to require readAt")
 	}
 
 	readAt := time.Date(2023, 3, 5, 0, 0, 0, 0, time.UTC)
-	updated, err := svc.Update(context.Background(), book.ID, UpdateItemInput{ReadingStatus: ptrBookStatus(BookStatusRead), ReadAt: ptrTimePtr(readAt)})
+	updated, err := svc.Update(context.Background(), book.ID, testOwnerID, UpdateItemInput{ReadingStatus: ptrBookStatus(BookStatusRead), ReadAt: ptrTimePtr(readAt)})
 	if err != nil {
 		t.Fatalf("expected valid status update, got %v", err)
 	}
@@ -511,7 +520,7 @@ func TestServiceValidatesBookStatusTransitions(t *testing.T) {
 		t.Fatalf("expected current page to clear for read status")
 	}
 
-	readingUpdate, err := svc.Update(context.Background(), book.ID, UpdateItemInput{
+	readingUpdate, err := svc.Update(context.Background(), book.ID, testOwnerID, UpdateItemInput{
 		ReadingStatus: ptrBookStatus(BookStatusReading),
 		CurrentPage:   ptrIntPtr(120),
 	})
@@ -522,12 +531,12 @@ func TestServiceValidatesBookStatusTransitions(t *testing.T) {
 		t.Fatalf("expected current page to persist")
 	}
 
-	_, err = svc.Update(context.Background(), book.ID, UpdateItemInput{CurrentPage: ptrIntPtr(999)})
+	_, err = svc.Update(context.Background(), book.ID, testOwnerID, UpdateItemInput{CurrentPage: ptrIntPtr(999)})
 	if err == nil {
 		t.Fatalf("expected error when current page exceeds total")
 	}
 
-	cleared, err := svc.Update(context.Background(), book.ID, UpdateItemInput{ReadingStatus: ptrBookStatus(BookStatusNone)})
+	cleared, err := svc.Update(context.Background(), book.ID, testOwnerID, UpdateItemInput{ReadingStatus: ptrBookStatus(BookStatusNone)})
 	if err != nil {
 		t.Fatalf("expected clearing reading status to succeed: %v", err)
 	}
@@ -541,7 +550,7 @@ func TestServiceValidatesBookStatusTransitions(t *testing.T) {
 		t.Fatalf("expected current page to clear when status removed")
 	}
 
-	_, err = svc.Update(context.Background(), book.ID, UpdateItemInput{ReadingStatus: ptrBookStatus(BookStatusReading), CurrentPage: ptrIntPtr(-5)})
+	_, err = svc.Update(context.Background(), book.ID, testOwnerID, UpdateItemInput{ReadingStatus: ptrBookStatus(BookStatusReading), CurrentPage: ptrIntPtr(-5)})
 	if err == nil {
 		t.Fatalf("expected negative current page to fail")
 	}
@@ -585,6 +594,7 @@ func TestServiceAllowsDataURIsLongerThanURLLimitWhenUnderByteCap(t *testing.T) {
 	}
 
 	item, err := svc.Create(context.Background(), CreateItemInput{
+		OwnerID:    testOwnerID,
 		Title:      "Large data URI",
 		ItemType:   ItemTypeBook,
 		CoverImage: payload,
@@ -597,7 +607,7 @@ func TestServiceAllowsDataURIsLongerThanURLLimitWhenUnderByteCap(t *testing.T) {
 	}
 
 	updatePayload := makeDataURICoverBytes(4200)
-	updated, err := svc.Update(context.Background(), item.ID, UpdateItemInput{CoverImage: &updatePayload})
+	updated, err := svc.Update(context.Background(), item.ID, testOwnerID, UpdateItemInput{CoverImage: &updatePayload})
 	if err != nil {
 		t.Fatalf("expected update to accept long data URI, got error: %v", err)
 	}
@@ -616,7 +626,7 @@ func TestServiceFindDuplicatesByTitle(t *testing.T) {
 	svc := NewService(repo)
 	ctx := context.Background()
 
-	existing, _ := svc.Create(ctx, CreateItemInput{Title: "The Great Gatsby", ItemType: ItemTypeBook, ISBN13: "9780743273565"})
+	existing, _ := svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "The Great Gatsby", ItemType: ItemTypeBook, ISBN13: "9780743273565"})
 
 	tests := []struct {
 		name        string
@@ -636,7 +646,7 @@ func TestServiceFindDuplicatesByTitle(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			matches, err := svc.FindDuplicates(ctx, DuplicateCheckInput{Title: tt.searchTitle})
+			matches, err := svc.FindDuplicates(ctx, DuplicateCheckInput{Title: tt.searchTitle}, testOwnerID)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -663,6 +673,7 @@ func TestServiceFindDuplicatesByISBN(t *testing.T) {
 	ctx := context.Background()
 
 	existing, _ := svc.Create(ctx, CreateItemInput{
+		OwnerID:  testOwnerID,
 		Title:    "Clean Code",
 		ItemType: ItemTypeBook,
 		ISBN13:   "978-0132350884",
@@ -686,7 +697,7 @@ func TestServiceFindDuplicatesByISBN(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			matches, err := svc.FindDuplicates(ctx, DuplicateCheckInput{ISBN13: tt.isbn13, ISBN10: tt.isbn10})
+			matches, err := svc.FindDuplicates(ctx, DuplicateCheckInput{ISBN13: tt.isbn13, ISBN10: tt.isbn10}, testOwnerID)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -714,10 +725,10 @@ func TestServiceFindDuplicatesReturnsMaxFiveMatches(t *testing.T) {
 
 	// Create 7 items with the same title
 	for i := 0; i < 7; i++ {
-		_, _ = svc.Create(ctx, CreateItemInput{Title: "Duplicate Title", ItemType: ItemTypeBook})
+		_, _ = svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "Duplicate Title", ItemType: ItemTypeBook})
 	}
 
-	matches, err := svc.FindDuplicates(ctx, DuplicateCheckInput{Title: "Duplicate Title"})
+	matches, err := svc.FindDuplicates(ctx, DuplicateCheckInput{Title: "Duplicate Title"}, testOwnerID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -733,13 +744,14 @@ func TestServiceFindDuplicatesReturnsCorrectFields(t *testing.T) {
 	ctx := context.Background()
 
 	existing, _ := svc.Create(ctx, CreateItemInput{
+		OwnerID:    testOwnerID,
 		Title:      "Test Book",
 		ItemType:   ItemTypeBook,
 		ISBN13:     "9780123456789",
 		CoverImage: "https://example.com/cover.jpg",
 	})
 
-	matches, err := svc.FindDuplicates(ctx, DuplicateCheckInput{Title: "Test Book"})
+	matches, err := svc.FindDuplicates(ctx, DuplicateCheckInput{Title: "Test Book"}, testOwnerID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -771,9 +783,9 @@ func TestServiceFindDuplicatesEmptyInput(t *testing.T) {
 	svc := NewService(repo)
 	ctx := context.Background()
 
-	_, _ = svc.Create(ctx, CreateItemInput{Title: "Some Book", ItemType: ItemTypeBook})
+	_, _ = svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "Some Book", ItemType: ItemTypeBook})
 
-	matches, err := svc.FindDuplicates(ctx, DuplicateCheckInput{})
+	matches, err := svc.FindDuplicates(ctx, DuplicateCheckInput{}, testOwnerID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -837,15 +849,15 @@ func TestServiceListStatusFilterWithAllItemType(t *testing.T) {
 
 	// Create test data: books with various statuses and non-book items
 	finishedDate := time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC)
-	readBook, _ := svc.Create(ctx, CreateItemInput{Title: "Read Book", ItemType: ItemTypeBook, ReadingStatus: BookStatusRead, ReadAt: &finishedDate})
-	readingBook, _ := svc.Create(ctx, CreateItemInput{Title: "Reading Book", ItemType: ItemTypeBook, ReadingStatus: BookStatusReading})
-	noneBook, _ := svc.Create(ctx, CreateItemInput{Title: "No Status Book", ItemType: ItemTypeBook})
-	movie, _ := svc.Create(ctx, CreateItemInput{Title: "A Movie", ItemType: ItemTypeMovie})
-	game, _ := svc.Create(ctx, CreateItemInput{Title: "A Game", ItemType: ItemTypeGame})
+	readBook, _ := svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "Read Book", ItemType: ItemTypeBook, ReadingStatus: BookStatusRead, ReadAt: &finishedDate})
+	readingBook, _ := svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "Reading Book", ItemType: ItemTypeBook, ReadingStatus: BookStatusReading})
+	noneBook, _ := svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "No Status Book", ItemType: ItemTypeBook})
+	movie, _ := svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "A Movie", ItemType: ItemTypeMovie})
+	game, _ := svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "A Game", ItemType: ItemTypeGame})
 
 	t.Run("All+Read shows only read books", func(t *testing.T) {
 		status := BookStatusRead
-		items, err := svc.List(ctx, ListOptions{ReadingStatus: &status})
+		items, err := svc.List(ctx, ListOptions{OwnerID: testOwnerID, ReadingStatus: &status})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -859,7 +871,7 @@ func TestServiceListStatusFilterWithAllItemType(t *testing.T) {
 
 	t.Run("All+Reading shows only reading books", func(t *testing.T) {
 		status := BookStatusReading
-		items, err := svc.List(ctx, ListOptions{ReadingStatus: &status})
+		items, err := svc.List(ctx, ListOptions{OwnerID: testOwnerID, ReadingStatus: &status})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -873,7 +885,7 @@ func TestServiceListStatusFilterWithAllItemType(t *testing.T) {
 
 	t.Run("All+None shows books with none status plus all non-books", func(t *testing.T) {
 		status := BookStatusNone
-		items, err := svc.List(ctx, ListOptions{ReadingStatus: &status})
+		items, err := svc.List(ctx, ListOptions{OwnerID: testOwnerID, ReadingStatus: &status})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -899,7 +911,7 @@ func TestServiceListStatusFilterWithAllItemType(t *testing.T) {
 	t.Run("Book+Read shows only read books", func(t *testing.T) {
 		itemType := ItemTypeBook
 		status := BookStatusRead
-		items, err := svc.List(ctx, ListOptions{ItemType: &itemType, ReadingStatus: &status})
+		items, err := svc.List(ctx, ListOptions{OwnerID: testOwnerID, ItemType: &itemType, ReadingStatus: &status})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -914,7 +926,7 @@ func TestServiceListStatusFilterWithAllItemType(t *testing.T) {
 	t.Run("Movie type ignores status filter", func(t *testing.T) {
 		itemType := ItemTypeMovie
 		status := BookStatusRead
-		items, err := svc.List(ctx, ListOptions{ItemType: &itemType, ReadingStatus: &status})
+		items, err := svc.List(ctx, ListOptions{OwnerID: testOwnerID, ItemType: &itemType, ReadingStatus: &status})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -932,14 +944,14 @@ func TestServiceHistogramStatusFilterWithAllItemType(t *testing.T) {
 
 	// Create test data
 	finishedDate := time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC)
-	_, _ = svc.Create(ctx, CreateItemInput{Title: "Alpha Read Book", ItemType: ItemTypeBook, ReadingStatus: BookStatusRead, ReadAt: &finishedDate})
-	_, _ = svc.Create(ctx, CreateItemInput{Title: "Beta No Status Book", ItemType: ItemTypeBook})
-	_, _ = svc.Create(ctx, CreateItemInput{Title: "Charlie Movie", ItemType: ItemTypeMovie})
-	_, _ = svc.Create(ctx, CreateItemInput{Title: "Delta Game", ItemType: ItemTypeGame})
+	_, _ = svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "Alpha Read Book", ItemType: ItemTypeBook, ReadingStatus: BookStatusRead, ReadAt: &finishedDate})
+	_, _ = svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "Beta No Status Book", ItemType: ItemTypeBook})
+	_, _ = svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "Charlie Movie", ItemType: ItemTypeMovie})
+	_, _ = svc.Create(ctx, CreateItemInput{OwnerID: testOwnerID, Title: "Delta Game", ItemType: ItemTypeGame})
 
 	t.Run("All+Read histogram shows only read books", func(t *testing.T) {
 		status := BookStatusRead
-		histogram, total, err := svc.Histogram(ctx, HistogramOptions{ReadingStatus: &status})
+		histogram, total, err := svc.Histogram(ctx, HistogramOptions{OwnerID: testOwnerID, ReadingStatus: &status})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -953,7 +965,7 @@ func TestServiceHistogramStatusFilterWithAllItemType(t *testing.T) {
 
 	t.Run("All+None histogram shows books with none status plus non-books", func(t *testing.T) {
 		status := BookStatusNone
-		histogram, total, err := svc.Histogram(ctx, HistogramOptions{ReadingStatus: &status})
+		histogram, total, err := svc.Histogram(ctx, HistogramOptions{OwnerID: testOwnerID, ReadingStatus: &status})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

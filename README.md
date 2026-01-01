@@ -178,7 +178,7 @@ npm run build
 * **Docker**: the repository now publishes separate images for the API (`Docker/Dockerfile.api`) and UI (`Docker/Dockerfile.ui`). The Makefile targets `docker-build-api`/`docker-build-ui` (and matching `docker-push`/`docker-buildx` variants) build and publish each image. The UI container writes `assets/runtime-config.js` from the `NG_APP_API_URL` environment variable so preview deployments can point at different backends without rebuilding the Angular assets.
 * **Secrets**: the API automatically loads `DATABASE_URL`, `GOOGLE_BOOKS_API_KEY`, `AUTH_GOOGLE_CLIENT_ID`, and `AUTH_GOOGLE_CLIENT_SECRET` from either the env var or a `<NAME>_FILE` path. Default secret paths include `/run/secrets/anthology_database_url`, `/run/secrets/anthology_google_books_api_key`, `/run/secrets/anthology_google_client_id`, and `/run/secrets/anthology_google_client_secret`, so Swarm/Stack secrets are consumed without baking credentials into the image.
 * **Environment management**: prefer `.env` files for local overrides (`DATA_STORE`, `DATABASE_URL`, `LOG_LEVEL`). Do not commit secrets.
-* **Migrations**: Ship migrations alongside deployments (e.g., run via `golang-migrate` or `psql`) before starting the API container.
+* **Migrations**: Ship migrations alongside deployments (e.g., run via `golang-migrate` or `psql`) before starting the API container. Set `MIGRATION_OWNER_EMAIL` when applying `0012_add_owner_id.sql` so existing rows are assigned to the intended user.
 
 ### Docker secrets quickstart
 

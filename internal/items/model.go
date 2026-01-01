@@ -79,6 +79,7 @@ const (
 // Item represents a catalog entry in Anthology.
 type Item struct {
 	ID             uuid.UUID       `db:"id" json:"id"`
+	OwnerID        uuid.UUID       `db:"owner_id" json:"-"`
 	Title          string          `db:"title" json:"title"`
 	Creator        string          `db:"creator" json:"creator"`
 	ItemType       ItemType        `db:"item_type" json:"itemType"`
@@ -119,6 +120,7 @@ type ShelfPlacement struct {
 
 // CreateItemInput captures the data needed to create a new Item.
 type CreateItemInput struct {
+	OwnerID        uuid.UUID
 	Title          string
 	Creator        string
 	ItemType       ItemType
@@ -189,6 +191,7 @@ const (
 
 // ListOptions describes filters for listing items.
 type ListOptions struct {
+	OwnerID       uuid.UUID
 	ItemType      *ItemType
 	ReadingStatus *BookStatus
 	ShelfStatus   *ShelfStatus
@@ -199,6 +202,7 @@ type ListOptions struct {
 
 // HistogramOptions describes filters for histogram aggregation.
 type HistogramOptions struct {
+	OwnerID       uuid.UUID
 	ItemType      *ItemType
 	ReadingStatus *BookStatus
 }
@@ -262,12 +266,12 @@ type SeriesRepoListOptions struct {
 // Repository defines persistence operations for Items.
 type Repository interface {
 	Create(ctx context.Context, item Item) (Item, error)
-	Get(ctx context.Context, id uuid.UUID) (Item, error)
+	Get(ctx context.Context, id uuid.UUID, ownerID uuid.UUID) (Item, error)
 	List(ctx context.Context, opts ListOptions) ([]Item, error)
 	Update(ctx context.Context, item Item) (Item, error)
-	Delete(ctx context.Context, id uuid.UUID) error
+	Delete(ctx context.Context, id uuid.UUID, ownerID uuid.UUID) error
 	Histogram(ctx context.Context, opts HistogramOptions) (LetterHistogram, error)
-	FindDuplicates(ctx context.Context, input DuplicateCheckInput) ([]DuplicateMatch, error)
-	ListSeries(ctx context.Context, opts SeriesRepoListOptions) ([]SeriesSummary, error)
-	GetSeriesByName(ctx context.Context, name string) (SeriesSummary, error)
+	FindDuplicates(ctx context.Context, input DuplicateCheckInput, ownerID uuid.UUID) ([]DuplicateMatch, error)
+	ListSeries(ctx context.Context, opts SeriesRepoListOptions, ownerID uuid.UUID) ([]SeriesSummary, error)
+	GetSeriesByName(ctx context.Context, name string, ownerID uuid.UUID) (SeriesSummary, error)
 }
