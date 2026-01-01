@@ -165,10 +165,7 @@
                     <mat-option *ngIf="loadingSeriesNames()" disabled>
                         Loading series...
                     </mat-option>
-                    <mat-option
-                        *ngFor="let name of filteredSeriesNames()"
-                        [value]="name"
-                    >
+                    <mat-option *ngFor="let name of filteredSeriesNames()" [value]="name">
                         {{ name }}
                     </mat-option>
                     <mat-option

@@ -204,10 +204,11 @@ export class AddItemPageComponent implements OnInit {
 
     private handleSeriesPrefill(params: ParamMap): void {
         const seriesName = this.getLastQueryParam(params, 'seriesName') ?? '';
-        const volumeNumberStr = this.getLastQueryParam(params, 'volumeNumber');
-        const volumeNumber = volumeNumberStr ? parseInt(volumeNumberStr, 10) : null;
-        const normalizedVolumeNumber =
-            volumeNumber !== null && !Number.isNaN(volumeNumber) ? volumeNumber : null;
+        const volumeNumber = Number.parseInt(
+            this.getLastQueryParam(params, 'volumeNumber') ?? '',
+            10,
+        );
+        const normalizedVolumeNumber = Number.isNaN(volumeNumber) ? null : volumeNumber;
 
         // Store series info for later merging when a search result is selected
         this.seriesPrefill.set({
@@ -565,11 +566,6 @@ export class AddItemPageComponent implements OnInit {
                 query: prefill.seriesName,
                 label: `Series${volumeHint}`,
             });
-        } else {
-            const source = this.manualDraftSource();
-            if (source) {
-                this.manualDraftSource.set({ ...source });
-            }
         }
 
         this.selectedTab.set(AddItemPageComponent.MANUAL_ENTRY_TAB_INDEX);

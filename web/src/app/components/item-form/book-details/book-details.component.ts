@@ -10,7 +10,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { debounceTime, distinctUntilChanged, map, startWith } from 'rxjs';
+import { debounceTime, distinctUntilChanged, finalize, map, startWith } from 'rxjs';
 
 import { BookStatus, Format, Genre } from '../../../models';
 import { SeriesService } from '../../../services/series.service';
@@ -55,7 +55,10 @@ export class BookDetailsComponent implements OnInit {
         this.loadingSeriesNames.set(true);
         this.seriesService
             .list()
-            .pipe(takeUntilDestroyed(this.destroyRef))
+            .pipe(
+                finalize(() => this.loadingSeriesNames.set(false)),
+                takeUntilDestroyed(this.destroyRef),
+            )
             .subscribe({
                 next: (seriesList) => {
                     const names = seriesList
@@ -64,10 +67,9 @@ export class BookDetailsComponent implements OnInit {
                         .sort((a, b) => a.localeCompare(b));
                     this.allSeriesNames.set(names);
                     this.filteredSeriesNames.set(names);
-                    this.loadingSeriesNames.set(false);
                 },
-                error: () => {
-                    this.loadingSeriesNames.set(false);
+                error: (error) => {
+                    console.error('Failed to load series names.', error);
                 },
             });
     }
