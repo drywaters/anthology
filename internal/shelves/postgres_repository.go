@@ -289,9 +289,15 @@ func (r *postgresRepository) ListPlacements(ctx context.Context, shelfID uuid.UU
 }
 
 func (r *postgresRepository) UpsertUnplaced(ctx context.Context, shelfID uuid.UUID, ownerID uuid.UUID, itemID uuid.UUID) (ItemPlacement, error) {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return ItemPlacement{}, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
 	// Verify shelf belongs to owner
 	var shelfExists bool
-	if err := r.db.GetContext(ctx, &shelfExists, `SELECT EXISTS(SELECT 1 FROM shelves WHERE id=$1 AND owner_id=$2)`, shelfID, ownerID); err != nil {
+	if err := tx.GetContext(ctx, &shelfExists, `SELECT EXISTS(SELECT 1 FROM shelves WHERE id=$1 AND owner_id=$2)`, shelfID, ownerID); err != nil {
 		return ItemPlacement{}, err
 	}
 	if !shelfExists {
@@ -306,14 +312,17 @@ func (r *postgresRepository) UpsertUnplaced(ctx context.Context, shelfID uuid.UU
 		CreatedAt:   time.Now().UTC(),
 	}
 
-	if _, err := r.db.ExecContext(ctx, `DELETE FROM item_shelf_locations WHERE shelf_id=$1 AND item_id=$2`, shelfID, itemID); err != nil {
+	if err := tx.GetContext(ctx, &placement, `
+        INSERT INTO item_shelf_locations (id, item_id, shelf_id, shelf_slot_id, created_at)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (shelf_id, item_id)
+        DO UPDATE SET shelf_slot_id = NULL, created_at = EXCLUDED.created_at
+        RETURNING id, item_id, shelf_id, shelf_slot_id, created_at
+    `, placement.ID, placement.ItemID, placement.ShelfID, placement.ShelfSlotID, placement.CreatedAt); err != nil {
 		return ItemPlacement{}, err
 	}
 
-	if _, err := r.db.NamedExecContext(ctx, `
-        INSERT INTO item_shelf_locations (id, item_id, shelf_id, shelf_slot_id, created_at)
-        VALUES (:id, :item_id, :shelf_id, :shelf_slot_id, :created_at)
-    `, placement); err != nil {
+	if err := tx.Commit(); err != nil {
 		return ItemPlacement{}, err
 	}
 	return placement, nil

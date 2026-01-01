@@ -44,10 +44,6 @@ func NewShelfHandler(svc *shelves.Service, logger *slog.Logger) *ShelfHandler {
 // List returns shelf summaries.
 func (h *ShelfHandler) List(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	shelvesList, err := h.svc.ListShelves(r.Context(), user.ID)
 	if err != nil {
@@ -62,10 +58,6 @@ func (h *ShelfHandler) List(w http.ResponseWriter, r *http.Request) {
 // Create registers a new shelf with a default layout.
 func (h *ShelfHandler) Create(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	var input shelves.CreateShelfInput
 	if err := decodeJSONBody(w, r, &input); err != nil {
@@ -85,10 +77,6 @@ func (h *ShelfHandler) Create(w http.ResponseWriter, r *http.Request) {
 // Get returns a shelf and its layout.
 func (h *ShelfHandler) Get(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	shelfID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -108,10 +96,6 @@ func (h *ShelfHandler) Get(w http.ResponseWriter, r *http.Request) {
 // UpdateLayout applies a new layout and returns displaced items.
 func (h *ShelfHandler) UpdateLayout(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	shelfID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -140,10 +124,6 @@ func (h *ShelfHandler) UpdateLayout(w http.ResponseWriter, r *http.Request) {
 // AssignItem assigns an item to a slot on the shelf.
 func (h *ShelfHandler) AssignItem(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	shelfID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -185,10 +165,6 @@ func (h *ShelfHandler) AssignItem(w http.ResponseWriter, r *http.Request) {
 // RemoveItem removes an item placement from a slot.
 func (h *ShelfHandler) RemoveItem(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	shelfID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -218,10 +194,6 @@ func (h *ShelfHandler) RemoveItem(w http.ResponseWriter, r *http.Request) {
 // ScanAndAssign scans an ISBN and assigns the item to a slot.
 func (h *ShelfHandler) ScanAndAssign(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	shelfID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {

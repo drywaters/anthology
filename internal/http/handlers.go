@@ -44,10 +44,6 @@ func NewItemHandler(service *items.Service, catalogSvc *catalog.Service, importe
 // List returns all items.
 func (h *ItemHandler) List(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	opts, err := parseListOptions(r.URL.Query())
 	if err != nil {
@@ -133,10 +129,6 @@ func parseListOptions(values url.Values) (items.ListOptions, error) {
 // Create stores a new item.
 func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	var payload struct {
 		Title          string     `json:"title"`
@@ -213,10 +205,6 @@ func (h *ItemHandler) Create(w http.ResponseWriter, r *http.Request) {
 // Get returns a single item.
 func (h *ItemHandler) Get(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	id, ok := parseUUIDParam(w, r, "id")
 	if !ok {
@@ -235,10 +223,6 @@ func (h *ItemHandler) Get(w http.ResponseWriter, r *http.Request) {
 // Update modifies an item.
 func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	id, ok := parseUUIDParam(w, r, "id")
 	if !ok {
@@ -400,10 +384,6 @@ func (h *ItemHandler) Update(w http.ResponseWriter, r *http.Request) {
 // Delete removes an item.
 func (h *ItemHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	id, ok := parseUUIDParam(w, r, "id")
 	if !ok {
@@ -421,10 +401,6 @@ func (h *ItemHandler) Delete(w http.ResponseWriter, r *http.Request) {
 // Resync refreshes metadata from Google Books for an existing item.
 func (h *ItemHandler) Resync(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	id, ok := parseUUIDParam(w, r, "id")
 	if !ok {
@@ -450,10 +426,6 @@ const maxCSVUploadBytes int64 = 5 << 20
 // Duplicates checks for potential duplicate items by title or identifier.
 func (h *ItemHandler) Duplicates(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	title := strings.TrimSpace(r.URL.Query().Get("title"))
 	isbn13 := strings.TrimSpace(r.URL.Query().Get("isbn13"))
@@ -487,10 +459,6 @@ func (h *ItemHandler) Duplicates(w http.ResponseWriter, r *http.Request) {
 // Histogram returns letter counts for the alphabet rail.
 func (h *ItemHandler) Histogram(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	opts, err := parseHistogramOptions(r.URL.Query())
 	if err != nil {
@@ -541,10 +509,6 @@ func parseHistogramOptions(values url.Values) (items.HistogramOptions, error) {
 // ImportCSV ingests a CSV file of catalog items.
 func (h *ItemHandler) ImportCSV(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	if h.importer == nil {
 		writeError(w, http.StatusNotImplemented, "CSV import is not available")
@@ -591,10 +555,6 @@ func (h *ItemHandler) ImportCSV(w http.ResponseWriter, r *http.Request) {
 // ExportCSV exports all items matching the given filters to CSV format.
 func (h *ItemHandler) ExportCSV(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	opts, err := parseListOptions(r.URL.Query())
 	if err != nil {

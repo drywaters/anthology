@@ -157,7 +157,11 @@ func (r *InMemoryRepository) Update(_ context.Context, item Item) (Item, error) 
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if _, ok := r.data[item.ID]; !ok {
+	existing, ok := r.data[item.ID]
+	if !ok {
+		return Item{}, ErrNotFound
+	}
+	if existing.OwnerID != item.OwnerID {
 		return Item{}, ErrNotFound
 	}
 	r.data[item.ID] = item

@@ -23,10 +23,6 @@ func NewSeriesHandler(service *items.Service, logger *slog.Logger) *SeriesHandle
 // List returns all series with summaries.
 func (h *SeriesHandler) List(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	opts := parseSeriesListOptions(r)
 
@@ -43,10 +39,6 @@ func (h *SeriesHandler) List(w http.ResponseWriter, r *http.Request) {
 // Get returns details for a single series.
 func (h *SeriesHandler) Get(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		writeError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	name := strings.TrimSpace(r.URL.Query().Get("name"))
 	if name == "" {

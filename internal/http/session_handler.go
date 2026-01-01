@@ -98,10 +98,6 @@ func (h *SessionHandler) Logout(w http.ResponseWriter, r *http.Request) {
 // CurrentUser returns the authenticated user's information.
 func (h *SessionHandler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
-	if user == nil {
-		unauthorized(w)
-		return
-	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"id":        user.ID.String(),
