@@ -59,7 +59,7 @@ Key environment variables (see `docs/LOCAL_DEVELOPMENT.md` for setup):
 - `AUTH_GOOGLE_ALLOWED_DOMAINS` / `AUTH_GOOGLE_ALLOWED_EMAILS` — OAuth allowlist (required)
 - `AUTH_GOOGLE_REDIRECT_URL` — OAuth callback (defaults to localhost)
 - `FRONTEND_URL` — UI URL used for OAuth redirects
-- `APP_ENV` — `development`, `staging`, or `production` (defaults to production for safety)
+- `APP_ENV` — `development` or `production` (defaults to production for safety)
 - `ALLOWED_ORIGINS` — CORS origins (default: localhost:4200,8080)
 - `PORT` — API port (default: 8080)
 

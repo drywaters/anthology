@@ -118,21 +118,7 @@ The application will be available at:
 - Frontend: http://localhost:4200
 - API: http://localhost:8080
 
-## OAuth Configuration for Other Environments
-
-### Staging (anthology-staging.bitofbytes.io)
-
-**Authorized JavaScript origins:**
-```
-https://anthology-staging.bitofbytes.io
-```
-
-**Authorized redirect URIs:**
-```
-https://anthology-staging.bitofbytes.io/api/auth/google/callback
-```
-
-### Production (anthology.bitofobytes.io)
+## OAuth Configuration for Production (anthology.bitofobytes.io)
 
 **Authorized JavaScript origins:**
 ```

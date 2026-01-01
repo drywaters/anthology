@@ -57,7 +57,7 @@ func Load() (Config, error) {
 	}
 	environment = strings.ToLower(environment)
 	if !isValidEnvironment(environment) {
-		return Config{}, fmt.Errorf("APP_ENV must be one of development, staging, or production")
+		return Config{}, fmt.Errorf("APP_ENV must be one of development or production")
 	}
 
 	cfg := Config{
@@ -137,7 +137,7 @@ func parseCSV(value string) []string {
 
 func isValidEnvironment(value string) bool {
 	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "development", "staging", "production":
+	case "development", "production":
 		return true
 	default:
 		return false

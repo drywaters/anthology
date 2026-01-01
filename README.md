@@ -26,7 +26,7 @@ If you are new to the project, start with [`docs/architecture/overview.md`](docs
 * Metadata lookups (`internal/catalog`) call the Google Books API. `/api/catalog/lookup` proxies those queries so the Angular UI can search by ISBN or keyword without exposing API tokens.
 * Bulk imports use `internal/importer`, which accepts CSV uploads, fetches metadata for incomplete rows, deduplicates based on title/ISBN, and returns a structured summary so the UI can visualize success vs. warnings.
 * Configuration is environment-driven (`DATA_STORE`, `DATABASE_URL`, `PORT`, `LOG_LEVEL`, `ALLOWED_ORIGINS`, `APP_ENV`, `GOOGLE_BOOKS_API_KEY`, `AUTH_GOOGLE_CLIENT_ID`, `AUTH_GOOGLE_CLIENT_SECRET`, `AUTH_GOOGLE_REDIRECT_URL`, `AUTH_GOOGLE_ALLOWED_DOMAINS`, `AUTH_GOOGLE_ALLOWED_EMAILS`, `FRONTEND_URL`). When `DATA_STORE=memory` (the default), the API boots with a seeded in-memory catalogue to help demo the experience quickly. Secrets can be provided via environment variables, `<NAME>_FILE` pointers, or the default Docker Swarm secret paths under `/run/secrets/anthology_*`.
-* Google OAuth is required when `APP_ENV` is `staging` or `production` (configure the Google client ID/secret plus an allowlist). OAuth sessions are stored in Postgres, so non-dev deployments must use `DATA_STORE=postgres`.
+* Google OAuth is required when `APP_ENV` is `production` (configure the Google client ID/secret plus an allowlist). OAuth sessions are stored in Postgres, so non-dev deployments must use `DATA_STORE=postgres`.
 * In `APP_ENV=development` without OAuth configured, auth is disabled and `/api/*` endpoints are open. Requests to `/health` remain public in all environments.
 * CORS is enabled via [`github.com/go-chi/cors`](https://github.com/go-chi/cors) and defaults to allowing `http://localhost:4200` and `http://localhost:8080`. Override with `ALLOWED_ORIGINS="https://example.com,https://admin.example.com"` when deploying.
 * Postgres persistence is implemented with `sqlx`; see `migrations/` (current schema requires up to `0007_make_no_status_explicit.sql`).
@@ -64,7 +64,7 @@ The API listens on `http://localhost:8080` and exposes JSON-only endpoints (the 
 
 ### Using Postgres
 
-OAuth requires Postgres. When `APP_ENV` is `staging` or `production`, configure the Google OAuth env vars and allowlist.
+OAuth requires Postgres. When `APP_ENV` is `production`, configure the Google OAuth env vars and allowlist.
 
 ```bash
 export DATA_STORE=postgres
@@ -77,7 +77,7 @@ export AUTH_GOOGLE_CLIENT_SECRET="google-client-secret"
 export AUTH_GOOGLE_ALLOWED_DOMAINS="example.com"
 export AUTH_GOOGLE_REDIRECT_URL="https://app.example.com/api/auth/google/callback"
 export FRONTEND_URL="https://app.example.com"
-export GOOGLE_BOOKS_API_KEY="staging-or-prod-google-books-key"
+export GOOGLE_BOOKS_API_KEY="prod-google-books-key"
 
 # Apply the migration (example)
 psql "$DATABASE_URL" -f migrations/0001_create_items.sql

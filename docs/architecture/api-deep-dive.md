@@ -38,7 +38,7 @@ flowchart LR
 * `ALLOWED_ORIGINS` CSV list; wildcards only allowed in `APP_ENV=development`.
 * `LOG_LEVEL` (`debug`, `info`, `warn`, `error`).
 * `GOOGLE_BOOKS_API_KEY` (required; `_FILE` supported with default `/run/secrets/anthology_google_books_api_key`).
-* `AUTH_GOOGLE_CLIENT_ID` / `AUTH_GOOGLE_CLIENT_SECRET` (required when `APP_ENV` is `staging` or `production`).
+* `AUTH_GOOGLE_CLIENT_ID` / `AUTH_GOOGLE_CLIENT_SECRET` (required when `APP_ENV` is `production`).
 * `AUTH_GOOGLE_ALLOWED_DOMAINS` or `AUTH_GOOGLE_ALLOWED_EMAILS` (allowlist required in non-dev).
 * `AUTH_GOOGLE_REDIRECT_URL` (defaults to `http://localhost:8080/api/auth/google/callback`).
 * `FRONTEND_URL` (defaults to `http://localhost:4200`).
