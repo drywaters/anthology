@@ -27,7 +27,7 @@ describe(AddItemPageComponent.name, () => {
     let queryParamMapSubject: BehaviorSubject<ParamMap>;
 
     const mockSeriesService = {
-        list: () => of([]),
+        list: () => of({ series: [], standaloneItems: [] }),
     };
 
     function createParamMap(params: Record<string, string[]>): ParamMap {

@@ -8,7 +8,7 @@ import { SeriesService } from '../../services/series.service';
 
 describe(ItemFormComponent.name, () => {
     const mockSeriesService = {
-        list: () => of([]),
+        list: () => of({ series: [], standaloneItems: [] }),
     };
 
     beforeEach(async () => {

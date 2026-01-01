@@ -7,6 +7,7 @@ import { ItemsPageComponent } from './items-page.component';
 import { ItemService } from '../../services/item.service';
 import { NotificationService } from '../../services/notification.service';
 import { LibraryActionsService } from '../../services/library-actions.service';
+import { SeriesService } from '../../services/series.service';
 import { BookStatusFilters, ItemTypes, ShelfStatusFilters } from '../../models';
 
 class IntersectionObserverStub {
@@ -46,12 +47,17 @@ describe(ItemsPageComponent.name, () => {
             'error',
         ]);
 
+        const seriesServiceStub = {
+            list: () => of({ series: [], standaloneItems: [] }),
+        };
+
         await TestBed.configureTestingModule({
             imports: [ItemsPageComponent],
             providers: [
                 provideNoopAnimations(),
                 { provide: ItemService, useValue: itemServiceSpy },
                 { provide: NotificationService, useValue: notificationSpy },
+                { provide: SeriesService, useValue: seriesServiceStub },
                 provideRouter([], withDisabledInitialNavigation()),
             ],
         }).compileComponents();

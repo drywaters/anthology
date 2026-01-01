@@ -11,7 +11,7 @@ describe(BookDetailsComponent.name, () => {
     let form: FormGroup;
 
     const mockSeriesService = {
-        list: () => of([]),
+        list: () => of({ series: [], standaloneItems: [] }),
     };
 
     beforeEach(async () => {
