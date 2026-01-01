@@ -8,7 +8,7 @@ Implement user-scoped data isolation so each user only sees their own items and 
 
 - **Column name**: `owner_id` (better semantics for future sharing)
 - **Error handling**: Return 404 for unauthorized access (prevents enumeration attacks)
-- **Data migration**: Hardcode assignment to `danwater1@gmail.com` for existing data
+- **Data migration**: Assign existing data to a configured owner email (set `MIGRATION_OWNER_EMAIL`)
 - **Filtering layer**: Repository level (single enforcement point, SQL performance)
 
 ---
@@ -28,9 +28,9 @@ ALTER TABLE shelves ADD COLUMN owner_id UUID REFERENCES users(id);
 CREATE INDEX idx_items_owner_id ON items (owner_id);
 CREATE INDEX idx_shelves_owner_id ON shelves (owner_id);
 
--- Migrate existing data to danwater1@gmail.com
-UPDATE items SET owner_id = (SELECT id FROM users WHERE email = 'danwater1@gmail.com') WHERE owner_id IS NULL;
-UPDATE shelves SET owner_id = (SELECT id FROM users WHERE email = 'danwater1@gmail.com') WHERE owner_id IS NULL;
+-- Migrate existing data to the configured owner email
+UPDATE items SET owner_id = (SELECT id FROM users WHERE email = '{{MIGRATION_OWNER_EMAIL}}') WHERE owner_id IS NULL;
+UPDATE shelves SET owner_id = (SELECT id FROM users WHERE email = '{{MIGRATION_OWNER_EMAIL}}') WHERE owner_id IS NULL;
 
 -- Make owner_id NOT NULL after migration
 ALTER TABLE items ALTER COLUMN owner_id SET NOT NULL;
