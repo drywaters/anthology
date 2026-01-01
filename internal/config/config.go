@@ -26,7 +26,12 @@ type Config struct {
 	FrontendURL          string
 }
 
-// Load reads configuration from environment variables with sensible defaults for local development.
+// Load reads configuration from environment variables, supporting secret-file fallbacks and sensible defaults for local development.
+// 
+// It validates and returns a Config populated from environment values (including parsing CSV lists and determining the HTTP port).
+// Load enforces APP_ENV to be either "development" or "production", requires DATABASE_URL and GOOGLE_BOOKS_API_KEY, requires Google OAuth
+// client ID and secret, and requires at least one of AUTH_GOOGLE_ALLOWED_DOMAINS or AUTH_GOOGLE_ALLOWED_EMAILS. It also sanitizes and
+// deduplicates allowed origins and returns an error for invalid port values or other validation/read failures.
 func Load() (Config, error) {
 	databaseURL, err := getEnvOrFile("DATABASE_URL", "/run/secrets/anthology_database_url")
 	if err != nil {
@@ -135,6 +140,8 @@ func parseCSV(value string) []string {
 	return out
 }
 
+// isValidEnvironment reports whether the provided environment string is one of the accepted values: "development" or "production".
+// Comparison is case-insensitive and ignores surrounding whitespace.
 func isValidEnvironment(value string) bool {
 	switch strings.ToLower(strings.TrimSpace(value)) {
 	case "development", "production":
