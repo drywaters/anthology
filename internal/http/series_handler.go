@@ -20,20 +20,20 @@ func NewSeriesHandler(service *items.Service, logger *slog.Logger) *SeriesHandle
 	return &SeriesHandler{service: service, logger: logger}
 }
 
-// List returns all series with summaries.
+// List returns all series with summaries and standalone books.
 func (h *SeriesHandler) List(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r.Context())
 
 	opts := parseSeriesListOptions(r)
 
-	series, err := h.service.ListSeries(r.Context(), opts, user.ID)
+	response, err := h.service.ListSeries(r.Context(), opts, user.ID)
 	if err != nil {
 		h.logger.Error("list series", "error", err)
 		writeError(w, http.StatusInternalServerError, "failed to list series")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]any{"series": series})
+	writeJSON(w, http.StatusOK, response)
 }
 
 // Get returns details for a single series.

@@ -23,6 +23,7 @@
                     <ng-container *ngIf="hasSeriesData(); else emptyState">
                         <app-items-series-view
                             [seriesData]="seriesData"
+                            [standaloneItems]="standaloneItems"
                             [expandedSeries]="expandedSeries"
                             (seriesToggled)="toggleSeriesExpanded($event)"
                             (itemSelected)="startEdit($event)"

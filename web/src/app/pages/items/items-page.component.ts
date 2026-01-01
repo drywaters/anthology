@@ -104,6 +104,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     readonly histogram = signal<LetterHistogram>({});
     readonly activeLetter = signal<string | null>(null);
     readonly seriesData = signal<SeriesSummary[]>([]);
+    readonly standaloneItems = signal<Item[]>([]);
     readonly expandedSeries = signal<Set<string>>(new Set());
     readonly seriesLoading = signal(false);
     readonly exportBusy = signal(false);
@@ -129,7 +130,9 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     ];
 
     readonly hasFilteredItems = computed(() => this.items().length > 0);
-    readonly hasSeriesData = computed(() => this.seriesData().length > 0);
+    readonly hasSeriesData = computed(
+        () => this.seriesData().length > 0 || this.standaloneItems().length > 0,
+    );
     readonly isUnfiltered = computed(
         () =>
             this.typeFilter() === 'all' &&
@@ -221,8 +224,9 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
                     }
                     this.seriesLoading.set(true);
                     return this.seriesService.list({ includeItems: true }).pipe(
-                        tap((series) => {
-                            this.seriesData.set(series);
+                        tap((response) => {
+                            this.seriesData.set(response.series);
+                            this.standaloneItems.set(response.standaloneItems || []);
                             this.seriesLoading.set(false);
                         }),
                         catchError(() => {

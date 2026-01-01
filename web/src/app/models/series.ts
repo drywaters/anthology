@@ -12,6 +12,11 @@ export interface SeriesSummary {
     missingVolumes?: number[];
 }
 
+export interface SeriesListResponse {
+    series: SeriesSummary[];
+    standaloneItems: Item[];
+}
+
 export interface MissingVolume {
     seriesName: string;
     volumeNumber: number;

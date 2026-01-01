@@ -1,9 +1,9 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { map, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 
 import { environment } from '../config/environment';
-import { SeriesSummary, SeriesStatus } from '../models/series';
+import { SeriesListResponse, SeriesSummary, SeriesStatus } from '../models/series';
 
 export interface SeriesListOptions {
     includeItems?: boolean;
@@ -15,7 +15,7 @@ export class SeriesService {
     private readonly http = inject(HttpClient);
     private readonly baseUrl = `${environment.apiUrl}/series`;
 
-    list(options?: SeriesListOptions): Observable<SeriesSummary[]> {
+    list(options?: SeriesListOptions): Observable<SeriesListResponse> {
         let params = new HttpParams();
         if (options?.includeItems) {
             params = params.set('include_items', 'true');
@@ -24,9 +24,7 @@ export class SeriesService {
             params = params.set('status', options.status);
         }
 
-        return this.http
-            .get<{ series: SeriesSummary[] }>(this.baseUrl, { params })
-            .pipe(map((response) => response.series));
+        return this.http.get<SeriesListResponse>(this.baseUrl, { params });
     }
 
     get(name: string): Observable<SeriesSummary> {
