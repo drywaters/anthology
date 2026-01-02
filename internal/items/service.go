@@ -398,10 +398,13 @@ func (s *Service) UpdateSeriesName(ctx context.Context, oldName, newName string,
 		return SeriesSummary{}, err
 	}
 
-	// Check if target name already exists (unless renaming to same name with different case)
-	if !strings.EqualFold(oldName, newName) {
-		existing, err := s.repo.GetSeriesByName(ctx, newName, ownerID)
-		if err == nil && existing.SeriesName != "" {
+	// Check if target name already exists (case-insensitive).
+	existingNames, err := s.repo.ListSeriesNamesByNameCI(ctx, newName, ownerID)
+	if err != nil {
+		return SeriesSummary{}, err
+	}
+	for _, seriesName := range existingNames {
+		if seriesName != oldName {
 			return SeriesSummary{}, validationErr("a series with this name already exists")
 		}
 	}

@@ -49,12 +49,13 @@ func (h *SeriesHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	summary, err := h.service.GetSeriesByName(r.Context(), name, user.ID)
 	if err != nil {
-		if errors.Is(err, items.ErrNotFound) {
+		switch {
+		case errors.Is(err, items.ErrNotFound):
 			writeError(w, http.StatusNotFound, "series not found")
-			return
+		default:
+			h.logger.Error("get series", "error", err)
+			writeError(w, http.StatusInternalServerError, "failed to get series")
 		}
-		h.logger.Error("get series", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to get series")
 		return
 	}
 
@@ -79,18 +80,23 @@ func (h *SeriesHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	summary, err := h.service.UpdateSeriesName(r.Context(), name, body.NewName, user.ID)
+	newName := strings.TrimSpace(body.NewName)
+	if newName == "" {
+		writeError(w, http.StatusBadRequest, "new series name is required")
+		return
+	}
+
+	summary, err := h.service.UpdateSeriesName(r.Context(), name, newName, user.ID)
 	if err != nil {
-		if errors.Is(err, items.ErrNotFound) {
+		switch {
+		case errors.Is(err, items.ErrNotFound):
 			writeError(w, http.StatusNotFound, "series not found")
-			return
-		}
-		if errors.Is(err, items.ErrValidation) {
+		case errors.Is(err, items.ErrValidation):
 			writeError(w, http.StatusBadRequest, err.Error())
-			return
+		default:
+			h.logger.Error("update series", "error", err)
+			writeError(w, http.StatusInternalServerError, "failed to update series")
 		}
-		h.logger.Error("update series", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to update series")
 		return
 	}
 
@@ -109,16 +115,15 @@ func (h *SeriesHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	count, err := h.service.DeleteSeries(r.Context(), name, user.ID)
 	if err != nil {
-		if errors.Is(err, items.ErrNotFound) {
+		switch {
+		case errors.Is(err, items.ErrNotFound):
 			writeError(w, http.StatusNotFound, "series not found")
-			return
-		}
-		if errors.Is(err, items.ErrValidation) {
+		case errors.Is(err, items.ErrValidation):
 			writeError(w, http.StatusBadRequest, err.Error())
-			return
+		default:
+			h.logger.Error("delete series", "error", err)
+			writeError(w, http.StatusInternalServerError, "failed to delete series")
 		}
-		h.logger.Error("delete series", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to delete series")
 		return
 	}
 

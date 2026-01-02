@@ -159,15 +159,12 @@ app-item-form button.form-actions__delete.mat-mdc-unelevated-button:disabled {
 // Delete/confirm button in dialogs - matches item form delete button styling.
 // Dialogs render in CDK overlay outside component tree, so we target via mat-dialog-container.
 .mat-mdc-dialog-container button.confirm-button:not(:disabled) {
-    --mdc-filled-button-container-color: var(--mat-sys-error-container);
-    --mdc-filled-button-label-text-color: var(--mat-sys-on-error-container);
-
-    background-color: var(--mat-sys-error-container);
-    color: var(--mat-sys-on-error-container);
+    --mat-button-filled-container-color: var(--mat-sys-error-container);
+    --mat-button-filled-label-text-color: var(--mat-sys-on-error-container);
 }
 
 .mat-mdc-dialog-container button.confirm-button:not(:disabled):hover {
-    background-color: color-mix(
+    --mat-button-filled-container-color: color-mix(
         in srgb,
         var(--mat-sys-error-container) 88%,
         var(--mat-sys-surface)
@@ -175,8 +172,16 @@ app-item-form button.form-actions__delete.mat-mdc-unelevated-button:disabled {
 }
 
 .mat-mdc-dialog-container button.confirm-button:disabled {
-    background-color: color-mix(in srgb, var(--mat-sys-on-surface) 12%, transparent);
-    color: color-mix(in srgb, var(--mat-sys-on-surface) 38%, transparent);
+    --mat-button-filled-disabled-container-color: color-mix(
+        in srgb,
+        var(--mat-sys-on-surface) 12%,
+        transparent
+    );
+    --mat-button-filled-disabled-label-text-color: color-mix(
+        in srgb,
+        var(--mat-sys-on-surface) 38%,
+        transparent
+    );
 }
 
 // Form field label visibility in dialogs

@@ -1,10 +1,11 @@
-<h2 mat-dialog-title cdkFocusInitial>Rename Series</h2>
+<h2 mat-dialog-title>Rename Series</h2>
 
 <mat-dialog-content>
     <mat-form-field appearance="outline" class="name-field">
         <mat-label>Series Name</mat-label>
         <input
             matInput
+            cdkFocusInitial
             [formControl]="nameControl"
             (keyup.enter)="handleSave()"
             autocomplete="off"
@@ -15,7 +16,7 @@
         @if (nameControl.hasError('maxlength')) {
             <mat-error>Name must be 200 characters or less</mat-error>
         }
-        <mat-hint align="end">{{ nameControl.value.length || 0 }}/200</mat-hint>
+        <mat-hint align="end">{{ nameControl.value.length }}/200</mat-hint>
     </mat-form-field>
 </mat-dialog-content>
 

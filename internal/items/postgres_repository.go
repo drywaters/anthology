@@ -466,6 +466,27 @@ func (r *PostgresRepository) GetSeriesByName(ctx context.Context, name string, o
 	return summary, nil
 }
 
+// ListSeriesNamesByNameCI returns distinct series names matching case-insensitively.
+func (r *PostgresRepository) ListSeriesNamesByNameCI(ctx context.Context, name string, ownerID uuid.UUID) ([]string, error) {
+	if name == "" {
+		return nil, nil
+	}
+
+	query := `SELECT DISTINCT series_name
+		FROM items
+		WHERE owner_id = $1
+		  AND item_type = 'book'
+		  AND series_name != ''
+		  AND LOWER(series_name) = LOWER($2)
+		ORDER BY series_name`
+
+	names := []string{}
+	if err := r.db.SelectContext(ctx, &names, query, ownerID, name); err != nil {
+		return nil, fmt.Errorf("list series names: %w", err)
+	}
+	return names, nil
+}
+
 // UpdateSeriesName updates series_name on all items matching oldName for the given owner.
 func (r *PostgresRepository) UpdateSeriesName(ctx context.Context, oldName, newName string, ownerID uuid.UUID) (int64, error) {
 	query := `UPDATE items SET series_name = $1, updated_at = NOW() WHERE series_name = $2 AND owner_id = $3 AND item_type = 'book'`
@@ -485,4 +506,3 @@ func (r *PostgresRepository) ClearSeriesName(ctx context.Context, seriesName str
 	}
 	return res.RowsAffected()
 }
-

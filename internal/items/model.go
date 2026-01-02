@@ -279,6 +279,7 @@ type Repository interface {
 	FindDuplicates(ctx context.Context, input DuplicateCheckInput, ownerID uuid.UUID) ([]DuplicateMatch, error)
 	ListSeries(ctx context.Context, opts SeriesRepoListOptions, ownerID uuid.UUID) ([]SeriesSummary, error)
 	GetSeriesByName(ctx context.Context, name string, ownerID uuid.UUID) (SeriesSummary, error)
+	ListSeriesNamesByNameCI(ctx context.Context, name string, ownerID uuid.UUID) ([]string, error)
 	UpdateSeriesName(ctx context.Context, oldName, newName string, ownerID uuid.UUID) (int64, error)
 	ClearSeriesName(ctx context.Context, seriesName string, ownerID uuid.UUID) (int64, error)
 }

@@ -505,6 +505,44 @@ func (r *InMemoryRepository) GetSeriesByName(_ context.Context, name string, own
 	return summary, nil
 }
 
+// ListSeriesNamesByNameCI returns distinct series names that match case-insensitively.
+func (r *InMemoryRepository) ListSeriesNamesByNameCI(_ context.Context, name string, ownerID uuid.UUID) ([]string, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	if name == "" {
+		return nil, nil
+	}
+
+	seen := make(map[string]struct{})
+	for _, id := range r.order {
+		item, ok := r.data[id]
+		if !ok {
+			continue
+		}
+		if item.OwnerID != ownerID {
+			continue
+		}
+		if item.ItemType != ItemTypeBook || item.SeriesName == "" {
+			continue
+		}
+		if strings.EqualFold(item.SeriesName, name) {
+			seen[item.SeriesName] = struct{}{}
+		}
+	}
+
+	if len(seen) == 0 {
+		return nil, nil
+	}
+
+	names := make([]string, 0, len(seen))
+	for seriesName := range seen {
+		names = append(names, seriesName)
+	}
+	slices.Sort(names)
+	return names, nil
+}
+
 // UpdateSeriesName updates series_name on all items matching oldName for the given owner.
 func (r *InMemoryRepository) UpdateSeriesName(_ context.Context, oldName, newName string, ownerID uuid.UUID) (int64, error) {
 	r.mu.Lock()
@@ -552,4 +590,3 @@ func (r *InMemoryRepository) ClearSeriesName(_ context.Context, seriesName strin
 	}
 	return count, nil
 }
-

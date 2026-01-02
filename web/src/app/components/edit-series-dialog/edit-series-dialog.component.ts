@@ -41,11 +41,17 @@ export class EditSeriesDialogComponent {
     });
 
     handleSave(): void {
+        const trimmed = this.nameControl.value.trim();
+        if (!trimmed) {
+            this.nameControl.setErrors({ ...this.nameControl.errors, required: true });
+            this.nameControl.markAsTouched();
+            return;
+        }
         if (this.nameControl.invalid) {
             this.nameControl.markAsTouched();
             return;
         }
-        this.dialogRef.close({ action: 'save', newName: this.nameControl.value.trim() });
+        this.dialogRef.close({ action: 'save', newName: trimmed });
     }
 
     handleCancel(): void {

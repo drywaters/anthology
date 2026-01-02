@@ -289,6 +289,10 @@ func (s *exportRepoStub) GetSeriesByName(ctx context.Context, name string, owner
 	return items.SeriesSummary{}, items.ErrNotFound
 }
 
+func (s *exportRepoStub) ListSeriesNamesByNameCI(ctx context.Context, name string, ownerID uuid.UUID) ([]string, error) {
+	return nil, nil
+}
+
 func (s *exportRepoStub) UpdateSeriesName(ctx context.Context, oldName, newName string, ownerID uuid.UUID) (int64, error) {
 	return 0, nil
 }

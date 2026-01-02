@@ -8,7 +8,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { catchError, EMPTY, filter, switchMap, tap } from 'rxjs';
+import { catchError, EMPTY, filter, finalize, switchMap, tap } from 'rxjs';
 
 import { Item, SeriesStatus, SeriesSummary, SERIES_STATUS_LABELS } from '../../models';
 import { SeriesService } from '../../services/series.service';
@@ -163,9 +163,10 @@ export class SeriesDetailPageComponent implements OnInit {
                         }),
                     ),
                 ),
+                finalize(() => this.busy.set(false)),
                 takeUntilDestroyed(this.destroyRef),
             )
-            .subscribe(() => this.busy.set(false));
+            .subscribe();
     }
 
     openDeleteDialog(): void {
@@ -201,9 +202,9 @@ export class SeriesDetailPageComponent implements OnInit {
                         }),
                         catchError(() => {
                             this.notification.error('Unable to delete series.');
-                            this.busy.set(false);
                             return EMPTY;
                         }),
+                        finalize(() => this.busy.set(false)),
                     ),
                 ),
                 takeUntilDestroyed(this.destroyRef),
