@@ -38,11 +38,6 @@ CREATE TABLE public.items (
     owner_id uuid NOT NULL
 );
 
-CREATE TABLE public.schema_migrations (
-    name text NOT NULL,
-    applied_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
 CREATE TABLE public.shelf_columns (
     id uuid NOT NULL,
     shelf_row_id uuid NOT NULL,
@@ -109,9 +104,6 @@ ALTER TABLE ONLY public.item_shelf_locations
 
 ALTER TABLE ONLY public.items
     ADD CONSTRAINT items_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY public.schema_migrations
-    ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (name);
 
 ALTER TABLE ONLY public.shelf_columns
     ADD CONSTRAINT shelf_columns_pkey PRIMARY KEY (id);
@@ -195,4 +187,3 @@ DROP TABLE IF EXISTS public.shelves CASCADE;
 DROP TABLE IF EXISTS public.user_sessions CASCADE;
 DROP TABLE IF EXISTS public.items CASCADE;
 DROP TABLE IF EXISTS public.users CASCADE;
-DROP TABLE IF EXISTS public.schema_migrations CASCADE;
