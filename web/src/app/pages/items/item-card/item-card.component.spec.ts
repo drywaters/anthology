@@ -135,4 +135,46 @@ describe('ItemCardComponent', () => {
         expect(compiled.textContent).toContain('25%');
         expect(compiled.textContent).toContain('50/200 pages');
     });
+
+    it('should show series button when item has seriesName', () => {
+        const itemWithSeries: Item = {
+            ...mockItem,
+            seriesName: 'Test Series',
+        };
+        component.item = itemWithSeries;
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+        expect(compiled.querySelector('.series-button')).toBeTruthy();
+    });
+
+    it('should not show series button when item has no seriesName', () => {
+        component.item = mockItem;
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+        expect(compiled.querySelector('.series-button')).toBeFalsy();
+    });
+
+    it('should emit seriesClicked when series button clicked', () => {
+        const itemWithSeries: Item = {
+            ...mockItem,
+            seriesName: 'Test Series',
+        };
+        component.item = itemWithSeries;
+        fixture.detectChanges();
+        const spy = spyOn(component.seriesClicked, 'emit');
+        const button = fixture.nativeElement.querySelector('.series-button');
+        button.click();
+        expect(spy).toHaveBeenCalled();
+    });
+
+    it('should have proper aria-label on series button', () => {
+        const itemWithSeries: Item = {
+            ...mockItem,
+            seriesName: 'Test Series',
+        };
+        component.item = itemWithSeries;
+        fixture.detectChanges();
+        const button = fixture.nativeElement.querySelector('.series-button');
+        expect(button.getAttribute('aria-label')).toBe('View series: Test Series');
+    });
 });

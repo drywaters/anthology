@@ -39,6 +39,7 @@
                             [groupedItems]="groupedItems"
                             (itemSelected)="startEdit($event)"
                             (shelfLocationRequested)="viewShelfPlacementFromChild($event)"
+                            (seriesRequested)="viewSeriesFromChild($event)"
                         ></app-items-grid-view>
 
                         <ng-template #tableView>
@@ -49,6 +50,7 @@
                                 (itemSelected)="startEdit($event)"
                                 (shelfLocationRequested)="viewShelfPlacementFromChild($event)"
                                 (typeFilterRequested)="filterByType($event)"
+                                (seriesRequested)="viewSeriesFromChild($event)"
                             ></app-items-table-view>
                         </ng-template>
                     </ng-container>

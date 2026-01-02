@@ -113,4 +113,13 @@ describe('ItemsTableViewComponent', () => {
         expect(sections[0].getAttribute('data-letter')).toBe('A');
         expect(sections[1].getAttribute('data-letter')).toBe('B');
     });
+
+    it('should emit seriesRequested when series button clicked', () => {
+        const spy = spyOn(component.seriesRequested, 'emit');
+        const event = new MouseEvent('click');
+        spyOn(event, 'stopPropagation');
+        component.onSeriesRequested(mockItems[0], event);
+        expect(spy).toHaveBeenCalledWith({ item: mockItems[0], event });
+        expect(event.stopPropagation).toHaveBeenCalled();
+    });
 });

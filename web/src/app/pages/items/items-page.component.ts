@@ -423,6 +423,12 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
         this.viewShelfPlacement(data.item, data.event);
     }
 
+    viewSeriesFromChild(data: { item: Item; event: MouseEvent }): void {
+        if (data.item.seriesName) {
+            this.viewSeriesDetail(data.item.seriesName);
+        }
+    }
+
     toggleSeriesExpanded(seriesName: string): void {
         const current = this.expandedSeries();
         const newSet = new Set(current);

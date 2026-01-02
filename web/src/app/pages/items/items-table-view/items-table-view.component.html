@@ -39,6 +39,16 @@
                             >
                                 <mat-icon aria-hidden="true">visibility</mat-icon>
                             </button>
+                            <button
+                                *ngIf="item.seriesName"
+                                mat-icon-button
+                                type="button"
+                                class="series-button"
+                                (click)="onSeriesRequested(item, $event)"
+                                [attr.aria-label]="'View series: ' + item.seriesName"
+                            >
+                                <mat-icon aria-hidden="true">collections_bookmark</mat-icon>
+                            </button>
                         </div>
                         <div class="item-subtext" *ngIf="readingProgress(item) as progress">
                             Reading •
