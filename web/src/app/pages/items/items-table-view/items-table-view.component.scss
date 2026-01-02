@@ -170,6 +170,7 @@
     border: 0;
 }
 
+// Slightly earlier collapse to avoid horizontal scroll from column min-widths.
 @media (width <= 715px) {
     .items-table .mat-column-releaseYear,
     .items-table .mat-column-updatedAt {
