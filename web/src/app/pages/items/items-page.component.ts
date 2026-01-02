@@ -424,9 +424,7 @@ export class ItemsPageComponent implements AfterViewInit, OnDestroy {
     }
 
     viewSeriesFromChild(data: { item: Item; event: MouseEvent }): void {
-        if (data.item.seriesName) {
-            this.viewSeriesDetail(data.item.seriesName);
-        }
+        this.viewSeriesDetail(data.item.seriesName!);
     }
 
     toggleSeriesExpanded(seriesName: string): void {
