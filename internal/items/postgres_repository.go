@@ -466,3 +466,23 @@ func (r *PostgresRepository) GetSeriesByName(ctx context.Context, name string, o
 	return summary, nil
 }
 
+// UpdateSeriesName updates series_name on all items matching oldName for the given owner.
+func (r *PostgresRepository) UpdateSeriesName(ctx context.Context, oldName, newName string, ownerID uuid.UUID) (int64, error) {
+	query := `UPDATE items SET series_name = $1, updated_at = NOW() WHERE series_name = $2 AND owner_id = $3 AND item_type = 'book'`
+	res, err := r.db.ExecContext(ctx, query, newName, oldName, ownerID)
+	if err != nil {
+		return 0, fmt.Errorf("update series name: %w", err)
+	}
+	return res.RowsAffected()
+}
+
+// ClearSeriesName clears series_name, volume_number, and total_volumes on all items matching seriesName for the given owner.
+func (r *PostgresRepository) ClearSeriesName(ctx context.Context, seriesName string, ownerID uuid.UUID) (int64, error) {
+	query := `UPDATE items SET series_name = '', volume_number = NULL, total_volumes = NULL, updated_at = NOW() WHERE series_name = $1 AND owner_id = $2 AND item_type = 'book'`
+	res, err := r.db.ExecContext(ctx, query, seriesName, ownerID)
+	if err != nil {
+		return 0, fmt.Errorf("clear series name: %w", err)
+	}
+	return res.RowsAffected()
+}
+

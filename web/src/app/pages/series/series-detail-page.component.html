@@ -8,6 +8,27 @@
             </button>
             <div class="header-content">
                 <h1>{{ s.seriesName }}</h1>
+                <div class="header-actions">
+                    <button
+                        mat-icon-button
+                        type="button"
+                        (click)="openEditDialog()"
+                        [disabled]="busy()"
+                        aria-label="Edit series"
+                    >
+                        <mat-icon>edit</mat-icon>
+                    </button>
+                    <button
+                        mat-icon-button
+                        type="button"
+                        class="delete-button"
+                        (click)="openDeleteDialog()"
+                        [disabled]="busy()"
+                        aria-label="Delete series"
+                    >
+                        <mat-icon>delete</mat-icon>
+                    </button>
+                </div>
                 <mat-chip [ngClass]="getStatusClass(s.status)">
                     {{ getStatusLabel(s.status) }}
                 </mat-chip>

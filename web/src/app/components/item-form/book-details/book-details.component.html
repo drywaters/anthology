@@ -212,6 +212,9 @@
                         <mat-icon>close</mat-icon>
                     </button>
                     <mat-hint>Name of the book series (e.g., "Harry Potter").</mat-hint>
+                    <mat-hint align="end">
+                        {{ form.get('seriesName')?.value?.length || 0 }}/200
+                    </mat-hint>
                 </mat-form-field>
 
                 <mat-form-field appearance="fill">
@@ -249,7 +252,7 @@
                     >
                         <mat-icon>close</mat-icon>
                     </button>
-                    <mat-hint>Total number of volumes in the series (if known).</mat-hint>
+                    <mat-hint>Total number of volumes in the series.</mat-hint>
                     <mat-error *ngIf="form.get('totalVolumes')?.hasError('min')">
                         Total volumes must be at least 1.
                     </mat-error>

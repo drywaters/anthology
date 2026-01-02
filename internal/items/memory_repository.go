@@ -505,3 +505,51 @@ func (r *InMemoryRepository) GetSeriesByName(_ context.Context, name string, own
 	return summary, nil
 }
 
+// UpdateSeriesName updates series_name on all items matching oldName for the given owner.
+func (r *InMemoryRepository) UpdateSeriesName(_ context.Context, oldName, newName string, ownerID uuid.UUID) (int64, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	var count int64
+	for _, id := range r.order {
+		item, ok := r.data[id]
+		if !ok {
+			continue
+		}
+		if item.OwnerID != ownerID {
+			continue
+		}
+		if item.ItemType == ItemTypeBook && item.SeriesName == oldName {
+			item.SeriesName = newName
+			r.data[id] = item
+			count++
+		}
+	}
+	return count, nil
+}
+
+// ClearSeriesName clears series_name, volume_number, and total_volumes on all items matching seriesName for the given owner.
+func (r *InMemoryRepository) ClearSeriesName(_ context.Context, seriesName string, ownerID uuid.UUID) (int64, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	var count int64
+	for _, id := range r.order {
+		item, ok := r.data[id]
+		if !ok {
+			continue
+		}
+		if item.OwnerID != ownerID {
+			continue
+		}
+		if item.ItemType == ItemTypeBook && item.SeriesName == seriesName {
+			item.SeriesName = ""
+			item.VolumeNumber = nil
+			item.TotalVolumes = nil
+			r.data[id] = item
+			count++
+		}
+	}
+	return count, nil
+}
+

@@ -90,6 +90,8 @@ func NewRouter(cfg config.Config, svc *items.Service, catalogSvc *catalog.Servic
 			r.Route("/series", func(r chi.Router) {
 				r.Get("/", seriesHandler.List)
 				r.Get("/detail", seriesHandler.Get)
+				r.Put("/detail", seriesHandler.Update)
+				r.Delete("/detail", seriesHandler.Delete)
 			})
 			r.Route("/shelves", func(r chi.Router) {
 				r.Get("/", shelfHandler.List)

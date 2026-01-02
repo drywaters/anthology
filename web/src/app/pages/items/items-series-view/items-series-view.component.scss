@@ -2,9 +2,16 @@
     padding: 1rem;
 }
 
+.series-title {
+    min-width: 0;
+}
+
 .series-name {
     font-weight: 500;
     font-size: 1.1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .series-meta {
