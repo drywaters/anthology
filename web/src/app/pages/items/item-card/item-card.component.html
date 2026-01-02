@@ -27,33 +27,35 @@
             {{ item.creator || 'Unknown creator' }}
         </p>
         <p class="card-sub" *ngIf="item.releaseYear">Released {{ item.releaseYear }}</p>
-        <button
-            *ngIf="item.shelfPlacement"
-            type="button"
-            mat-icon-button
-            class="shelf-location-button shelf-location-button--card"
-            (click)="onShelfLocationClick($event)"
-            [attr.aria-label]="
-                'View shelf slot ' +
-                (item.shelfPlacement.rowIndex + 1) +
-                '/' +
-                (item.shelfPlacement.colIndex + 1) +
-                ' on ' +
-                item.shelfPlacement.shelfName
-            "
-        >
-            <mat-icon aria-hidden="true">visibility</mat-icon>
-        </button>
-        <button
-            *ngIf="item.seriesName"
-            type="button"
-            mat-icon-button
-            class="series-button series-button--card"
-            (click)="onSeriesClick($event)"
-            [attr.aria-label]="'View series: ' + item.seriesName"
-        >
-            <mat-icon aria-hidden="true">collections_bookmark</mat-icon>
-        </button>
+        <div class="card-actions" *ngIf="item.shelfPlacement || item.seriesName">
+            <button
+                *ngIf="item.shelfPlacement"
+                type="button"
+                mat-icon-button
+                class="shelf-location-button shelf-location-button--card"
+                (click)="onShelfLocationClick($event)"
+                [attr.aria-label]="
+                    'View shelf slot ' +
+                    (item.shelfPlacement.rowIndex + 1) +
+                    '/' +
+                    (item.shelfPlacement.colIndex + 1) +
+                    ' on ' +
+                    item.shelfPlacement.shelfName
+                "
+            >
+                <mat-icon aria-hidden="true">visibility</mat-icon>
+            </button>
+            <button
+                *ngIf="item.seriesName"
+                type="button"
+                mat-icon-button
+                class="series-button series-button--card"
+                (click)="onSeriesClick($event)"
+                [attr.aria-label]="'View series: ' + item.seriesName"
+            >
+                <mat-icon aria-hidden="true">collections_bookmark</mat-icon>
+            </button>
+        </div>
         <p class="card-sub" *ngIf="readingStatusLabel(item) as statusLabel">
             <span class="status-chip">{{ statusLabel }}</span>
             <ng-container *ngIf="item.readingStatus === BookStatus.Read && item.readAt">
