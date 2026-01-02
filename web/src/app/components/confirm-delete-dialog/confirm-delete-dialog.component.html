@@ -1,0 +1,19 @@
+<h2 mat-dialog-title cdkFocusInitial>{{ data.title }}</h2>
+
+<mat-dialog-content>
+    <div class="warning-content">
+        <mat-icon class="warning-icon">warning</mat-icon>
+        <p class="message">{{ data.message }}</p>
+        <p class="item-count">
+            <strong>{{ data.itemCount }}</strong> item{{ data.itemCount === 1 ? '' : 's' }} will be
+            affected.
+        </p>
+    </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="handleCancel()">Cancel</button>
+    <button mat-flat-button class="confirm-button" type="button" (click)="handleConfirm()">
+        {{ confirmLabel }}
+    </button>
+</mat-dialog-actions>

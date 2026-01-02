@@ -10,6 +10,10 @@ export interface SeriesListOptions {
     status?: SeriesStatus;
 }
 
+export interface SeriesDeleteResponse {
+    itemsUpdated: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SeriesService {
     private readonly http = inject(HttpClient);
@@ -30,5 +34,15 @@ export class SeriesService {
     get(name: string): Observable<SeriesSummary> {
         const params = new HttpParams().set('name', name);
         return this.http.get<SeriesSummary>(`${this.baseUrl}/detail`, { params });
+    }
+
+    update(name: string, newName: string): Observable<SeriesSummary> {
+        const params = new HttpParams().set('name', name);
+        return this.http.put<SeriesSummary>(`${this.baseUrl}/detail`, { newName }, { params });
+    }
+
+    delete(name: string): Observable<SeriesDeleteResponse> {
+        const params = new HttpParams().set('name', name);
+        return this.http.delete<SeriesDeleteResponse>(`${this.baseUrl}/detail`, { params });
     }
 }

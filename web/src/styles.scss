@@ -139,17 +139,55 @@ app-slot-sidebar .mat-mdc-tab-body-content {
 // Material Design 3 doesn't support color="warn" the same as M2, so we
 // override directly. High specificity selector matches Material's internal styles.
 app-item-form button.form-actions__delete.mat-mdc-unelevated-button:not(:disabled) {
-    background-color: var(--mat-sys-error);
-    color: var(--mat-sys-on-error);
+    background-color: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
 }
 
 app-item-form button.form-actions__delete.mat-mdc-unelevated-button:not(:disabled):hover {
-    background-color: color-mix(in srgb, var(--mat-sys-error) 88%, var(--mat-sys-surface));
+    background-color: color-mix(
+        in srgb,
+        var(--mat-sys-error-container) 88%,
+        var(--mat-sys-surface)
+    );
 }
 
 app-item-form button.form-actions__delete.mat-mdc-unelevated-button:disabled {
     background-color: color-mix(in srgb, var(--mat-sys-on-surface) 12%, transparent);
     color: color-mix(in srgb, var(--mat-sys-on-surface) 38%, transparent);
+}
+
+// Delete/confirm button in dialogs - matches item form delete button styling.
+// Dialogs render in CDK overlay outside component tree, so we target via mat-dialog-container.
+.mat-mdc-dialog-container button.confirm-button:not(:disabled) {
+    --mat-button-filled-container-color: var(--mat-sys-error-container);
+    --mat-button-filled-label-text-color: var(--mat-sys-on-error-container);
+}
+
+.mat-mdc-dialog-container button.confirm-button:not(:disabled):hover {
+    --mat-button-filled-container-color: color-mix(
+        in srgb,
+        var(--mat-sys-error-container) 88%,
+        var(--mat-sys-surface)
+    );
+}
+
+.mat-mdc-dialog-container button.confirm-button:disabled {
+    --mat-button-filled-disabled-container-color: color-mix(
+        in srgb,
+        var(--mat-sys-on-surface) 12%,
+        transparent
+    );
+    --mat-button-filled-disabled-label-text-color: color-mix(
+        in srgb,
+        var(--mat-sys-on-surface) 38%,
+        transparent
+    );
+}
+
+// Form field label visibility in dialogs
+.mat-mdc-dialog-container .mat-mdc-form-field {
+    --mdc-outlined-text-field-label-text-color: var(--mat-sys-on-surface-variant);
+    --mdc-outlined-text-field-focus-label-text-color: var(--mat-sys-primary);
 }
 
 // =============================================================================

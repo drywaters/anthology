@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -48,16 +49,87 @@ func (h *SeriesHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	summary, err := h.service.GetSeriesByName(r.Context(), name, user.ID)
 	if err != nil {
-		if errors.Is(err, items.ErrNotFound) {
+		switch {
+		case errors.Is(err, items.ErrNotFound):
 			writeError(w, http.StatusNotFound, "series not found")
-			return
+		default:
+			h.logger.Error("get series", "error", err)
+			writeError(w, http.StatusInternalServerError, "failed to get series")
 		}
-		h.logger.Error("get series", "error", err)
-		writeError(w, http.StatusInternalServerError, "failed to get series")
 		return
 	}
 
 	writeJSON(w, http.StatusOK, summary)
+}
+
+// Update renames a series.
+func (h *SeriesHandler) Update(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+
+	name := strings.TrimSpace(r.URL.Query().Get("name"))
+	if name == "" {
+		writeError(w, http.StatusBadRequest, "series name is required")
+		return
+	}
+
+	var body struct {
+		NewName string `json:"newName"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	newName := strings.TrimSpace(body.NewName)
+	if newName == "" {
+		writeError(w, http.StatusBadRequest, "new series name is required")
+		return
+	}
+
+	summary, err := h.service.UpdateSeriesName(r.Context(), name, newName, user.ID)
+	if err != nil {
+		switch {
+		case errors.Is(err, items.ErrNotFound):
+			writeError(w, http.StatusNotFound, "series not found")
+		case errors.Is(err, items.ErrValidation):
+			writeError(w, http.StatusBadRequest, err.Error())
+		default:
+			h.logger.Error("update series", "error", err)
+			writeError(w, http.StatusInternalServerError, "failed to update series")
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, summary)
+}
+
+// Delete removes series association from all items in a series.
+func (h *SeriesHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	user := UserFromContext(r.Context())
+
+	name := strings.TrimSpace(r.URL.Query().Get("name"))
+	if name == "" {
+		writeError(w, http.StatusBadRequest, "series name is required")
+		return
+	}
+
+	count, err := h.service.DeleteSeries(r.Context(), name, user.ID)
+	if err != nil {
+		switch {
+		case errors.Is(err, items.ErrNotFound):
+			writeError(w, http.StatusNotFound, "series not found")
+		case errors.Is(err, items.ErrValidation):
+			writeError(w, http.StatusBadRequest, err.Error())
+		default:
+			h.logger.Error("delete series", "error", err)
+			writeError(w, http.StatusInternalServerError, "failed to delete series")
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"itemsUpdated": count,
+	})
 }
 
 func parseSeriesListOptions(r *http.Request) items.SeriesListOptions {

@@ -18,11 +18,22 @@
     align-items: center;
     gap: 1rem;
     flex-wrap: wrap;
+    min-width: 0;
 
     h1 {
         margin: 0;
         font-size: clamp(1.5rem, 3vw, 2rem);
     }
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.delete-button {
+    color: var(--mat-sys-error);
 }
 
 mat-chip {

@@ -1,0 +1,27 @@
+.warning-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    text-align: center;
+    padding: 1rem 0;
+}
+
+.warning-icon {
+    font-size: 3rem;
+    width: 3rem;
+    height: 3rem;
+    color: var(--mat-sys-error);
+}
+
+.message {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--mat-sys-on-surface);
+}
+
+.item-count {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--mat-sys-on-surface-variant);
+}
