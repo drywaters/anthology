@@ -172,22 +172,20 @@
 
 @media (width <= 715px) {
     .items-table .mat-column-releaseYear,
-    .items-table .mat-column-updatedAt,
-    .items-table .col-releaseYear,
-    .items-table .col-updatedAt {
+    .items-table .mat-column-updatedAt {
         display: none;
     }
 
-    .items-table .col-title {
-        width: 50%;
+    .items-table col.col-releaseYear,
+    .items-table col.col-updatedAt {
+        width: 0;
+        min-width: 0;
     }
 
-    .items-table .col-creator {
-        width: 30%;
-    }
-
-    .items-table .col-itemType {
-        width: 20%;
+    .items-table {
+        --col-title: 50%;
+        --col-creator: 30%;
+        --col-itemType: 20%;
     }
 
     .item-type-chip {
