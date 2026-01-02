@@ -14,7 +14,6 @@ export interface SeriesSummary {
 
 export interface SeriesListResponse {
     series: SeriesSummary[];
-    standaloneItems: Item[];
 }
 
 export interface MissingVolume {

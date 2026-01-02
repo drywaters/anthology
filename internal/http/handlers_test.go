@@ -288,7 +288,3 @@ func (s *exportRepoStub) ListSeries(ctx context.Context, opts items.SeriesRepoLi
 func (s *exportRepoStub) GetSeriesByName(ctx context.Context, name string, ownerID uuid.UUID) (items.SeriesSummary, error) {
 	return items.SeriesSummary{}, items.ErrNotFound
 }
-
-func (s *exportRepoStub) ListStandaloneItems(ctx context.Context, itemType items.ItemType, ownerID uuid.UUID) ([]items.Item, error) {
-	return nil, nil
-}

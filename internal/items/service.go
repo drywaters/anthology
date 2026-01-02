@@ -330,7 +330,7 @@ func (s *Service) FindDuplicates(ctx context.Context, input DuplicateCheckInput,
 	return s.repo.FindDuplicates(ctx, input, ownerID)
 }
 
-// ListSeries returns all series with aggregated statistics, missing volume detection, and standalone books.
+// ListSeries returns all series with aggregated statistics and missing volume detection.
 func (s *Service) ListSeries(ctx context.Context, opts SeriesListOptions, ownerID uuid.UUID) (SeriesListResponse, error) {
 	// Always include items for missing volume calculation.
 	repoOpts := SeriesRepoListOptions{
@@ -362,18 +362,8 @@ func (s *Service) ListSeries(ctx context.Context, opts SeriesListOptions, ownerI
 		summaries = filtered
 	}
 
-	// Fetch standalone books (books without a series)
-	var standaloneItems []Item
-	if opts.IncludeItems {
-		standaloneItems, err = s.repo.ListStandaloneItems(ctx, ItemTypeBook, ownerID)
-		if err != nil {
-			return SeriesListResponse{}, err
-		}
-	}
-
 	return SeriesListResponse{
-		Series:          summaries,
-		StandaloneItems: standaloneItems,
+		Series: summaries,
 	}, nil
 }
 
