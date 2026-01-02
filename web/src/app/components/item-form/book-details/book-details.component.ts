@@ -10,6 +10,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { debounceTime, distinctUntilChanged, finalize, map, startWith } from 'rxjs';
 
 import { BookStatus, Format, Genre } from '../../../models';
@@ -28,6 +29,7 @@ import { SeriesService } from '../../../services/series.service';
         MatInputModule,
         MatNativeDateModule,
         MatSelectModule,
+        MatSlideToggleModule,
         ReactiveFormsModule,
     ],
     templateUrl: './book-details.component.html',
@@ -41,14 +43,23 @@ export class BookDetailsComponent implements OnInit {
     @Input() bookStatusOptions: Array<{ value: BookStatus; label: string }> = [];
     @Input() formatOptions: Array<{ value: Format; label: string }> = [];
     @Input() genreOptions: Array<{ value: Genre | ''; label: string }> = [];
+    @Input() hasSeriesData = false;
 
+    readonly seriesExpanded = signal(false);
     readonly allSeriesNames = signal<string[]>([]);
     readonly filteredSeriesNames = signal<string[]>([]);
     readonly loadingSeriesNames = signal(false);
 
     ngOnInit(): void {
+        if (this.hasSeriesData) {
+            this.seriesExpanded.set(true);
+        }
         this.loadSeriesNames();
         this.initializeSeriesAutocomplete();
+    }
+
+    toggleSeriesSection(): void {
+        this.seriesExpanded.update((v) => !v);
     }
 
     private loadSeriesNames(): void {

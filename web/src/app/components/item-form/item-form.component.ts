@@ -125,6 +125,13 @@ export class ItemFormComponent implements OnChanges, OnInit {
         return this.form.get('itemType')?.value === 'game';
     }
 
+    get hasSeriesData(): boolean {
+        const seriesName = this.form.get('seriesName')?.value;
+        const volumeNumber = this.form.get('volumeNumber')?.value;
+        const totalVolumes = this.form.get('totalVolumes')?.value;
+        return !!(seriesName?.trim() || volumeNumber !== null || totalVolumes !== null);
+    }
+
     ngOnInit(): void {
         this.form
             .get('itemType')

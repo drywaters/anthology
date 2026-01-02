@@ -147,103 +147,114 @@
         </mat-form-field>
     </div>
 
-    <div class="series-section">
-        <div class="series-heading">
-            <h4>Series</h4>
-            <span class="series-highlight" aria-hidden="true"></span>
-        </div>
-        <div class="series-grid">
-            <mat-form-field appearance="fill" class="series-name-field">
-                <mat-label>Series name</mat-label>
-                <input
-                    matInput
-                    formControlName="seriesName"
-                    maxlength="200"
-                    [matAutocomplete]="seriesAutocomplete"
-                />
-                <mat-autocomplete #seriesAutocomplete="matAutocomplete">
-                    <mat-option *ngIf="loadingSeriesNames()" disabled>
-                        Loading series...
-                    </mat-option>
-                    <mat-option *ngFor="let name of filteredSeriesNames()" [value]="name">
-                        {{ name }}
-                    </mat-option>
-                    <mat-option
-                        *ngIf="
-                            !loadingSeriesNames() &&
-                            filteredSeriesNames().length === 0 &&
-                            form.get('seriesName')?.value
-                        "
-                        disabled
-                    >
-                        No matching series (new series will be created)
-                    </mat-option>
-                </mat-autocomplete>
-                <button
-                    mat-icon-button
-                    matSuffix
-                    type="button"
-                    (click)="clearSeriesName()"
-                    aria-label="Clear series name"
-                    *ngIf="form.get('seriesName')?.value"
-                >
-                    <mat-icon>close</mat-icon>
-                </button>
-                <mat-hint>Name of the book series (e.g., "Harry Potter").</mat-hint>
-            </mat-form-field>
-
-            <mat-form-field appearance="fill">
-                <mat-label>Volume number</mat-label>
-                <input matInput formControlName="volumeNumber" type="number" min="1" />
-                <button
-                    mat-icon-button
-                    matSuffix
-                    type="button"
-                    (click)="clearVolumeNumber()"
-                    aria-label="Clear volume number"
-                    *ngIf="form.get('volumeNumber')?.value"
-                >
-                    <mat-icon>close</mat-icon>
-                </button>
-                <mat-hint>This book's position in the series.</mat-hint>
-                <mat-error *ngIf="form.get('volumeNumber')?.hasError('min')">
-                    Volume number must be at least 1.
-                </mat-error>
-                <mat-error *ngIf="form.get('volumeNumber')?.hasError('exceedsTotal')">
-                    Volume number cannot exceed total volumes.
-                </mat-error>
-            </mat-form-field>
-
-            <mat-form-field appearance="fill">
-                <mat-label>Total volumes</mat-label>
-                <input matInput formControlName="totalVolumes" type="number" min="1" />
-                <button
-                    mat-icon-button
-                    matSuffix
-                    type="button"
-                    (click)="clearTotalVolumes()"
-                    aria-label="Clear total volumes"
-                    *ngIf="form.get('totalVolumes')?.value"
-                >
-                    <mat-icon>close</mat-icon>
-                </button>
-                <mat-hint>Total number of volumes in the series (if known).</mat-hint>
-                <mat-error *ngIf="form.get('totalVolumes')?.hasError('min')">
-                    Total volumes must be at least 1.
-                </mat-error>
-            </mat-form-field>
-        </div>
-    </div>
-
     <div class="description-section">
         <div class="description-heading">
             <h4>Description</h4>
-            <span class="description-highlight" aria-hidden="true"></span>
         </div>
         <mat-form-field appearance="fill" class="description-field">
             <mat-label>Book description</mat-label>
             <textarea matInput rows="5" formControlName="description" maxlength="2000"></textarea>
             <mat-hint align="end">{{ form.get('description')?.value?.length || 0 }}/2000</mat-hint>
         </mat-form-field>
+    </div>
+
+    <div class="series-section">
+        <div class="series-heading">
+            <div class="series-toggle-header">
+                <h4>Series</h4>
+                <mat-slide-toggle
+                    [checked]="seriesExpanded()"
+                    (change)="toggleSeriesSection()"
+                    aria-label="Toggle series information"
+                >
+                    <span class="toggle-label">
+                        {{ seriesExpanded() ? '' : 'Part of a series?' }}
+                    </span>
+                </mat-slide-toggle>
+            </div>
+        </div>
+        @if (seriesExpanded()) {
+            <div class="series-grid">
+                <mat-form-field appearance="fill" class="series-name-field">
+                    <mat-label>Series name</mat-label>
+                    <input
+                        matInput
+                        formControlName="seriesName"
+                        maxlength="200"
+                        [matAutocomplete]="seriesAutocomplete"
+                    />
+                    <mat-autocomplete #seriesAutocomplete="matAutocomplete">
+                        <mat-option *ngIf="loadingSeriesNames()" disabled>
+                            Loading series...
+                        </mat-option>
+                        <mat-option *ngFor="let name of filteredSeriesNames()" [value]="name">
+                            {{ name }}
+                        </mat-option>
+                        <mat-option
+                            *ngIf="
+                                !loadingSeriesNames() &&
+                                filteredSeriesNames().length === 0 &&
+                                form.get('seriesName')?.value
+                            "
+                            disabled
+                        >
+                            No matching series (new series will be created)
+                        </mat-option>
+                    </mat-autocomplete>
+                    <button
+                        mat-icon-button
+                        matSuffix
+                        type="button"
+                        (click)="clearSeriesName()"
+                        aria-label="Clear series name"
+                        *ngIf="form.get('seriesName')?.value"
+                    >
+                        <mat-icon>close</mat-icon>
+                    </button>
+                    <mat-hint>Name of the book series (e.g., "Harry Potter").</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="fill">
+                    <mat-label>Volume number</mat-label>
+                    <input matInput formControlName="volumeNumber" type="number" min="1" />
+                    <button
+                        mat-icon-button
+                        matSuffix
+                        type="button"
+                        (click)="clearVolumeNumber()"
+                        aria-label="Clear volume number"
+                        *ngIf="form.get('volumeNumber')?.value"
+                    >
+                        <mat-icon>close</mat-icon>
+                    </button>
+                    <mat-hint>This book's position in the series.</mat-hint>
+                    <mat-error *ngIf="form.get('volumeNumber')?.hasError('min')">
+                        Volume number must be at least 1.
+                    </mat-error>
+                    <mat-error *ngIf="form.get('volumeNumber')?.hasError('exceedsTotal')">
+                        Volume number cannot exceed total volumes.
+                    </mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="fill">
+                    <mat-label>Total volumes</mat-label>
+                    <input matInput formControlName="totalVolumes" type="number" min="1" />
+                    <button
+                        mat-icon-button
+                        matSuffix
+                        type="button"
+                        (click)="clearTotalVolumes()"
+                        aria-label="Clear total volumes"
+                        *ngIf="form.get('totalVolumes')?.value"
+                    >
+                        <mat-icon>close</mat-icon>
+                    </button>
+                    <mat-hint>Total number of volumes in the series (if known).</mat-hint>
+                    <mat-error *ngIf="form.get('totalVolumes')?.hasError('min')">
+                        Total volumes must be at least 1.
+                    </mat-error>
+                </mat-form-field>
+            </div>
+        }
     </div>
 </section>
