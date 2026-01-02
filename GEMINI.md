@@ -8,7 +8,7 @@ Anthology is a two-tier catalogue application designed to manage personal librar
 ### Backend (Go)
 -   **Entrypoint:** `cmd/api`
 -   **Router:** `chi` (v5)
--   **Persistence:** Postgres (via `sqlx`).
+-   **Persistence:** Postgres (via `sqlx`), Goose-managed migrations.
 -   **Structure:**
     -   `internal/items`: Domain logic and repository interfaces.
     -   `internal/catalog`: Google Books API client for metadata.
@@ -85,7 +85,7 @@ Configuration is driven by environment variables. Defaults are set in `Makefile`
 | `FRONTEND_URL` | `...` | UI URL used for OAuth redirects |
 | `ALLOWED_ORIGINS` | `...` | CORS allowed origins |
 
-**Note:** `_FILE` variants (e.g., `DATABASE_URL_FILE`) are supported for Docker secrets. OAuth is required in all environments, and sessions use Postgres.
+**Note:** `_FILE` variants (e.g., `DATABASE_URL_FILE`) are supported for Docker secrets. OAuth is required in all environments, and sessions use Postgres. Goose runs migrations on API startup using `migrations/0001_baseline.sql` as the current-schema baseline.
 
 ## Development Conventions
 

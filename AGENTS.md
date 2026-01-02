@@ -6,13 +6,13 @@ Anthology is a two-tier catalogue: a Go 1.24 API (under `cmd/api` + `internal/`)
 ## Project Structure & Module Organization
 - `cmd/api`: Go entrypoint; wire up config, repositories, chi router, middleware, and HTTP handlers.
 - `internal/`: shared Go packages (domain logic, importer, catalog lookups, services, transport, config). Shelf layout + placement logic now lives in `internal/shelves`.
-- `migrations/`: Postgres DDL (apply via `psql` or your migration runner before switching to `DATA_STORE=postgres`). Run through `0007_make_no_status_explicit.sql` to get shelves and explicit default reading status.
+- `migrations/`: Postgres DDL managed by Goose. `0001_baseline.sql` captures the current schema.
 - `web/`: Angular workspace (feature modules under `web/src/app`, Material theme in `web/src/styles.scss`, runtime config in `web/src/assets/runtime-config.js`). Shelf management views live under `web/src/app/pages/shelves`.
 - `Docker/`: split Dockerfiles (`Dockerfile.api`, `Dockerfile.ui`) for the independently deployable API/UI containers.
 - `docs/architecture/` & `docs/planning/`: architecture diagrams, startup flows, Material guidelines, and roadmap notes.
 
 ## Build, Test, and Development Commands
-- `go run ./cmd/api` — boots the API using the current env vars; requires Postgres (`DATA_STORE=postgres` + `DATABASE_URL`) with migrations through `0007`.
+- `go run ./cmd/api` — boots the API using the current env vars; requires Postgres (`DATA_STORE=postgres` + `DATABASE_URL`) and applies Goose migrations on startup.
 - `go test ./...` — Go unit tests (catalog lookups, importer, services, handlers).
 - `cd web && npm install` — install Angular deps (Material, CLI, test runners).
 - `cd web && npm start` — Angular dev server on `http://localhost:4200` proxying to the API URL defined in the meta tag/runtime config.
@@ -24,8 +24,8 @@ Anthology is a two-tier catalogue: a Go 1.24 API (under `cmd/api` + `internal/`)
 - Angular: 2-space indentation, kebab-case filenames (`items-page.component.ts`), standalone components, and SCSS scoped per component. Stick to Material 3 tokens defined in `styles.scss`. Keep environment variables in screaming snake case (e.g., `GOOGLE_BOOKS_API_KEY`).
 
 ## Configuration & Security
-- Primary env vars: `DATA_STORE`, `DATABASE_URL`, `PORT`, `LOG_LEVEL`, `ALLOWED_ORIGINS`, `APP_ENV`, `GOOGLE_BOOKS_API_KEY`, `AUTH_GOOGLE_CLIENT_ID`, `AUTH_GOOGLE_CLIENT_SECRET`, `AUTH_GOOGLE_REDIRECT_URL`, `AUTH_GOOGLE_ALLOWED_DOMAINS`, `AUTH_GOOGLE_ALLOWED_EMAILS`, `FRONTEND_URL`, `MIGRATION_OWNER_EMAIL` (required when applying `0012_add_owner_id.sql`). `_FILE` variants are respected (defaults point to `/run/secrets/anthology_*`, including `anthology_google_books_api_key`, `anthology_google_client_id`, and `anthology_google_client_secret`). `GOOGLE_BOOKS_API_KEY` is required even in local/dev; set a placeholder when testing.
-- The in-memory store has been removed; `DATA_STORE=postgres` is required and expects migrations through `0007` to be applied (uses the `sqlx` repo implementation).
+- Primary env vars: `DATA_STORE`, `DATABASE_URL`, `PORT`, `LOG_LEVEL`, `ALLOWED_ORIGINS`, `APP_ENV`, `GOOGLE_BOOKS_API_KEY`, `AUTH_GOOGLE_CLIENT_ID`, `AUTH_GOOGLE_CLIENT_SECRET`, `AUTH_GOOGLE_REDIRECT_URL`, `AUTH_GOOGLE_ALLOWED_DOMAINS`, `AUTH_GOOGLE_ALLOWED_EMAILS`, `FRONTEND_URL`. `_FILE` variants are respected (defaults point to `/run/secrets/anthology_*`, including `anthology_google_books_api_key`, `anthology_google_client_id`, and `anthology_google_client_secret`). `GOOGLE_BOOKS_API_KEY` is required even in local/dev; set a placeholder when testing.
+- The in-memory store has been removed; `DATA_STORE=postgres` is required and expects Goose migrations to be applied (uses the `sqlx` repo implementation).
 - CORS defaults allow `http://localhost:4200`/`8080`; override via `ALLOWED_ORIGINS`.
 - OAuth is required in all environments (configure Google OAuth client ID/secret plus an allowlist) and relies on Postgres for sessions.
 - Never commit secrets; rely on `.env` files locally. Docker secrets include `anthology_database_url`, `anthology_google_books_api_key`, `anthology_google_client_id`, and `anthology_google_client_secret`, which map to the `_FILE` envs.
@@ -47,7 +47,7 @@ Anthology is a two-tier catalogue: a Go 1.24 API (under `cmd/api` + `internal/`)
 ## Deployment Notes
 - Docker images are split: API (`Docker/Dockerfile.api`) and UI (`Docker/Dockerfile.ui`). Makefile targets (`docker-build-*`, `docker-push-*`, `docker-buildx-*`) wrap builds/pushes.
 - UI container rewrites `assets/runtime-config.js` from `NG_APP_API_URL` at startup so you can repoint environments without rebuilding Angular assets.
-- Apply SQL migrations before booting the Postgres-backed API (run through `0007` for shelves + explicit reading status defaults), and ensure services load secrets through env vars or Swarm/Stack secret mounts.
+- Apply Goose migrations before booting the Postgres-backed API (or let the API run them on startup), and ensure services load secrets through env vars or Swarm/Stack secret mounts.
 
 ## Local Auth
 Local dev runs without auth unless OAuth is configured. To exercise OAuth locally, use Postgres plus the Google OAuth env vars and keep `APP_ENV=development` so cookies stay non-secure.

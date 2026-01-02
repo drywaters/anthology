@@ -22,20 +22,21 @@ If you are new to the project, start with [`docs/architecture/overview.md`](docs
 
 * Go 1.24 with structured logging via `log/slog`.
 * HTTP routing handled by `chi`, with middleware for request IDs, timeouts, and structured logging.
-* Domain package `internal/items` exposes a repository interface with both in-memory and Postgres implementations, while `internal/shelves` manages shelf layouts and item placement.
+* Postgres repositories in `internal/items` and `internal/shelves` handle persistence, shelf layouts, and item placement.
 * Metadata lookups (`internal/catalog`) call the Google Books API. `/api/catalog/lookup` proxies those queries so the Angular UI can search by ISBN or keyword without exposing API tokens.
 * Bulk imports use `internal/importer`, which accepts CSV uploads, fetches metadata for incomplete rows, deduplicates based on title/ISBN, and returns a structured summary so the UI can visualize success vs. warnings.
-* Configuration is environment-driven (`DATA_STORE`, `DATABASE_URL`, `PORT`, `LOG_LEVEL`, `ALLOWED_ORIGINS`, `APP_ENV`, `GOOGLE_BOOKS_API_KEY`, `AUTH_GOOGLE_CLIENT_ID`, `AUTH_GOOGLE_CLIENT_SECRET`, `AUTH_GOOGLE_REDIRECT_URL`, `AUTH_GOOGLE_ALLOWED_DOMAINS`, `AUTH_GOOGLE_ALLOWED_EMAILS`, `FRONTEND_URL`). When `DATA_STORE=memory` (the default), the API boots with a seeded in-memory catalogue to help demo the experience quickly. Secrets can be provided via environment variables, `<NAME>_FILE` pointers, or the default Docker Swarm secret paths under `/run/secrets/anthology_*`.
+* Configuration is environment-driven (`DATA_STORE`, `DATABASE_URL`, `PORT`, `LOG_LEVEL`, `ALLOWED_ORIGINS`, `APP_ENV`, `GOOGLE_BOOKS_API_KEY`, `AUTH_GOOGLE_CLIENT_ID`, `AUTH_GOOGLE_CLIENT_SECRET`, `AUTH_GOOGLE_REDIRECT_URL`, `AUTH_GOOGLE_ALLOWED_DOMAINS`, `AUTH_GOOGLE_ALLOWED_EMAILS`, `FRONTEND_URL`). Postgres is required (`DATA_STORE=postgres`). Secrets can be provided via environment variables, `<NAME>_FILE` pointers, or the default Docker Swarm secret paths under `/run/secrets/anthology_*`.
 * Google OAuth is required in all environments (configure the Google client ID/secret plus an allowlist). OAuth sessions are stored in Postgres, so deployments must use `DATA_STORE=postgres`.
 * In `APP_ENV=development`, cookies are non-secure for localhost; `/health` remains public in all environments.
 * CORS is enabled via [`github.com/go-chi/cors`](https://github.com/go-chi/cors) and defaults to allowing `http://localhost:4200` and `http://localhost:8080`. Override with `ALLOWED_ORIGINS="https://example.com,https://admin.example.com"` when deploying.
-* Postgres persistence is implemented with `sqlx`; see `migrations/` (current schema requires up to `0007_make_no_status_explicit.sql`).
+* Postgres persistence is implemented with `sqlx`; migrations are managed by Goose with a baseline in `migrations/0001_baseline.sql` and tracked in `goose_db_version`.
 
-### Running the API locally (in-memory)
+### Running the API locally (Postgres)
 
 ```bash
 # From the repository root
-export DATA_STORE=memory
+export DATA_STORE=postgres
+export DATABASE_URL="postgres://anthology:anthology@localhost:5432/anthology?sslmode=disable"
 export PORT=8080
 export ALLOWED_ORIGINS="http://localhost:4200,http://localhost:8080"
 export APP_ENV=development
@@ -79,8 +80,8 @@ export AUTH_GOOGLE_REDIRECT_URL="https://app.example.com/api/auth/google/callbac
 export FRONTEND_URL="https://app.example.com"
 export GOOGLE_BOOKS_API_KEY="prod-google-books-key"
 
-# Apply the migration (example)
-psql "$DATABASE_URL" -f migrations/0001_create_items.sql
+# Apply migrations (API startup runs this automatically)
+goose -dir migrations postgres "$DATABASE_URL" up
 
 go run ./cmd/api
 ```
@@ -178,7 +179,7 @@ npm run build
 * **Docker**: the repository now publishes separate images for the API (`Docker/Dockerfile.api`) and UI (`Docker/Dockerfile.ui`). The Makefile targets `docker-build-api`/`docker-build-ui` (and matching `docker-push`/`docker-buildx` variants) build and publish each image. The UI container writes `assets/runtime-config.js` from the `NG_APP_API_URL` environment variable so preview deployments can point at different backends without rebuilding the Angular assets.
 * **Secrets**: the API automatically loads `DATABASE_URL`, `GOOGLE_BOOKS_API_KEY`, `AUTH_GOOGLE_CLIENT_ID`, and `AUTH_GOOGLE_CLIENT_SECRET` from either the env var or a `<NAME>_FILE` path. Default secret paths include `/run/secrets/anthology_database_url`, `/run/secrets/anthology_google_books_api_key`, `/run/secrets/anthology_google_client_id`, and `/run/secrets/anthology_google_client_secret`, so Swarm/Stack secrets are consumed without baking credentials into the image.
 * **Environment management**: prefer `.env` files for local overrides (`DATA_STORE`, `DATABASE_URL`, `LOG_LEVEL`). Do not commit secrets.
-* **Migrations**: Ship migrations alongside deployments (e.g., run via `golang-migrate` or `psql`) before starting the API container. Set `MIGRATION_OWNER_EMAIL` when applying `0012_add_owner_id.sql` so existing rows are assigned to the intended user.
+* **Migrations**: Goose-managed migrations run on API startup; use the Goose CLI for manual `up`/`down` operations if needed.
 
 ### Docker secrets quickstart
 
@@ -237,5 +238,5 @@ Use the resulting credentials in your `anthology_database_url` secret (e.g., `po
 * [Planning document](docs/planning/anthology.md) for the full multi-phase roadmap.
 * [Go startup flow diagram](docs/architecture/go-startup.md) showing how config, repositories, services, and HTTP components initialize.
 * [Angular Material reference](docs/architecture/material-design.md) for theming notes, component usage, and the formatting checklist before shipping UI changes.
-* `internal/items/service_test.go` covers domain validation logic and in-memory repository behaviour.
+* `internal/items/service_test.go` covers domain validation logic and repository behavior.
 * `web/src/app/pages/items/items-page.component.*` contains the main Angular page that ties the experience together.

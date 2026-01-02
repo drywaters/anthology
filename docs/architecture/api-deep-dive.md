@@ -6,7 +6,7 @@ This document reflects the current API implementation under `cmd/api` and `inter
 
 * Go 1.24, chi router, `slog` logging.
 * Runtime config from env/_FILE (see **Configuration**).
-* Supports `DATA_STORE=memory` (demo seed) or Postgres (sqlx, embedded migrations).
+* Requires Postgres (sqlx, embedded Goose migrations).
 * Metadata lookups proxy Google Books; CSV import reuses that pipeline.
 * Authentication: Google OAuth with an HttpOnly session cookie for API calls.
 
@@ -21,18 +21,18 @@ flowchart LR
         R[Router & middleware\nchi + cors + slog]
         H[Handlers\nitems/catalog/shelves/session]
         Svc[Services\nitems/importer/catalog/shelves]
-        Repo[Repos\nin-memory or Postgres]
+        Repo[Repos\nPostgres]
         GB[Google Books]
         DB[(Postgres)]
     end
     A -->|OAuth + cookie| R --> H --> Svc --> Repo
     Svc -->|ISBN/keyword| GB
-    Repo -.->|memory| DB
+    Repo --> DB
 ```
 
 ## Configuration
 
-* `DATA_STORE` (`memory` default, or `postgres`).
+* `DATA_STORE` (`postgres` required).
 * `DATABASE_URL` (`postgres://…`) or `DATABASE_URL_FILE`.
 * `PORT`/`HTTP_PORT` (default 8080).
 * `ALLOWED_ORIGINS` CSV list; wildcards only allowed in `APP_ENV=development`.
@@ -44,9 +44,9 @@ flowchart LR
 * `FRONTEND_URL` (defaults to `http://localhost:4200`).
 * `APP_ENV` (defaults to `production`) toggles cookie `Secure` flag for OAuth cookies.
 
-OAuth sessions are stored in Postgres, so deployments must use `DATA_STORE=postgres`.
+OAuth sessions are stored in Postgres; Postgres is required for all deployments.
 
-`cmd/api/main.go` loads config, builds logger, chooses repository via `buildRepositories`, applies migrations when using Postgres, then binds `http.Server` with sensible timeouts.
+`cmd/api/main.go` loads config, builds logger, connects to Postgres, applies Goose migrations, then binds `http.Server` with sensible timeouts.
 
 ## Authentication and sessions
 
@@ -171,7 +171,6 @@ Shelves:
 
 ## Persistence
 
-* In-memory repos for items and shelves used when `DATA_STORE=memory`; seeded demo data and shelf layout created in `cmd/api/main.go`.
 * Postgres repos (`internal/items/postgres_repository.go`, `internal/shelves/postgres_repository.go`) use `sqlx`:
   * Items: CRUD with lateral join to latest placement (`item_shelf_locations` ordered by created_at).
   * Shelves: transactional upserts for rows/cols/slots; placements stored in `item_shelf_locations`; layout updates delete missing slots/columns/rows and null out placements for removed slots.
@@ -179,15 +178,10 @@ Shelves:
 
 ### Schema (migrations)
 
-* `0001_create_items.sql`: base items table.
-* `0002_add_book_fields.sql`: book-specific fields (read_at, reading_status).
-* `0003_add_cover_image.sql`: coverImage column.
-* `0004_add_book_status.sql`: refined statuses.
-* `0005_add_reading_progress.sql`: current_page.
-* `0006_create_shelves.sql`: shelves, rows, columns, slots, item_shelf_locations.
-* `0007_make_no_status_explicit.sql`: defaults reading_status to 'none'.
+* `migrations/0001_baseline.sql` captures the current schema as a Goose baseline (built from a schema-only dump).
+* Future schema changes live in new Goose migrations (Up/Down) in `migrations/`.
 
-`internal/platform/migrate` embeds migrations and applies pending files on startup (exclusive lock on `schema_migrations`).
+`internal/platform/migrate` embeds migrations and runs `goose.Up` on startup, tracking applied versions in `goose_db_version`.
 
 ## Request flows
 
@@ -267,12 +261,13 @@ sequenceDiagram
 * Timeouts: Request timeout middleware 60s; HTTP server read/write 15s, idle 60s.
 * Logging: `slog` text handler; HTTP middleware logs method/path/status/duration.
 * CSV upload size guard at handler level; JSON max 1 MiB.
-* Memory mode seeds curated demo items and a sample shelf layout for local demos.
+* Postgres is required; local dev should point at a local database.
 
 ## How to run locally
 
 ```bash
-export DATA_STORE=memory
+export DATA_STORE=postgres
+export DATABASE_URL="postgres://anthology:anthology@localhost:5432/anthology?sslmode=disable"
 export PORT=8080
 export APP_ENV=development
 export GOOGLE_BOOKS_API_KEY="your-key"

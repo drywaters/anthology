@@ -52,4 +52,4 @@ This document summarizes application features based on the current API and UI co
 
 ## API utilities
 - Health check endpoint for service status.
-- Support for in-memory or Postgres-backed repositories, with migrations defining shelves and reading status defaults.
+- Postgres-backed repositories, with migrations defining shelves and reading status defaults.

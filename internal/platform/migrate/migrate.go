@@ -2,153 +2,106 @@ package migrate
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
-	"io/fs"
-	"os"
-	"sort"
 	"strings"
 
 	"log/slog"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/pressly/goose/v3"
 
 	"anthology/migrations"
 )
 
 const (
-	schemaMigrationsTable          = "schema_migrations"
-	migrationOwnerEmailEnv         = "MIGRATION_OWNER_EMAIL"
-	migrationOwnerEmailPlaceholder = "{{MIGRATION_OWNER_EMAIL}}"
+	baselineVersion int64 = 1
 )
 
 // Apply runs any pending SQL migrations bundled with the binary.
 func Apply(ctx context.Context, db *sqlx.DB, logger *slog.Logger) error {
-	tx, err := db.BeginTxx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("migrate: begin tx: %w", err)
-	}
-	defer func() {
-		_ = tx.Rollback()
-	}()
-
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
-		CREATE TABLE IF NOT EXISTS %s (
-			name TEXT PRIMARY KEY,
-			applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
-		);`, schemaMigrationsTable)); err != nil {
-		return fmt.Errorf("migrate: create schema table: %w", err)
+	goose.SetBaseFS(migrations.Files)
+	if err := goose.SetDialect("postgres"); err != nil {
+		return fmt.Errorf("migrate: set goose dialect: %w", err)
 	}
 
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`LOCK TABLE %s IN EXCLUSIVE MODE`, schemaMigrationsTable)); err != nil {
-		return fmt.Errorf("migrate: lock schema table: %w", err)
-	}
-
-	applied, err := fetchApplied(ctx, tx)
-	if err != nil {
+	if err := bootstrapBaseline(ctx, db.DB, logger); err != nil {
 		return err
 	}
 
-	files, err := readMigrationFiles()
-	if err != nil {
-		return err
-	}
-
-	for _, name := range files {
-		if applied[name] {
-			continue
-		}
-
-		src, err := migrations.Files.ReadFile(name)
-		if err != nil {
-			return fmt.Errorf("migrate: read %s: %w", name, err)
-		}
-
-		content, err := hydrateMigration(name, src)
-		if err != nil {
-			return err
-		}
-
-		if _, err := tx.ExecContext(ctx, content); err != nil {
-			return fmt.Errorf("migrate: exec %s: %w", name, err)
-		}
-
-		if _, err := tx.ExecContext(ctx,
-			fmt.Sprintf("INSERT INTO %s (name) VALUES ($1)", schemaMigrationsTable),
-			name,
-		); err != nil {
-			return fmt.Errorf("migrate: record %s: %w", name, err)
-		}
-
-		if logger != nil {
-			logger.Info("migration applied", "name", name)
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("migrate: commit: %w", err)
+	if err := goose.UpContext(ctx, db.DB, "."); err != nil {
+		return fmt.Errorf("migrate: goose up: %w", err)
 	}
 
 	return nil
 }
 
-func fetchApplied(ctx context.Context, q sqlx.QueryerContext) (map[string]bool, error) {
-	rows, err := q.QueryxContext(ctx, fmt.Sprintf(`SELECT name FROM %s`, schemaMigrationsTable))
+func bootstrapBaseline(ctx context.Context, db *sql.DB, logger *slog.Logger) error {
+	coreExists, err := tableExists(ctx, db, "items")
 	if err != nil {
-		// table creation should guarantee existence, so propagate errors here
-		return nil, fmt.Errorf("migrate: fetch applied: %w", err)
+		return fmt.Errorf("migrate: check core tables: %w", err)
 	}
-	defer func() {
-		_ = rows.Close()
-	}()
 
-	applied := make(map[string]bool)
-	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
-			return nil, fmt.Errorf("migrate: scan applied: %w", err)
-		}
-		applied[name] = true
+	if !coreExists {
+		return nil
 	}
-	return applied, rows.Err()
-}
 
-func readMigrationFiles() ([]string, error) {
-	entries, err := fs.ReadDir(migrations.Files, ".")
+	if _, err := goose.EnsureDBVersionContext(ctx, db); err != nil {
+		return fmt.Errorf("migrate: ensure goose table: %w", err)
+	}
+
+	current, err := goose.GetDBVersionContext(ctx, db)
 	if err != nil {
-		return nil, fmt.Errorf("migrate: read dir: %w", err)
+		return fmt.Errorf("migrate: check goose version: %w", err)
 	}
 
-	var files []string
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
+	if current == 0 {
+		if err := insertVersion(ctx, db, baselineVersion); err != nil {
+			return fmt.Errorf("migrate: set baseline: %w", err)
 		}
-
-		name := entry.Name()
-		if strings.HasSuffix(name, ".sql") {
-			files = append(files, name)
+		if logger != nil {
+			logger.Info("goose baseline recorded", "version", baselineVersion)
 		}
 	}
 
-	sort.Strings(files)
-	return files, nil
+	return nil
 }
 
-func hydrateMigration(name string, src []byte) (string, error) {
-	content := string(src)
-	if !strings.Contains(content, migrationOwnerEmailPlaceholder) {
-		return content, nil
+func tableExists(ctx context.Context, db *sql.DB, name string) (bool, error) {
+	schema, table := splitTableName(name)
+	var exists bool
+	if schema != "" {
+		if err := db.QueryRowContext(
+			ctx,
+			`SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = $1 AND tablename = $2)`,
+			schema,
+			table,
+		).Scan(&exists); err != nil {
+			return false, err
+		}
+		return exists, nil
 	}
 
-	ownerEmail := strings.TrimSpace(os.Getenv(migrationOwnerEmailEnv))
-	if ownerEmail == "" {
-		return "", fmt.Errorf("migrate: %s requires %s to be set", name, migrationOwnerEmailEnv)
+	if err := db.QueryRowContext(
+		ctx,
+		`SELECT EXISTS (SELECT 1 FROM pg_tables WHERE (current_schema() IS NULL OR schemaname = current_schema()) AND tablename = $1)`,
+		table,
+	).Scan(&exists); err != nil {
+		return false, err
 	}
-
-	content = strings.ReplaceAll(content, migrationOwnerEmailPlaceholder, escapeSQLLiteral(ownerEmail))
-	return content, nil
+	return exists, nil
 }
 
-func escapeSQLLiteral(value string) string {
-	return strings.ReplaceAll(value, "'", "''")
+func splitTableName(name string) (string, string) {
+	schema, table, found := strings.Cut(name, ".")
+	if !found {
+		return "", name
+	}
+	return schema, table
+}
+
+func insertVersion(ctx context.Context, db *sql.DB, version int64) error {
+	query := fmt.Sprintf(`INSERT INTO %s (version_id, is_applied) VALUES ($1, TRUE)`, goose.TableName())
+	_, err := db.ExecContext(ctx, query, version)
+	return err
 }

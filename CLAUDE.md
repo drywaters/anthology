@@ -37,6 +37,7 @@ Two-tier catalogue: Go 1.24 API + Angular 20 Material UI, deployed as independen
 - **internal/config** — Environment-driven configuration
 - **internal/shelves** — Shelf/collection management
 - **internal/auth** — Google OAuth authentication and session management
+- **migrations/** — Goose-managed SQL; `0001_baseline.sql` captures the current schema and runs on startup
 
 ### Angular Frontend (`web/src/app/`)
 - Standalone components with Angular Material 3
@@ -53,6 +54,7 @@ Two-tier catalogue: Go 1.24 API + Angular 20 Material UI, deployed as independen
 ## Configuration
 
 Key environment variables (see `docs/LOCAL_DEVELOPMENT.md` for setup):
+- `DATA_STORE` — `postgres` (required)
 - `DATABASE_URL` — Postgres connection string (required)
 - `GOOGLE_BOOKS_API_KEY` — For metadata lookups (required)
 - `AUTH_GOOGLE_CLIENT_ID` / `AUTH_GOOGLE_CLIENT_SECRET` — Google OAuth credentials (required)
