@@ -41,7 +41,7 @@ describe(BookDetailsComponent.name, () => {
         }).compileComponents();
     });
 
-    function createComponent() {
+    function createComponent({ hasSeriesData = false }: { hasSeriesData?: boolean } = {}) {
         const fixture = TestBed.createComponent(BookDetailsComponent);
         fixture.componentInstance.form = form;
         fixture.componentInstance.bookStatusOptions = [
@@ -51,6 +51,7 @@ describe(BookDetailsComponent.name, () => {
         ];
         fixture.componentInstance.formatOptions = [];
         fixture.componentInstance.genreOptions = [];
+        fixture.componentInstance.hasSeriesData = hasSeriesData;
         fixture.detectChanges();
         return fixture;
     }
@@ -170,13 +171,7 @@ describe(BookDetailsComponent.name, () => {
         });
 
         it('should auto-expand series section when hasSeriesData is true', () => {
-            const fixture = TestBed.createComponent(BookDetailsComponent);
-            fixture.componentInstance.form = form;
-            fixture.componentInstance.hasSeriesData = true;
-            fixture.componentInstance.bookStatusOptions = [];
-            fixture.componentInstance.formatOptions = [];
-            fixture.componentInstance.genreOptions = [];
-            fixture.detectChanges();
+            const fixture = createComponent({ hasSeriesData: true });
 
             expect(fixture.componentInstance.seriesExpanded()).toBeTrue();
         });
