@@ -62,9 +62,9 @@ describe('ItemsTableViewComponent', () => {
 
     it('should render letter headers', () => {
         const compiled = fixture.nativeElement as HTMLElement;
-        const headers = compiled.querySelectorAll('.letter-header');
-        expect(headers[0].textContent).toContain('A');
-        expect(headers[1].textContent).toContain('B');
+        const letters = compiled.querySelectorAll('.header-letter');
+        expect(letters[0].textContent).toContain('A');
+        expect(letters[1].textContent).toContain('B');
     });
 
     it('should render tables', () => {

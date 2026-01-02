@@ -115,9 +115,10 @@
     font-size: 0.75rem;
 }
 
-.shelf-location-button--card,
-.series-button--card {
-    align-self: flex-start;
+.card-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 0.25rem;
 }
 
 // Item type chip variants (inherited from parent for consistency)

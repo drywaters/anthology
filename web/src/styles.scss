@@ -229,7 +229,7 @@ app-items-table-view .items-table {
 }
 
 // Hide less critical columns on mobile viewports
-@media (width <= 680px) {
+@media (width <= 715px) {
     app-items-table-view .items-table {
         col.col-releaseYear,
         col.col-updatedAt {
