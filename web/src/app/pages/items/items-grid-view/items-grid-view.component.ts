@@ -25,6 +25,7 @@ export class ItemsGridViewComponent {
 
     @Output() itemSelected = new EventEmitter<Item>();
     @Output() shelfLocationRequested = new EventEmitter<{ item: Item; event: MouseEvent }>();
+    @Output() seriesRequested = new EventEmitter<{ item: Item; event: MouseEvent }>();
 
     onItemSelected(item: Item): void {
         this.itemSelected.emit(item);
@@ -32,6 +33,10 @@ export class ItemsGridViewComponent {
 
     onShelfLocationRequested(data: { item: Item; event: MouseEvent }): void {
         this.shelfLocationRequested.emit(data);
+    }
+
+    onSeriesRequested(data: { item: Item; event: MouseEvent }): void {
+        this.seriesRequested.emit(data);
     }
 
     trackByLetter(_: number, group: LetterGroup): string {

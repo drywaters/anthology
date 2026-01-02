@@ -20,6 +20,10 @@ describe('ItemCardComponent', () => {
         createdAt: '2023-01-01T00:00:00Z',
         updatedAt: '2023-06-15T00:00:00Z',
     };
+    const itemWithSeries: Item = {
+        ...mockItem,
+        seriesName: 'Test Series',
+    };
 
     beforeEach(async () => {
         await TestBed.configureTestingModule({
@@ -134,5 +138,40 @@ describe('ItemCardComponent', () => {
         const compiled = fixture.nativeElement as HTMLElement;
         expect(compiled.textContent).toContain('25%');
         expect(compiled.textContent).toContain('50/200 pages');
+    });
+
+    it('should show series button when item has seriesName', () => {
+        component.item = itemWithSeries;
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+        expect(compiled.querySelector('.series-button')).toBeTruthy();
+    });
+
+    it('should not show series button when item has no seriesName', () => {
+        component.item = mockItem;
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+        expect(compiled.querySelector('.series-button')).toBeFalsy();
+    });
+
+    it('should emit seriesClicked when series button clicked', () => {
+        component.item = itemWithSeries;
+        fixture.detectChanges();
+        const spy = spyOn(component.seriesClicked, 'emit');
+        const button = fixture.nativeElement.querySelector('.series-button');
+        button.click();
+        expect(spy).toHaveBeenCalledWith(
+            jasmine.objectContaining({
+                item: itemWithSeries,
+                event: jasmine.any(MouseEvent),
+            }),
+        );
+    });
+
+    it('should have proper aria-label on series button', () => {
+        component.item = itemWithSeries;
+        fixture.detectChanges();
+        const button = fixture.nativeElement.querySelector('.series-button');
+        expect(button.getAttribute('aria-label')).toBe('View series: Test Series');
     });
 });

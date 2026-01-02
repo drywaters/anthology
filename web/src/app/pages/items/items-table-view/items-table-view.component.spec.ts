@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { signal } from '@angular/core';
+import { signal, WritableSignal } from '@angular/core';
 import { ItemsTableViewComponent } from './items-table-view.component';
 import { Item, ItemTypes } from '../../../models';
 import { LetterGroup } from '../items-page.component';
@@ -7,6 +7,7 @@ import { LetterGroup } from '../items-page.component';
 describe('ItemsTableViewComponent', () => {
     let component: ItemsTableViewComponent;
     let fixture: ComponentFixture<ItemsTableViewComponent>;
+    let groupedItemsSignal: WritableSignal<LetterGroup[]>;
 
     const mockItems: Item[] = [
         {
@@ -43,7 +44,8 @@ describe('ItemsTableViewComponent', () => {
 
         fixture = TestBed.createComponent(ItemsTableViewComponent);
         component = fixture.componentInstance;
-        component.groupedItems = signal(mockGroupedItems);
+        groupedItemsSignal = signal(mockGroupedItems);
+        component.groupedItems = groupedItemsSignal;
         component.typeFilter = signal('all');
         fixture.detectChanges();
     });
@@ -112,5 +114,23 @@ describe('ItemsTableViewComponent', () => {
         const sections = compiled.querySelectorAll('.letter-section');
         expect(sections[0].getAttribute('data-letter')).toBe('A');
         expect(sections[1].getAttribute('data-letter')).toBe('B');
+    });
+
+    it('should emit seriesRequested when series button clicked', () => {
+        const itemWithSeries: Item = {
+            ...mockItems[0],
+            seriesName: 'Test Series',
+        };
+        groupedItemsSignal.set([{ letter: 'A', items: [itemWithSeries] }]);
+        fixture.detectChanges();
+
+        const spy = spyOn(component.seriesRequested, 'emit');
+        const button = fixture.nativeElement.querySelector('.series-button') as HTMLButtonElement;
+        const event = new MouseEvent('click');
+        spyOn(event, 'stopPropagation');
+        button.dispatchEvent(event);
+
+        expect(spy).toHaveBeenCalledWith({ item: itemWithSeries, event });
+        expect(event.stopPropagation).toHaveBeenCalled();
     });
 });

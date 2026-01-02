@@ -44,6 +44,16 @@
         >
             <mat-icon aria-hidden="true">visibility</mat-icon>
         </button>
+        <button
+            *ngIf="item.seriesName"
+            type="button"
+            mat-icon-button
+            class="series-button series-button--card"
+            (click)="onSeriesClick($event)"
+            [attr.aria-label]="'View series: ' + item.seriesName"
+        >
+            <mat-icon aria-hidden="true">collections_bookmark</mat-icon>
+        </button>
         <p class="card-sub" *ngIf="readingStatusLabel(item) as statusLabel">
             <span class="status-chip">{{ statusLabel }}</span>
             <ng-container *ngIf="item.readingStatus === BookStatus.Read && item.readAt">

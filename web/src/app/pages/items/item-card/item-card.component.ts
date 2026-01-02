@@ -26,6 +26,7 @@ export class ItemCardComponent {
 
     @Output() cardClicked = new EventEmitter<Item>();
     @Output() shelfLocationClicked = new EventEmitter<{ item: Item; event: MouseEvent }>();
+    @Output() seriesClicked = new EventEmitter<{ item: Item; event: MouseEvent }>();
 
     readonly BookStatus = BookStatus;
 
@@ -35,6 +36,11 @@ export class ItemCardComponent {
 
     onShelfLocationClick(event: MouseEvent): void {
         this.shelfLocationClicked.emit({ item: this.item, event });
+    }
+
+    onSeriesClick(event: MouseEvent): void {
+        event.stopPropagation();
+        this.seriesClicked.emit({ item: this.item, event });
     }
 
     handleCardKeydown(event: KeyboardEvent): void {

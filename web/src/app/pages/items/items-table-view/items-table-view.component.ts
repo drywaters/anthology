@@ -38,6 +38,7 @@ export class ItemsTableViewComponent {
     @Output() itemSelected = new EventEmitter<Item>();
     @Output() shelfLocationRequested = new EventEmitter<{ item: Item; event: MouseEvent }>();
     @Output() typeFilterRequested = new EventEmitter<ItemType>();
+    @Output() seriesRequested = new EventEmitter<{ item: Item; event: MouseEvent }>();
 
     onItemSelected(item: Item): void {
         this.itemSelected.emit(item);
@@ -50,6 +51,11 @@ export class ItemsTableViewComponent {
     onTypeFilterRequested(itemType: ItemType, event: MouseEvent): void {
         event.stopPropagation();
         this.typeFilterRequested.emit(itemType);
+    }
+
+    onSeriesRequested(item: Item, event: MouseEvent): void {
+        event.stopPropagation();
+        this.seriesRequested.emit({ item, event });
     }
 
     handleRowKeydown(event: KeyboardEvent, item: Item): void {
