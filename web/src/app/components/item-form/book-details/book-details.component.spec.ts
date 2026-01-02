@@ -41,7 +41,7 @@ describe(BookDetailsComponent.name, () => {
         }).compileComponents();
     });
 
-    function createComponent() {
+    function createComponent({ hasSeriesData = false }: { hasSeriesData?: boolean } = {}) {
         const fixture = TestBed.createComponent(BookDetailsComponent);
         fixture.componentInstance.form = form;
         fixture.componentInstance.bookStatusOptions = [
@@ -51,6 +51,7 @@ describe(BookDetailsComponent.name, () => {
         ];
         fixture.componentInstance.formatOptions = [];
         fixture.componentInstance.genreOptions = [];
+        fixture.componentInstance.hasSeriesData = hasSeriesData;
         fixture.detectChanges();
         return fixture;
     }
@@ -159,5 +160,51 @@ describe(BookDetailsComponent.name, () => {
         component.clearTotalVolumes();
 
         expect(form.get('totalVolumes')?.value).toBeNull();
+    });
+
+    describe('series toggle', () => {
+        it('should start with series section collapsed by default', () => {
+            const fixture = createComponent();
+            const component = fixture.componentInstance;
+
+            expect(component.seriesExpanded()).toBeFalse();
+        });
+
+        it('should auto-expand series section when hasSeriesData is true', () => {
+            const fixture = createComponent({ hasSeriesData: true });
+
+            expect(fixture.componentInstance.seriesExpanded()).toBeTrue();
+        });
+
+        it('should toggle series section visibility', () => {
+            const fixture = createComponent();
+            const component = fixture.componentInstance;
+
+            expect(component.seriesExpanded()).toBeFalse();
+
+            component.toggleSeriesSection();
+            expect(component.seriesExpanded()).toBeTrue();
+
+            component.toggleSeriesSection();
+            expect(component.seriesExpanded()).toBeFalse();
+        });
+
+        it('should show series fields when expanded', () => {
+            const fixture = createComponent();
+            fixture.componentInstance.seriesExpanded.set(true);
+            fixture.detectChanges();
+
+            const seriesGrid = fixture.nativeElement.querySelector('.series-grid');
+            expect(seriesGrid).toBeTruthy();
+        });
+
+        it('should hide series fields when collapsed', () => {
+            const fixture = createComponent();
+            fixture.componentInstance.seriesExpanded.set(false);
+            fixture.detectChanges();
+
+            const seriesGrid = fixture.nativeElement.querySelector('.series-grid');
+            expect(seriesGrid).toBeNull();
+        });
     });
 });

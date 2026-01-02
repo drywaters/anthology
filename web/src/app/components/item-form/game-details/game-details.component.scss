@@ -36,7 +36,8 @@
 .description-section {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 1rem;
+    margin-top: 0.5rem;
 }
 
 .description-heading {
@@ -47,16 +48,6 @@
     h4 {
         margin: 0;
         font-size: 1.1rem;
-    }
-}
-
-.description-highlight {
-    width: 90px;
-    height: 6px;
-    border-radius: 999px;
-
-    &--game {
-        background: linear-gradient(90deg, var(--mat-sys-tertiary), var(--mat-sys-secondary));
     }
 }
 
