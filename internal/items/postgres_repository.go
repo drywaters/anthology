@@ -466,19 +466,3 @@ func (r *PostgresRepository) GetSeriesByName(ctx context.Context, name string, o
 	return summary, nil
 }
 
-// ListStandaloneItems returns items of the given type that are not part of a series.
-func (r *PostgresRepository) ListStandaloneItems(ctx context.Context, itemType ItemType, ownerID uuid.UUID) ([]Item, error) {
-	query := baseSelect + ` WHERE i.owner_id = $1 AND i.item_type = $2 AND (i.series_name = '' OR i.series_name IS NULL) ORDER BY i.title`
-
-	rows := []itemRow{}
-	if err := r.db.SelectContext(ctx, &rows, query, ownerID, itemType); err != nil {
-		return nil, fmt.Errorf("list standalone items: %w", err)
-	}
-
-	items := make([]Item, 0, len(rows))
-	for _, row := range rows {
-		items = append(items, row.toItem())
-	}
-
-	return items, nil
-}

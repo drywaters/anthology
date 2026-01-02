@@ -505,34 +505,3 @@ func (r *InMemoryRepository) GetSeriesByName(_ context.Context, name string, own
 	return summary, nil
 }
 
-// ListStandaloneItems returns items of the given type that are not part of a series.
-func (r *InMemoryRepository) ListStandaloneItems(_ context.Context, itemType ItemType, ownerID uuid.UUID) ([]Item, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	var items []Item
-
-	for _, id := range r.order {
-		item, ok := r.data[id]
-		if !ok {
-			continue
-		}
-
-		// Filter by owner_id
-		if item.OwnerID != ownerID {
-			continue
-		}
-
-		// Only include items of the given type without a series
-		if item.ItemType == itemType && item.SeriesName == "" {
-			items = append(items, item)
-		}
-	}
-
-	// Sort items by title
-	slices.SortFunc(items, func(a, b Item) int {
-		return strings.Compare(a.Title, b.Title)
-	})
-
-	return items, nil
-}

@@ -263,10 +263,9 @@ type SeriesRepoListOptions struct {
 	IncludeItems bool
 }
 
-// SeriesListResponse contains series and standalone books for the series view.
+// SeriesListResponse contains series for the series view.
 type SeriesListResponse struct {
-	Series          []SeriesSummary `json:"series"`
-	StandaloneItems []Item          `json:"standaloneItems"`
+	Series []SeriesSummary `json:"series"`
 }
 
 // Repository defines persistence operations for Items.
@@ -280,5 +279,4 @@ type Repository interface {
 	FindDuplicates(ctx context.Context, input DuplicateCheckInput, ownerID uuid.UUID) ([]DuplicateMatch, error)
 	ListSeries(ctx context.Context, opts SeriesRepoListOptions, ownerID uuid.UUID) ([]SeriesSummary, error)
 	GetSeriesByName(ctx context.Context, name string, ownerID uuid.UUID) (SeriesSummary, error)
-	ListStandaloneItems(ctx context.Context, itemType ItemType, ownerID uuid.UUID) ([]Item, error)
 }

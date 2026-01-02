@@ -6,7 +6,6 @@ import {
     Input,
     Output,
     Signal,
-    signal,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatExpansionModule } from '@angular/material/expansion';
@@ -41,7 +40,6 @@ const STATUS_CLASS_MAP: Record<SeriesStatus, string> = {
 })
 export class ItemsSeriesViewComponent {
     @Input({ required: true }) seriesData!: Signal<SeriesSummary[]>;
-    @Input({ required: true }) standaloneItems!: Signal<Item[]>;
     @Input({ required: true }) expandedSeries!: Signal<Set<string>>;
 
     @Output() seriesToggled = new EventEmitter<string>();
@@ -49,14 +47,8 @@ export class ItemsSeriesViewComponent {
     @Output() addMissingVolume = new EventEmitter<{ seriesName: string; volumeNumber: number }>();
     @Output() viewSeriesDetail = new EventEmitter<string>();
 
-    standaloneExpanded = signal(false);
-
     isExpanded(seriesName: string): boolean {
         return this.expandedSeries().has(seriesName);
-    }
-
-    toggleStandaloneExpanded(): void {
-        this.standaloneExpanded.update((expanded) => !expanded);
     }
 
     onPanelToggle(seriesName: string): void {
