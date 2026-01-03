@@ -25,6 +25,6 @@ This document outlines potential features and enhancements for the Anthology app
 
 ## Multi-user support
 - **User registration & authentication:** Transition from a single shared token to individual user accounts with secure password hashing or OAuth (e.g., Google, GitHub) integration. (DONE)
-- **Data multi-tenancy:** Update the database schema and API logic to isolate items, shelves, and history by `user_id`, ensuring users only access their own data. (PLANNED)
+- **Data multi-tenancy:** Update the database schema and API logic to isolate items, shelves, and history by `user_id`, ensuring users only access their own data. (DONE)
 - **Shared libraries:** Implement permission-based sharing, allowing users to grant read or write access to specific shelves or their entire catalog to other users.
 - **Personalized preferences:** Store per-user settings such as default catalog views (list vs. grid), preferred metadata providers, and UI themes.

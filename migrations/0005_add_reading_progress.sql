@@ -1,2 +1,0 @@
-ALTER TABLE items
-    ADD COLUMN IF NOT EXISTS current_page INTEGER;

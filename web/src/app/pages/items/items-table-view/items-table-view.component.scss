@@ -33,6 +33,10 @@
     white-space: nowrap;
 }
 
+.items-table th.mat-mdc-header-cell {
+    vertical-align: baseline;
+}
+
 .items-table tr.mat-mdc-header-row {
     position: sticky;
     top: 0;
