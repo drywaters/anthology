@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,7 +9,6 @@ import { MatInputModule } from '@angular/material/input';
     selector: 'app-cover-section',
     standalone: true,
     imports: [
-        CommonModule,
         MatButtonModule,
         MatFormFieldModule,
         MatIconModule,

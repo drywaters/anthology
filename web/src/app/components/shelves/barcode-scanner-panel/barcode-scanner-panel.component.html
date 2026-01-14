@@ -5,18 +5,28 @@
 
     <div class="scanner-preview">
         <video #scanVideo autoplay playsinline muted class="scanner-video"></video>
-        <div class="scanner-overlay" *ngIf="scannerActive()">
-            <div class="scanner-frame"></div>
-        </div>
-        <div class="scanner-overlay scanner-overlay--flash" *ngIf="scannerFlash()"></div>
-        <div class="scanner-overlay scanner-overlay--busy" *ngIf="scannerProcessing()">
-            <div class="busy-indicator">
-                <mat-spinner diameter="32"></mat-spinner>
-                <span class="busy-text">Processing...</span>
+        @if (scannerActive()) {
+            <div class="scanner-overlay">
+                <div class="scanner-frame"></div>
             </div>
-        </div>
+        }
+        @if (scannerFlash()) {
+            <div class="scanner-overlay scanner-overlay--flash"></div>
+        }
+        @if (scannerProcessing()) {
+            <div class="scanner-overlay scanner-overlay--busy">
+                <div class="busy-indicator">
+                    <mat-spinner diameter="32"></mat-spinner>
+                    <span class="busy-text">Processing...</span>
+                </div>
+            </div>
+        }
     </div>
 
-    <p class="scanner-error" *ngIf="scannerError()">{{ scannerError() }}</p>
-    <p class="scanner-hint" *ngIf="scannerHint() && !scannerError()">{{ scannerHint() }}</p>
+    @if (scannerError()) {
+        <p class="scanner-error">{{ scannerError() }}</p>
+    }
+    @if (scannerHint() && !scannerError()) {
+        <p class="scanner-hint">{{ scannerHint() }}</p>
+    }
 </div>

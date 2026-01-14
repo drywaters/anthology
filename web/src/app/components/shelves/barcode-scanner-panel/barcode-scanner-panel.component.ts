@@ -12,7 +12,7 @@ import {
     ViewChild,
     computed,
 } from '@angular/core';
-import { NgIf } from '@angular/common';
+
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import {
@@ -23,7 +23,7 @@ import {
 @Component({
     selector: 'app-barcode-scanner-panel',
     standalone: true,
-    imports: [NgIf, MatProgressSpinnerModule],
+    imports: [MatProgressSpinnerModule],
     templateUrl: './barcode-scanner-panel.component.html',
     styleUrl: './barcode-scanner-panel.component.scss',
 })

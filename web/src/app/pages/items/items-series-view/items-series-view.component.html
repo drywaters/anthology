@@ -1,82 +1,82 @@
 <div class="series-view">
     <mat-accordion multi>
-        <mat-expansion-panel
-            *ngFor="let series of seriesData(); trackBy: trackBySeries"
-            [expanded]="isExpanded(series.seriesName)"
-            (opened)="onPanelToggle(series.seriesName)"
-            (closed)="onPanelToggle(series.seriesName)"
-        >
-            <mat-expansion-panel-header>
-                <mat-panel-title class="series-title">
-                    <span class="series-name">{{ series.seriesName }}</span>
-                </mat-panel-title>
-                <mat-panel-description>
-                    <div class="series-meta">
-                        <span class="owned-count">{{ series.ownedCount }} owned</span>
-                        <span
-                            class="missing-count"
-                            *ngIf="
+        @for (series of seriesData(); track trackBySeries($index, series)) {
+            <mat-expansion-panel
+                [expanded]="isExpanded(series.seriesName)"
+                (opened)="onPanelToggle(series.seriesName)"
+                (closed)="onPanelToggle(series.seriesName)"
+            >
+                <mat-expansion-panel-header>
+                    <mat-panel-title class="series-title">
+                        <span class="series-name">{{ series.seriesName }}</span>
+                    </mat-panel-title>
+                    <mat-panel-description>
+                        <div class="series-meta">
+                            <span class="owned-count">{{ series.ownedCount }} owned</span>
+                            @if (
                                 series.missingCount !== null && series.missingCount !== undefined
-                            "
-                        >
-                            {{ series.missingCount }} missing
-                        </span>
-                        <span
-                            class="missing-count unknown"
-                            *ngIf="
+                            ) {
+                                <span class="missing-count">
+                                    {{ series.missingCount }} missing
+                                </span>
+                            }
+                            @if (
                                 series.missingCount === null || series.missingCount === undefined
+                            ) {
+                                <span class="missing-count unknown"> -- </span>
+                            }
+                            <mat-chip [ngClass]="getStatusClass(series.status)" size="small">
+                                {{ getStatusLabel(series.status) }}
+                            </mat-chip>
+                        </div>
+                    </mat-panel-description>
+                </mat-expansion-panel-header>
+                <div class="series-content">
+                    <div class="series-actions">
+                        <button
+                            mat-stroked-button
+                            type="button"
+                            (click)="
+                                onViewSeriesDetail(series.seriesName); $event.stopPropagation()
                             "
                         >
-                            --
-                        </span>
-                        <mat-chip [ngClass]="getStatusClass(series.status)" size="small">
-                            {{ getStatusLabel(series.status) }}
-                        </mat-chip>
+                            <mat-icon>info</mat-icon>
+                            View series details
+                        </button>
                     </div>
-                </mat-panel-description>
-            </mat-expansion-panel-header>
-
-            <div class="series-content">
-                <div class="series-actions">
-                    <button
-                        mat-stroked-button
-                        type="button"
-                        (click)="onViewSeriesDetail(series.seriesName); $event.stopPropagation()"
-                    >
-                        <mat-icon>info</mat-icon>
-                        View series details
-                    </button>
-                </div>
-
-                <div class="volumes-grid">
-                    <ng-container *ngFor="let item of series.items; trackBy: trackById">
-                        <app-item-card [item]="item" (click)="onItemSelected(item)"></app-item-card>
-                    </ng-container>
-
-                    <ng-container
-                        *ngFor="let volume of series.missingVolumes; trackBy: trackByVolume"
-                    >
-                        <div class="missing-volume-card">
-                            <div class="missing-volume-content">
-                                <span class="volume-label">Vol. {{ volume }}</span>
-                                <span class="missing-label">Missing</span>
+                    <div class="volumes-grid">
+                        @for (item of series.items; track trackById($index, item)) {
+                            <app-item-card
+                                [item]="item"
+                                (click)="onItemSelected(item)"
+                            ></app-item-card>
+                        }
+                        @for (
+                            volume of series.missingVolumes;
+                            track trackByVolume($index, volume)
+                        ) {
+                            <div class="missing-volume-card">
+                                <div class="missing-volume-content">
+                                    <span class="volume-label">Vol. {{ volume }}</span>
+                                    <span class="missing-label">Missing</span>
+                                </div>
+                                <button
+                                    mat-stroked-button
+                                    type="button"
+                                    class="add-button"
+                                    (click)="
+                                        onAddMissingVolume(series.seriesName, volume);
+                                        $event.stopPropagation()
+                                    "
+                                >
+                                    <mat-icon>add</mat-icon>
+                                    Add book
+                                </button>
                             </div>
-                            <button
-                                mat-stroked-button
-                                type="button"
-                                class="add-button"
-                                (click)="
-                                    onAddMissingVolume(series.seriesName, volume);
-                                    $event.stopPropagation()
-                                "
-                            >
-                                <mat-icon>add</mat-icon>
-                                Add book
-                            </button>
-                        </div>
-                    </ng-container>
+                        }
+                    </div>
                 </div>
-            </div>
-        </mat-expansion-panel>
+            </mat-expansion-panel>
+        }
     </mat-accordion>
 </div>

@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
     AfterViewInit,
     Component,
@@ -14,7 +13,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 @Component({
     selector: 'app-barcode-scanner',
     standalone: true,
-    imports: [CommonModule, MatProgressSpinnerModule],
+    imports: [MatProgressSpinnerModule],
     templateUrl: './barcode-scanner.component.html',
     styleUrl: './barcode-scanner.component.scss',
 })

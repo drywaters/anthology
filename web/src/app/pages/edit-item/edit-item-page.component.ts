@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -16,7 +15,6 @@ import { NotificationService } from '../../services/notification.service';
     selector: 'app-edit-item-page',
     standalone: true,
     imports: [
-        CommonModule,
         ItemFormComponent,
         MatButtonModule,
         MatCardModule,

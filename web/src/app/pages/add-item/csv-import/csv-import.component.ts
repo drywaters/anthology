@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
     Component,
     ElementRef,
@@ -30,7 +29,7 @@ interface CsvImportStatus {
 @Component({
     selector: 'app-csv-import',
     standalone: true,
-    imports: [CommonModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule],
+    imports: [MatButtonModule, MatIconModule, MatProgressSpinnerModule],
     templateUrl: './csv-import.component.html',
     styleUrl: './csv-import.component.scss',
 })

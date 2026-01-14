@@ -9,7 +9,7 @@ import {
     signal,
     SimpleChanges,
 } from '@angular/core';
-import { NgFor, NgIf } from '@angular/common';
+
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -38,8 +38,6 @@ type ItemTypeFilter = ItemType | 'all';
     selector: 'app-item-search',
     standalone: true,
     imports: [
-        NgFor,
-        NgIf,
         ReactiveFormsModule,
         MatAutocompleteModule,
         MatFormFieldModule,

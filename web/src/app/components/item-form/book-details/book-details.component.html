@@ -8,46 +8,53 @@
         <mat-form-field appearance="fill">
             <mat-label>Reading status</mat-label>
             <mat-select formControlName="readingStatus" (valueChange)="onStatusChange($event)">
-                <mat-option *ngFor="let option of bookStatusOptions" [value]="option.value">
-                    {{ option.label }}
-                </mat-option>
+                @for (option of bookStatusOptions; track option) {
+                    <mat-option [value]="option.value">
+                        {{ option.label }}
+                    </mat-option>
+                }
             </mat-select>
             <mat-hint>Track whether you have read or started this book.</mat-hint>
         </mat-form-field>
 
-        <mat-form-field appearance="fill" *ngIf="isReadStatus">
-            <mat-label>Date finished</mat-label>
-            <input matInput [matDatepicker]="finishedPicker" formControlName="readAt" />
-            <mat-datepicker-toggle matIconSuffix [for]="finishedPicker"></mat-datepicker-toggle>
-            <mat-datepicker #finishedPicker></mat-datepicker>
-            <mat-error *ngIf="form.get('readAt')?.hasError('required')">
-                Finish date is required when marking a book as read.
-            </mat-error>
-        </mat-form-field>
+        @if (isReadStatus) {
+            <mat-form-field appearance="fill">
+                <mat-label>Date finished</mat-label>
+                <input matInput [matDatepicker]="finishedPicker" formControlName="readAt" />
+                <mat-datepicker-toggle matIconSuffix [for]="finishedPicker"></mat-datepicker-toggle>
+                <mat-datepicker #finishedPicker></mat-datepicker>
+                @if (form.get('readAt')?.hasError('required')) {
+                    <mat-error> Finish date is required when marking a book as read. </mat-error>
+                }
+            </mat-form-field>
+        }
 
-        <mat-form-field appearance="fill" *ngIf="isReadingStatus">
-            <mat-label>Current page</mat-label>
-            <input matInput formControlName="currentPage" type="number" min="0" />
-            <button
-                mat-icon-button
-                matSuffix
-                type="button"
-                (click)="clearCurrentPage()"
-                aria-label="Clear current page"
-                *ngIf="form.get('currentPage')?.value || form.get('currentPage')?.value === 0"
-            >
-                <mat-icon>close</mat-icon>
-            </button>
-            <mat-hint *ngIf="form.get('pageCount')?.value as total"
-                >Out of {{ total }} total pages.</mat-hint
-            >
-            <mat-error *ngIf="form.get('currentPage')?.hasError('min')">
-                Current page cannot be negative.
-            </mat-error>
-            <mat-error *ngIf="form.get('currentPage')?.hasError('maxPages')">
-                Current page cannot exceed the total page count.
-            </mat-error>
-        </mat-form-field>
+        @if (isReadingStatus) {
+            <mat-form-field appearance="fill">
+                <mat-label>Current page</mat-label>
+                <input matInput formControlName="currentPage" type="number" min="0" />
+                @if (form.get('currentPage')?.value || form.get('currentPage')?.value === 0) {
+                    <button
+                        mat-icon-button
+                        matSuffix
+                        type="button"
+                        (click)="clearCurrentPage()"
+                        aria-label="Clear current page"
+                    >
+                        <mat-icon>close</mat-icon>
+                    </button>
+                }
+                @if (form.get('pageCount')?.value; as total) {
+                    <mat-hint>Out of {{ total }} total pages.</mat-hint>
+                }
+                @if (form.get('currentPage')?.hasError('min')) {
+                    <mat-error> Current page cannot be negative. </mat-error>
+                }
+                @if (form.get('currentPage')?.hasError('maxPages')) {
+                    <mat-error> Current page cannot exceed the total page count. </mat-error>
+                }
+            </mat-form-field>
+        }
 
         <mat-form-field appearance="fill">
             <mat-label>Number of pages</mat-label>
@@ -62,9 +69,9 @@
                 <mat-icon>close</mat-icon>
             </button>
             <mat-hint>Total printed pages for the edition you own.</mat-hint>
-            <mat-error *ngIf="form.get('pageCount')?.hasError('min')"
-                >Use at least one page.</mat-error
-            >
+            @if (form.get('pageCount')?.hasError('min')) {
+                <mat-error>Use at least one page.</mat-error>
+            }
         </mat-form-field>
 
         <mat-form-field appearance="fill">
@@ -82,9 +89,11 @@
         <mat-form-field appearance="fill">
             <mat-label>Format</mat-label>
             <mat-select formControlName="format">
-                <mat-option *ngFor="let option of formatOptions" [value]="option.value">
-                    {{ option.label }}
-                </mat-option>
+                @for (option of formatOptions; track option) {
+                    <mat-option [value]="option.value">
+                        {{ option.label }}
+                    </mat-option>
+                }
             </mat-select>
             <mat-hint>Physical format of this edition.</mat-hint>
         </mat-form-field>
@@ -92,9 +101,11 @@
         <mat-form-field appearance="fill">
             <mat-label>Genre</mat-label>
             <mat-select formControlName="genre">
-                <mat-option *ngFor="let option of genreOptions" [value]="option.value">
-                    {{ option.label }}
-                </mat-option>
+                @for (option of genreOptions; track option) {
+                    <mat-option [value]="option.value">
+                        {{ option.label }}
+                    </mat-option>
+                }
             </mat-select>
             <mat-hint>Primary category for this book.</mat-hint>
         </mat-form-field>
@@ -102,42 +113,44 @@
         <mat-form-field appearance="fill">
             <mat-label>Your rating</mat-label>
             <input matInput formControlName="rating" type="number" min="1" max="10" />
-            <button
-                mat-icon-button
-                matSuffix
-                type="button"
-                (click)="clearRating()"
-                aria-label="Clear rating"
-                *ngIf="form.get('rating')?.value"
-            >
-                <mat-icon>close</mat-icon>
-            </button>
+            @if (form.get('rating')?.value) {
+                <button
+                    mat-icon-button
+                    matSuffix
+                    type="button"
+                    (click)="clearRating()"
+                    aria-label="Clear rating"
+                >
+                    <mat-icon>close</mat-icon>
+                </button>
+            }
             <mat-hint>Personal enjoyment rating (1–10).</mat-hint>
-            <mat-error *ngIf="form.get('rating')?.hasError('min')"
-                >Rating must be at least 1.</mat-error
-            >
-            <mat-error *ngIf="form.get('rating')?.hasError('max')"
-                >Rating cannot exceed 10.</mat-error
-            >
+            @if (form.get('rating')?.hasError('min')) {
+                <mat-error>Rating must be at least 1.</mat-error>
+            }
+            @if (form.get('rating')?.hasError('max')) {
+                <mat-error>Rating cannot exceed 10.</mat-error>
+            }
         </mat-form-field>
 
         <mat-form-field appearance="fill">
             <mat-label>Retail price (USD)</mat-label>
             <input matInput formControlName="retailPriceUsd" type="number" min="0" step="0.01" />
-            <button
-                mat-icon-button
-                matSuffix
-                type="button"
-                (click)="clearRetailPrice()"
-                aria-label="Clear retail price"
-                *ngIf="form.get('retailPriceUsd')?.value"
-            >
-                <mat-icon>close</mat-icon>
-            </button>
+            @if (form.get('retailPriceUsd')?.value) {
+                <button
+                    mat-icon-button
+                    matSuffix
+                    type="button"
+                    (click)="clearRetailPrice()"
+                    aria-label="Clear retail price"
+                >
+                    <mat-icon>close</mat-icon>
+                </button>
+            }
             <mat-hint>List price in US dollars.</mat-hint>
-            <mat-error *ngIf="form.get('retailPriceUsd')?.hasError('min')"
-                >Price cannot be negative.</mat-error
-            >
+            @if (form.get('retailPriceUsd')?.hasError('min')) {
+                <mat-error>Price cannot be negative.</mat-error>
+            }
         </mat-form-field>
 
         <mat-form-field appearance="fill">
@@ -184,33 +197,35 @@
                         [matAutocomplete]="seriesAutocomplete"
                     />
                     <mat-autocomplete #seriesAutocomplete="matAutocomplete">
-                        <mat-option *ngIf="loadingSeriesNames()" disabled>
-                            Loading series...
-                        </mat-option>
-                        <mat-option *ngFor="let name of filteredSeriesNames()" [value]="name">
-                            {{ name }}
-                        </mat-option>
-                        <mat-option
-                            *ngIf="
-                                !loadingSeriesNames() &&
-                                filteredSeriesNames().length === 0 &&
-                                form.get('seriesName')?.value
-                            "
-                            disabled
-                        >
-                            No matching series (new series will be created)
-                        </mat-option>
+                        @if (loadingSeriesNames()) {
+                            <mat-option disabled> Loading series... </mat-option>
+                        }
+                        @for (name of filteredSeriesNames(); track name) {
+                            <mat-option [value]="name">
+                                {{ name }}
+                            </mat-option>
+                        }
+                        @if (
+                            !loadingSeriesNames() &&
+                            filteredSeriesNames().length === 0 &&
+                            form.get('seriesName')?.value
+                        ) {
+                            <mat-option disabled>
+                                No matching series (new series will be created)
+                            </mat-option>
+                        }
                     </mat-autocomplete>
-                    <button
-                        mat-icon-button
-                        matSuffix
-                        type="button"
-                        (click)="clearSeriesName()"
-                        aria-label="Clear series name"
-                        *ngIf="form.get('seriesName')?.value"
-                    >
-                        <mat-icon>close</mat-icon>
-                    </button>
+                    @if (form.get('seriesName')?.value) {
+                        <button
+                            mat-icon-button
+                            matSuffix
+                            type="button"
+                            (click)="clearSeriesName()"
+                            aria-label="Clear series name"
+                        >
+                            <mat-icon>close</mat-icon>
+                        </button>
+                    }
                     <mat-hint>Name of the book series (e.g., "Harry Potter").</mat-hint>
                     <mat-hint align="end">
                         {{ form.get('seriesName')?.value?.length || 0 }}/200
@@ -220,42 +235,44 @@
                 <mat-form-field appearance="fill">
                     <mat-label>Volume number</mat-label>
                     <input matInput formControlName="volumeNumber" type="number" min="1" />
-                    <button
-                        mat-icon-button
-                        matSuffix
-                        type="button"
-                        (click)="clearVolumeNumber()"
-                        aria-label="Clear volume number"
-                        *ngIf="form.get('volumeNumber')?.value"
-                    >
-                        <mat-icon>close</mat-icon>
-                    </button>
+                    @if (form.get('volumeNumber')?.value) {
+                        <button
+                            mat-icon-button
+                            matSuffix
+                            type="button"
+                            (click)="clearVolumeNumber()"
+                            aria-label="Clear volume number"
+                        >
+                            <mat-icon>close</mat-icon>
+                        </button>
+                    }
                     <mat-hint>This book's position in the series.</mat-hint>
-                    <mat-error *ngIf="form.get('volumeNumber')?.hasError('min')">
-                        Volume number must be at least 1.
-                    </mat-error>
-                    <mat-error *ngIf="form.get('volumeNumber')?.hasError('exceedsTotal')">
-                        Volume number cannot exceed total volumes.
-                    </mat-error>
+                    @if (form.get('volumeNumber')?.hasError('min')) {
+                        <mat-error> Volume number must be at least 1. </mat-error>
+                    }
+                    @if (form.get('volumeNumber')?.hasError('exceedsTotal')) {
+                        <mat-error> Volume number cannot exceed total volumes. </mat-error>
+                    }
                 </mat-form-field>
 
                 <mat-form-field appearance="fill">
                     <mat-label>Total volumes</mat-label>
                     <input matInput formControlName="totalVolumes" type="number" min="1" />
-                    <button
-                        mat-icon-button
-                        matSuffix
-                        type="button"
-                        (click)="clearTotalVolumes()"
-                        aria-label="Clear total volumes"
-                        *ngIf="form.get('totalVolumes')?.value"
-                    >
-                        <mat-icon>close</mat-icon>
-                    </button>
+                    @if (form.get('totalVolumes')?.value) {
+                        <button
+                            mat-icon-button
+                            matSuffix
+                            type="button"
+                            (click)="clearTotalVolumes()"
+                            aria-label="Clear total volumes"
+                        >
+                            <mat-icon>close</mat-icon>
+                        </button>
+                    }
                     <mat-hint>Total number of volumes in the series.</mat-hint>
-                    <mat-error *ngIf="form.get('totalVolumes')?.hasError('min')">
-                        Total volumes must be at least 1.
-                    </mat-error>
+                    @if (form.get('totalVolumes')?.hasError('min')) {
+                        <mat-error> Total volumes must be at least 1. </mat-error>
+                    }
                 </mat-form-field>
             </div>
         }

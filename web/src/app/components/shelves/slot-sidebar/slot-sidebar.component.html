@@ -1,57 +1,62 @@
-<mat-card class="sidebar" *ngIf="slot">
-    <div class="sidebar__header">
-        <div>
-            <h3>{{ slotLabel }}</h3>
-            <p class="helper">Assign items to this slot.</p>
-        </div>
-        <div class="badge">{{ placedCount }} placed</div>
-    </div>
-
-    <app-assigned-items-list
-        [items]="assignedItems"
-        [recentlyScannedIds]="recentlyScannedIds"
-        (removeItem)="onItemRemove($event)"
-    ></app-assigned-items-list>
-
-    <mat-tab-group
-        dynamicHeight
-        class="sidebar__tabs"
-        [selectedIndex]="selectedTab()"
-        (selectedIndexChange)="handleTabChange($event)"
-    >
-        <mat-tab label="From Library">
-            <div class="sidebar__section">
-                <app-item-search (itemSelected)="onItemSelected($event)"></app-item-search>
+@if (slot) {
+    <mat-card class="sidebar">
+        <div class="sidebar__header">
+            <div>
+                <h3>{{ slotLabel }}</h3>
+                <p class="helper">Assign items to this slot.</p>
             </div>
-        </mat-tab>
-
-        <mat-tab label="Scan New">
-            <app-barcode-scanner-panel
-                [active]="isScannerTabActive"
-                (barcodeScanned)="onBarcodeScanned($event)"
-            ></app-barcode-scanner-panel>
-        </mat-tab>
-    </mat-tab-group>
-
-    <div class="sidebar__section" *ngIf="unplacedItems.length">
-        <div class="sidebar__section-title">Unplaced on this shelf</div>
-        <div class="chip-row">
-            <mat-chip-row *ngFor="let placement of unplacedItems">
-                {{ placement.item.title }}
-                <button matChipRemove (click)="onUnplacedItemAssign(placement.item.id)">
-                    <mat-icon>login</mat-icon>
-                </button>
-            </mat-chip-row>
+            <div class="badge">{{ placedCount }} placed</div>
         </div>
-    </div>
-
-    <div class="sidebar__section" *ngIf="displacedItems.length">
-        <div class="sidebar__section-title">Displaced after save</div>
-        <p class="helper">Place these items in a new slot.</p>
-        <div class="chip-row">
-            <mat-chip-row *ngFor="let placement of displacedItems">
-                {{ placement.item.title }}
-            </mat-chip-row>
-        </div>
-    </div>
-</mat-card>
+        <app-assigned-items-list
+            [items]="assignedItems"
+            [recentlyScannedIds]="recentlyScannedIds"
+            (removeItem)="onItemRemove($event)"
+        ></app-assigned-items-list>
+        <mat-tab-group
+            dynamicHeight
+            class="sidebar__tabs"
+            [selectedIndex]="selectedTab()"
+            (selectedIndexChange)="handleTabChange($event)"
+        >
+            <mat-tab label="From Library">
+                <div class="sidebar__section">
+                    <app-item-search (itemSelected)="onItemSelected($event)"></app-item-search>
+                </div>
+            </mat-tab>
+            <mat-tab label="Scan New">
+                <app-barcode-scanner-panel
+                    [active]="isScannerTabActive"
+                    (barcodeScanned)="onBarcodeScanned($event)"
+                ></app-barcode-scanner-panel>
+            </mat-tab>
+        </mat-tab-group>
+        @if (unplacedItems.length) {
+            <div class="sidebar__section">
+                <div class="sidebar__section-title">Unplaced on this shelf</div>
+                <div class="chip-row">
+                    @for (placement of unplacedItems; track placement) {
+                        <mat-chip-row>
+                            {{ placement.item.title }}
+                            <button matChipRemove (click)="onUnplacedItemAssign(placement.item.id)">
+                                <mat-icon>login</mat-icon>
+                            </button>
+                        </mat-chip-row>
+                    }
+                </div>
+            </div>
+        }
+        @if (displacedItems.length) {
+            <div class="sidebar__section">
+                <div class="sidebar__section-title">Displaced after save</div>
+                <p class="helper">Place these items in a new slot.</p>
+                <div class="chip-row">
+                    @for (placement of displacedItems; track placement) {
+                        <mat-chip-row>
+                            {{ placement.item.title }}
+                        </mat-chip-row>
+                    }
+                </div>
+            </div>
+        }
+    </mat-card>
+}

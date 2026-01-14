@@ -1,18 +1,17 @@
 <div class="grouped-content" data-testid="item-card-grid">
-    <section
-        class="letter-section"
-        *ngFor="let group of groupedItems(); trackBy: trackByLetter"
-        [attr.data-letter]="group.letter"
-    >
-        <h4 class="letter-header">{{ group.letter }}</h4>
-        <div class="card-grid">
-            <app-item-card
-                *ngFor="let item of group.items; trackBy: trackById"
-                [item]="item"
-                (cardClicked)="onItemSelected($event)"
-                (shelfLocationClicked)="onShelfLocationRequested($event)"
-                (seriesClicked)="onSeriesRequested($event)"
-            ></app-item-card>
-        </div>
-    </section>
+    @for (group of groupedItems(); track trackByLetter($index, group)) {
+        <section class="letter-section" [attr.data-letter]="group.letter">
+            <h4 class="letter-header">{{ group.letter }}</h4>
+            <div class="card-grid">
+                @for (item of group.items; track trackById($index, item)) {
+                    <app-item-card
+                        [item]="item"
+                        (cardClicked)="onItemSelected($event)"
+                        (shelfLocationClicked)="onShelfLocationRequested($event)"
+                        (seriesClicked)="onSeriesRequested($event)"
+                    ></app-item-card>
+                }
+            </div>
+        </section>
+    }
 </div>

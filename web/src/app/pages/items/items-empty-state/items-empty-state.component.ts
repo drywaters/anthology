@@ -1,4 +1,3 @@
-import { NgIf } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
@@ -13,7 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 @Component({
     selector: 'app-items-empty-state',
     standalone: true,
-    imports: [NgIf, MatButtonModule, MatIconModule],
+    imports: [MatButtonModule, MatIconModule],
     templateUrl: './items-empty-state.component.html',
     styleUrl: './items-empty-state.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

@@ -8,7 +8,6 @@ import {
     signal,
     Signal,
 } from '@angular/core';
-import { NgFor } from '@angular/common';
 
 export type LetterHistogram = Record<string, number>;
 
@@ -45,7 +44,7 @@ const ALPHABET: string[] = [
 @Component({
     selector: 'app-alpha-rail',
     standalone: true,
-    imports: [NgFor],
+    imports: [],
     templateUrl: './alpha-rail.component.html',
     styleUrl: './alpha-rail.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

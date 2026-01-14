@@ -1,4 +1,4 @@
-import { DatePipe, NgClass, NgIf } from '@angular/common';
+import { DatePipe, NgClass } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -16,7 +16,7 @@ import {
 @Component({
     selector: 'app-item-card',
     standalone: true,
-    imports: [DatePipe, NgClass, NgIf, MatButtonModule, MatIconModule, ThumbnailPipe],
+    imports: [DatePipe, NgClass, MatButtonModule, MatIconModule, ThumbnailPipe],
     templateUrl: './item-card.component.html',
     styleUrl: './item-card.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

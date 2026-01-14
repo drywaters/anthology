@@ -2,10 +2,12 @@
     <mat-form-field appearance="fill">
         <mat-label>Title</mat-label>
         <input matInput formControlName="title" maxlength="120" required />
-        <mat-error *ngIf="form.get('title')?.hasError('required')">Title is required.</mat-error>
-        <mat-error *ngIf="form.get('title')?.hasError('maxlength')"
-            >Keep titles under 120 characters.</mat-error
-        >
+        @if (form.get('title')?.hasError('required')) {
+            <mat-error>Title is required.</mat-error>
+        }
+        @if (form.get('title')?.hasError('maxlength')) {
+            <mat-error>Keep titles under 120 characters.</mat-error>
+        }
     </mat-form-field>
 
     <mat-form-field appearance="fill">
@@ -17,9 +19,11 @@
     <mat-form-field appearance="fill">
         <mat-label>Type</mat-label>
         <mat-select formControlName="itemType" required>
-            <mat-option *ngFor="let option of itemTypeOptions" [value]="option[0]">
-                {{ option[1] }}
-            </mat-option>
+            @for (option of itemTypeOptions; track option) {
+                <mat-option [value]="option[0]">
+                    {{ option[1] }}
+                </mat-option>
+            }
         </mat-select>
     </mat-form-field>
 
@@ -37,16 +41,19 @@
         </button>
     </mat-form-field>
 
-    <app-book-details
-        *ngIf="isBook"
-        [form]="form"
-        [bookStatusOptions]="bookStatusOptions"
-        [formatOptions]="formatOptions"
-        [genreOptions]="genreOptions"
-        [hasSeriesData]="hasSeriesData"
-    />
+    @if (isBook) {
+        <app-book-details
+            [form]="form"
+            [bookStatusOptions]="bookStatusOptions"
+            [formatOptions]="formatOptions"
+            [genreOptions]="genreOptions"
+            [hasSeriesData]="hasSeriesData"
+        />
+    }
 
-    <app-game-details *ngIf="isGame" [form]="form" />
+    @if (isGame) {
+        <app-game-details [form]="form" />
+    }
 
     <app-cover-section
         [form]="form"
@@ -62,25 +69,27 @@
     </mat-form-field>
 
     <div class="form-actions">
-        <button
-            mat-flat-button
-            type="button"
-            class="form-actions__delete"
-            *ngIf="mode === 'edit'"
-            (click)="deleteRequested.emit()"
-            [disabled]="busy || resyncing"
-        >
-            Delete item
-        </button>
-        <button
-            mat-stroked-button
-            type="button"
-            *ngIf="mode === 'edit' && isBook"
-            (click)="requestResync()"
-            [disabled]="busy || resyncing"
-        >
-            {{ resyncing ? 'Syncing...' : 'Re-sync' }}
-        </button>
+        @if (mode === 'edit') {
+            <button
+                mat-flat-button
+                type="button"
+                class="form-actions__delete"
+                (click)="deleteRequested.emit()"
+                [disabled]="busy || resyncing"
+            >
+                Delete item
+            </button>
+        }
+        @if (mode === 'edit' && isBook) {
+            <button
+                mat-stroked-button
+                type="button"
+                (click)="requestResync()"
+                [disabled]="busy || resyncing"
+            >
+                {{ resyncing ? 'Syncing...' : 'Re-sync' }}
+            </button>
+        }
         <button
             mat-stroked-button
             type="button"

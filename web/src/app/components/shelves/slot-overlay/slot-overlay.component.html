@@ -8,7 +8,7 @@
     [ngStyle]="slotStyle"
     (click)="mode === 'view' ? onClick() : null"
 >
-    <ng-container *ngIf="mode === 'edit'">
+    @if (mode === 'edit') {
         <button
             type="button"
             class="slot__label slot__label-button"
@@ -17,7 +17,7 @@
         >
             {{ label }}
         </button>
-        <ng-container *ngIf="selected">
+        @if (selected) {
             <button
                 type="button"
                 class="slot__handle slot__handle--top-left slot__handle--start"
@@ -42,9 +42,11 @@
                 (pointerdown)="onCornerPointerDown('bottom-right', $event)"
                 [attr.aria-label]="'Adjust bottom-right corner of ' + ariaLabelPrefix"
             ></button>
-        </ng-container>
-    </ng-container>
-    <ng-container *ngIf="mode === 'view'">
-        <span class="slot__label" *ngIf="selected"> {{ rowIndex + 1 }}/{{ colIndex + 1 }} </span>
-    </ng-container>
+        }
+    }
+    @if (mode === 'view') {
+        @if (selected) {
+            <span class="slot__label"> {{ rowIndex + 1 }}/{{ colIndex + 1 }} </span>
+        }
+    }
 </div>

@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { NgIf, NgClass, NgStyle } from '@angular/common';
+import { NgClass, NgStyle } from '@angular/common';
 
 export type CornerPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
@@ -18,7 +18,7 @@ export interface CornerDragEvent {
 @Component({
     selector: 'app-slot-overlay',
     standalone: true,
-    imports: [NgIf, NgClass, NgStyle],
+    imports: [NgClass, NgStyle],
     templateUrl: './slot-overlay.component.html',
     styleUrl: './slot-overlay.component.scss',
 })

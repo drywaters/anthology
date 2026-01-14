@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
     Component,
@@ -57,7 +56,6 @@ interface SearchCategoryConfig {
     selector: 'app-add-item-page',
     standalone: true,
     imports: [
-        CommonModule,
         MatButtonModule,
         MatCardModule,
         MatDialogModule,

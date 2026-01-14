@@ -17,10 +17,12 @@
     <div class="layout">
         <section class="items-panel" #scrollContainer>
             <mat-card>
-                <mat-progress-bar *ngIf="loading()" mode="indeterminate"></mat-progress-bar>
+                @if (loading()) {
+                    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+                }
 
-                <ng-container *ngIf="isSeriesView(); else standardView">
-                    <ng-container *ngIf="hasSeriesData(); else emptyState">
+                @if (isSeriesView()) {
+                    @if (hasSeriesData()) {
                         <app-items-series-view
                             [seriesData]="seriesData"
                             [expandedSeries]="expandedSeries"
@@ -29,20 +31,23 @@
                             (addMissingVolume)="addMissingVolume($event)"
                             (viewSeriesDetail)="viewSeriesDetail($event)"
                         ></app-items-series-view>
-                    </ng-container>
-                </ng-container>
-
-                <ng-template #standardView>
-                    <ng-container *ngIf="hasFilteredItems(); else emptyState">
-                        <app-items-grid-view
-                            *ngIf="isGridView(); else tableView"
-                            [groupedItems]="groupedItems"
-                            (itemSelected)="startEdit($event)"
-                            (shelfLocationRequested)="viewShelfPlacementFromChild($event)"
-                            (seriesRequested)="viewSeriesFromChild($event)"
-                        ></app-items-grid-view>
-
-                        <ng-template #tableView>
+                    } @else {
+                        <app-items-empty-state
+                            [isUnfiltered]="isUnfiltered"
+                            [loading]="loading"
+                            (createRequested)="startCreate()"
+                        ></app-items-empty-state>
+                    }
+                } @else {
+                    @if (hasFilteredItems()) {
+                        @if (isGridView()) {
+                            <app-items-grid-view
+                                [groupedItems]="groupedItems"
+                                (itemSelected)="startEdit($event)"
+                                (shelfLocationRequested)="viewShelfPlacementFromChild($event)"
+                                (seriesRequested)="viewSeriesFromChild($event)"
+                            ></app-items-grid-view>
+                        } @else {
                             <app-items-table-view
                                 [groupedItems]="groupedItems"
                                 [typeFilter]="typeFilter"
@@ -52,17 +57,15 @@
                                 (typeFilterRequested)="filterByType($event)"
                                 (seriesRequested)="viewSeriesFromChild($event)"
                             ></app-items-table-view>
-                        </ng-template>
-                    </ng-container>
-                </ng-template>
-
-                <ng-template #emptyState>
-                    <app-items-empty-state
-                        [isUnfiltered]="isUnfiltered"
-                        [loading]="loading"
-                        (createRequested)="startCreate()"
-                    ></app-items-empty-state>
-                </ng-template>
+                        }
+                    } @else {
+                        <app-items-empty-state
+                            [isUnfiltered]="isUnfiltered"
+                            [loading]="loading"
+                            (createRequested)="startCreate()"
+                        ></app-items-empty-state>
+                    }
+                }
             </mat-card>
         </section>
 

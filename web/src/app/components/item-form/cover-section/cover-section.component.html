@@ -1,14 +1,14 @@
 <div class="cover-section" [formGroup]="form">
     <div class="cover-preview" [class.cover-preview--empty]="!form.get('coverImage')?.value">
-        <img
-            *ngIf="form.get('coverImage')?.value"
-            [src]="form.get('coverImage')?.value"
-            alt="Cover preview"
-        />
-        <div *ngIf="!form.get('coverImage')?.value" class="cover-placeholder">
-            <mat-icon aria-hidden="true">photo</mat-icon>
-            <span>No cover added yet</span>
-        </div>
+        @if (form.get('coverImage')?.value) {
+            <img [src]="form.get('coverImage')?.value" alt="Cover preview" />
+        }
+        @if (!form.get('coverImage')?.value) {
+            <div class="cover-placeholder">
+                <mat-icon aria-hidden="true">photo</mat-icon>
+                <span>No cover added yet</span>
+            </div>
+        }
     </div>
 
     <div class="cover-fields">
@@ -22,16 +22,17 @@
         <mat-form-field appearance="fill" class="cover-image-field">
             <mat-label>Cover image URL or data URI</mat-label>
             <input matInput formControlName="coverImage" (input)="clearCoverError()" />
-            <button
-                mat-icon-button
-                matSuffix
-                type="button"
-                *ngIf="form.get('coverImage')?.value"
-                (click)="clearCoverImage()"
-                aria-label="Remove cover image"
-            >
-                <mat-icon>close</mat-icon>
-            </button>
+            @if (form.get('coverImage')?.value) {
+                <button
+                    mat-icon-button
+                    matSuffix
+                    type="button"
+                    (click)="clearCoverImage()"
+                    aria-label="Remove cover image"
+                >
+                    <mat-icon>close</mat-icon>
+                </button>
+            }
             <mat-hint>Links stay as-is; uploaded images are stored as thumbnails.</mat-hint>
         </mat-form-field>
 
@@ -56,6 +57,8 @@
             />
         </div>
 
-        <div class="cover-error" *ngIf="coverImageError">{{ coverImageError }}</div>
+        @if (coverImageError) {
+            <div class="cover-error">{{ coverImageError }}</div>
+        }
     </div>
 </div>

@@ -96,7 +96,7 @@ The Go test suite covers the metadata lookup pipeline (`internal/catalog`) and t
 
 ## Frontend (Angular)
 
-* Angular 20 standalone application located in `web/`.
+* Angular 21 standalone application located in `web/`.
 * Styling is powered by [`@angular/material`](https://www.npmjs.com/package/@angular/material) and its Material 3 design tokens. The global theme lives in [`web/src/styles.scss`](web/src/styles.scss).
 * The main page (`ItemsPageComponent`) provides a responsive catalogue view, inline editing, and CRUD actions that call the Go API. A dedicated login screen initiates Google OAuth and relies on an HttpOnly session cookie so browsers send it automatically without exposing it to JavaScript.
 * API base URL is resolved from the `<meta name="anthology-api">` tag (defaults to `http://localhost:8080/api`).

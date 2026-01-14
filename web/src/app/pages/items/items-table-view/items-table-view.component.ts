@@ -1,4 +1,4 @@
-import { DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
+import { DatePipe, NgClass } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
@@ -19,7 +19,7 @@ import { chipClassFor, labelFor, readingProgress, ReadingProgress } from '../ite
 @Component({
     selector: 'app-items-table-view',
     standalone: true,
-    imports: [DatePipe, NgClass, NgFor, NgIf, MatButtonModule, MatIconModule, MatTableModule],
+    imports: [DatePipe, NgClass, MatButtonModule, MatIconModule, MatTableModule],
     templateUrl: './items-table-view.component.html',
     styleUrl: './items-table-view.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
