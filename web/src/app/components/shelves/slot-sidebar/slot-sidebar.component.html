@@ -33,7 +33,7 @@
         @if (unplacedItems.length) {
             <div class="sidebar__section">
                 <div class="sidebar__section-title">Unplaced on this shelf</div>
-                <div class="chip-row">
+                <mat-chip-set class="chip-row">
                     @for (placement of unplacedItems; track placement) {
                         <mat-chip-row>
                             {{ placement.item.title }}
@@ -42,20 +42,20 @@
                             </button>
                         </mat-chip-row>
                     }
-                </div>
+                </mat-chip-set>
             </div>
         }
         @if (displacedItems.length) {
             <div class="sidebar__section">
                 <div class="sidebar__section-title">Displaced after save</div>
                 <p class="helper">Place these items in a new slot.</p>
-                <div class="chip-row">
+                <mat-chip-set class="chip-row">
                     @for (placement of displacedItems; track placement) {
                         <mat-chip-row>
                             {{ placement.item.title }}
                         </mat-chip-row>
                     }
-                </div>
+                </mat-chip-set>
             </div>
         }
     </mat-card>
