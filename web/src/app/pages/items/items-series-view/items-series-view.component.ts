@@ -1,4 +1,4 @@
-import { NgClass, NgFor, NgIf } from '@angular/common';
+import { NgClass } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
@@ -26,8 +26,6 @@ const STATUS_CLASS_MAP: Record<SeriesStatus, string> = {
     standalone: true,
     imports: [
         NgClass,
-        NgFor,
-        NgIf,
         MatButtonModule,
         MatExpansionModule,
         MatIconModule,

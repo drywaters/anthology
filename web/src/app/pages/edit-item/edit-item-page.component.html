@@ -6,61 +6,71 @@
 
     <mat-card>
         <mat-card-content>
-            <div class="state" *ngIf="loading()">
-                <mat-progress-spinner mode="indeterminate" diameter="32"></mat-progress-spinner>
-                <p>Loading item…</p>
-            </div>
-            <div class="state error" *ngIf="!loading() && loadError()">
-                <mat-icon aria-hidden="true">error</mat-icon>
-                <div>
-                    <h3>Something went wrong</h3>
-                    <p>{{ loadError() }}</p>
+            @if (loading()) {
+                <div class="state">
+                    <mat-progress-spinner mode="indeterminate" diameter="32"></mat-progress-spinner>
+                    <p>Loading item…</p>
                 </div>
-                <div class="state-actions">
-                    <button mat-stroked-button type="button" (click)="retry()" *ngIf="itemId()">
-                        Try again
-                    </button>
-                    <button mat-button type="button" (click)="navigateBack()">Back to list</button>
-                </div>
-            </div>
-
-            <div
-                class="placement-banner"
-                *ngIf="item() && !loading() && !loadError() && item()?.shelfPlacement as placement"
-            >
-                <mat-icon aria-hidden="true">inventory_2</mat-icon>
-                <div class="placement-banner__details">
+            }
+            @if (!loading() && loadError()) {
+                <div class="state error">
+                    <mat-icon aria-hidden="true">error</mat-icon>
                     <div>
-                        <span class="placement-banner__meta-label">Shelf</span>
-                        <span class="placement-banner__meta-value">{{ placement.shelfName }}</span>
+                        <h3>Something went wrong</h3>
+                        <p>{{ loadError() }}</p>
                     </div>
-                    <div>
-                        <span class="placement-banner__meta-label">Slot</span>
-                        <span class="placement-banner__meta-value"
-                            >Row {{ placement.rowIndex + 1 }} · Column
-                            {{ placement.colIndex + 1 }}</span
-                        >
+                    <div class="state-actions">
+                        @if (itemId()) {
+                            <button mat-stroked-button type="button" (click)="retry()">
+                                Try again
+                            </button>
+                        }
+                        <button mat-button type="button" (click)="navigateBack()">
+                            Back to list
+                        </button>
                     </div>
                 </div>
-                <a
-                    mat-stroked-button
-                    [routerLink]="['/shelves', placement.shelfId]"
-                    [queryParams]="{ slot: placement.slotId }"
-                    >View shelf</a
-                >
-            </div>
+            }
 
-            <app-item-form
-                *ngIf="item() && !loading() && !loadError()"
-                [item]="item()"
-                mode="edit"
-                [busy]="busy()"
-                [resyncing]="resyncing()"
-                (save)="handleSave($event)"
-                (cancelled)="handleCancel()"
-                (deleteRequested)="handleDelete()"
-                (resyncRequested)="handleResync()"
-            ></app-item-form>
+            @if (item() && !loading() && !loadError() && item()?.shelfPlacement; as placement) {
+                <div class="placement-banner">
+                    <mat-icon aria-hidden="true">inventory_2</mat-icon>
+                    <div class="placement-banner__details">
+                        <div>
+                            <span class="placement-banner__meta-label">Shelf</span>
+                            <span class="placement-banner__meta-value">{{
+                                placement.shelfName
+                            }}</span>
+                        </div>
+                        <div>
+                            <span class="placement-banner__meta-label">Slot</span>
+                            <span class="placement-banner__meta-value"
+                                >Row {{ placement.rowIndex + 1 }} · Column
+                                {{ placement.colIndex + 1 }}</span
+                            >
+                        </div>
+                    </div>
+                    <a
+                        mat-stroked-button
+                        [routerLink]="['/shelves', placement.shelfId]"
+                        [queryParams]="{ slot: placement.slotId }"
+                        >View shelf</a
+                    >
+                </div>
+            }
+
+            @if (item() && !loading() && !loadError()) {
+                <app-item-form
+                    [item]="item()"
+                    mode="edit"
+                    [busy]="busy()"
+                    [resyncing]="resyncing()"
+                    (save)="handleSave($event)"
+                    (cancelled)="handleCancel()"
+                    (deleteRequested)="handleDelete()"
+                    (resyncRequested)="handleResync()"
+                ></app-item-form>
+            }
         </mat-card-content>
     </mat-card>
 </section>

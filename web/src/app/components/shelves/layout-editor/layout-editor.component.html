@@ -6,38 +6,46 @@
         </p>
     </div>
     <div class="layout-editor__rows">
-        <div class="layout-row" *ngFor="let row of rows; let idx = index">
-            <div class="layout-row__header">
-                <div>Row {{ idx + 1 }}</div>
-                <div class="layout-row__actions">
-                    <button mat-icon-button (click)="onAddColumn(idx)">
-                        <mat-icon>add</mat-icon>
-                    </button>
-                    <button mat-icon-button color="warn" (click)="onRemoveRow(idx)">
-                        <mat-icon>delete</mat-icon>
-                    </button>
-                </div>
-            </div>
-            <div class="columns">
-                <div *ngFor="let col of row.columns; let colIdx = index" class="column-card">
-                    <div class="column-card__header">
-                        <button
-                            type="button"
-                            class="column-card__label"
-                            (click)="onSelectSlot(idx, colIdx)"
-                        >
-                            <span>Column {{ colIdx + 1 }}</span>
-                            <span *ngIf="isSelected(idx, colIdx)" class="column-card__pill"
-                                >Selected</span
-                            >
+        @for (row of rows; track row; let idx = $index) {
+            <div class="layout-row">
+                <div class="layout-row__header">
+                    <div>Row {{ idx + 1 }}</div>
+                    <div class="layout-row__actions">
+                        <button mat-icon-button (click)="onAddColumn(idx)">
+                            <mat-icon>add</mat-icon>
                         </button>
-                        <button mat-icon-button color="warn" (click)="onRemoveColumn(idx, colIdx)">
-                            <mat-icon>close</mat-icon>
+                        <button mat-icon-button color="warn" (click)="onRemoveRow(idx)">
+                            <mat-icon>delete</mat-icon>
                         </button>
                     </div>
                 </div>
+                <div class="columns">
+                    @for (col of row.columns; track col; let colIdx = $index) {
+                        <div class="column-card">
+                            <div class="column-card__header">
+                                <button
+                                    type="button"
+                                    class="column-card__label"
+                                    (click)="onSelectSlot(idx, colIdx)"
+                                >
+                                    <span>Column {{ colIdx + 1 }}</span>
+                                    @if (isSelected(idx, colIdx)) {
+                                        <span class="column-card__pill">Selected</span>
+                                    }
+                                </button>
+                                <button
+                                    mat-icon-button
+                                    color="warn"
+                                    (click)="onRemoveColumn(idx, colIdx)"
+                                >
+                                    <mat-icon>close</mat-icon>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
             </div>
-        </div>
+        }
     </div>
     <button mat-stroked-button color="primary" (click)="onAddRow()">Add row</button>
 </mat-card>

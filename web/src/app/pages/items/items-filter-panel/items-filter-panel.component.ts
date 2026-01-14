@@ -1,4 +1,3 @@
-import { NgFor, NgIf } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
@@ -20,7 +19,7 @@ export type ViewMode = 'table' | 'grid' | 'series';
 @Component({
     selector: 'app-items-filter-panel',
     standalone: true,
-    imports: [NgFor, NgIf, MatButtonModule, MatFormFieldModule, MatIconModule, MatSelectModule],
+    imports: [MatButtonModule, MatFormFieldModule, MatIconModule, MatSelectModule],
     templateUrl: './items-filter-panel.component.html',
     styleUrl: './items-filter-panel.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

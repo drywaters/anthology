@@ -1,77 +1,76 @@
-<div class="page" *ngIf="shelf() as shelfData">
-    <div class="page__header">
-        <div>
-            <h1>{{ shelfData.shelf.name }}</h1>
-            <p class="subtitle">
-                {{ shelfData.shelf.description || 'Overlay slots onto your shelf photo.' }}
-            </p>
+@if (shelf(); as shelfData) {
+    <div class="page">
+        <div class="page__header">
+            <div>
+                <h1>{{ shelfData.shelf.name }}</h1>
+                <p class="subtitle">
+                    {{ shelfData.shelf.description || 'Overlay slots onto your shelf photo.' }}
+                </p>
+            </div>
+            <div class="actions">
+                <button mat-stroked-button routerLink="/shelves">
+                    <mat-icon>arrow_back</mat-icon> Shelves
+                </button>
+                @if (mode() === 'view') {
+                    <button mat-stroked-button color="primary" (click)="startEdit()">
+                        Edit layout
+                    </button>
+                }
+                @if (mode() === 'edit') {
+                    <button mat-stroked-button (click)="cancelEdit()">Cancel</button>
+                }
+                <button
+                    mat-flat-button
+                    color="primary"
+                    (click)="saveLayout()"
+                    [disabled]="savingLayout() || mode() !== 'edit'"
+                >
+                    Save layout
+                </button>
+            </div>
         </div>
-        <div class="actions">
-            <button mat-stroked-button routerLink="/shelves">
-                <mat-icon>arrow_back</mat-icon> Shelves
-            </button>
-            <button
-                mat-stroked-button
-                color="primary"
-                (click)="startEdit()"
-                *ngIf="mode() === 'view'"
-            >
-                Edit layout
-            </button>
-            <button mat-stroked-button (click)="cancelEdit()" *ngIf="mode() === 'edit'">
-                Cancel
-            </button>
-            <button
-                mat-flat-button
-                color="primary"
-                (click)="saveLayout()"
-                [disabled]="savingLayout() || mode() !== 'edit'"
-            >
-                Save layout
-            </button>
+        @if (loading()) {
+            <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+        }
+        <div class="content" [class.content--single]="mode() === 'edit'">
+            <mat-card class="canvas" [ngClass]="{ 'canvas--editing': mode() === 'edit' }">
+                <app-shelf-canvas
+                    [photoUrl]="shelfData.shelf.photoUrl"
+                    [photoAlt]="shelfData.shelf.name"
+                    [mode]="mode()"
+                    [slots]="shelfData.slots"
+                    [selectedSlotId]="selectedSlot()?.id ?? null"
+                    [layoutSlots]="layoutSlots()"
+                    [selectedLayoutSlot]="activeLayoutSelection()"
+                    (slotSelected)="onSlotSelected($event)"
+                    (layoutSlotSelected)="onLayoutSlotSelected($event)"
+                    (slotPositionChanged)="onSlotPositionChanged($event)"
+                ></app-shelf-canvas>
+            </mat-card>
+            @if (mode() === 'view' && selectedSlot(); as slot) {
+                <app-slot-sidebar
+                    [slot]="slot"
+                    [assignedItems]="assignedItems(slot.id)"
+                    [unplacedItems]="unplacedItems()"
+                    [displacedItems]="displaced()"
+                    [recentlyScannedIds]="recentlyScannedIds()"
+                    (itemRemoved)="onItemRemoved($event)"
+                    (itemSelected)="onItemSelected($event)"
+                    (barcodeScanned)="onBarcodeScanned($event)"
+                    (unplacedItemAssigned)="onUnplacedItemAssigned($event)"
+                ></app-slot-sidebar>
+            }
         </div>
+        @if (mode() === 'edit') {
+            <app-layout-editor
+                [rows]="layoutRows()"
+                [selectedSlot]="activeLayoutSelection()"
+                (addRow)="addRow()"
+                (removeRow)="removeRow($event)"
+                (addColumn)="addColumn($event)"
+                (removeColumn)="removeColumn($event)"
+                (selectSlot)="onLayoutSlotSelected($event)"
+            ></app-layout-editor>
+        }
     </div>
-
-    <mat-progress-bar *ngIf="loading()" mode="indeterminate"></mat-progress-bar>
-
-    <div class="content" [class.content--single]="mode() === 'edit'">
-        <mat-card class="canvas" [ngClass]="{ 'canvas--editing': mode() === 'edit' }">
-            <app-shelf-canvas
-                [photoUrl]="shelfData.shelf.photoUrl"
-                [photoAlt]="shelfData.shelf.name"
-                [mode]="mode()"
-                [slots]="shelfData.slots"
-                [selectedSlotId]="selectedSlot()?.id ?? null"
-                [layoutSlots]="layoutSlots()"
-                [selectedLayoutSlot]="activeLayoutSelection()"
-                (slotSelected)="onSlotSelected($event)"
-                (layoutSlotSelected)="onLayoutSlotSelected($event)"
-                (slotPositionChanged)="onSlotPositionChanged($event)"
-            ></app-shelf-canvas>
-        </mat-card>
-
-        <app-slot-sidebar
-            *ngIf="mode() === 'view' && selectedSlot() as slot"
-            [slot]="slot"
-            [assignedItems]="assignedItems(slot.id)"
-            [unplacedItems]="unplacedItems()"
-            [displacedItems]="displaced()"
-            [recentlyScannedIds]="recentlyScannedIds()"
-            (itemRemoved)="onItemRemoved($event)"
-            (itemSelected)="onItemSelected($event)"
-            (barcodeScanned)="onBarcodeScanned($event)"
-            (unplacedItemAssigned)="onUnplacedItemAssigned($event)"
-        ></app-slot-sidebar>
-    </div>
-
-    <app-layout-editor
-        *ngIf="mode() === 'edit'"
-        [rows]="layoutRows()"
-        [selectedSlot]="activeLayoutSelection()"
-        (addRow)="addRow()"
-        (removeRow)="removeRow($event)"
-        (addColumn)="addColumn($event)"
-        (removeColumn)="removeColumn($event)"
-        (selectSlot)="onLayoutSlotSelected($event)"
-    ></app-layout-editor>
-</div>
+}

@@ -6,7 +6,9 @@
         </mat-card-header>
 
         <mat-card-content>
-            <p class="error" *ngIf="errorMessage()">{{ errorMessage() }}</p>
+            @if (errorMessage()) {
+                <p class="error">{{ errorMessage() }}</p>
+            }
 
             <button
                 mat-stroked-button

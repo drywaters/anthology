@@ -1,5 +1,5 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
-import { NgFor, NgIf } from '@angular/common';
+
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -14,15 +14,7 @@ import { NotificationService } from '../../../services/notification.service';
 @Component({
     selector: 'app-shelves-page',
     standalone: true,
-    imports: [
-        NgFor,
-        NgIf,
-        MatCardModule,
-        MatIconModule,
-        MatProgressBarModule,
-        RouterModule,
-        MatButtonModule,
-    ],
+    imports: [MatCardModule, MatIconModule, MatProgressBarModule, RouterModule, MatButtonModule],
     templateUrl: './shelves-page.component.html',
     styleUrl: './shelves-page.component.scss',
 })

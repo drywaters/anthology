@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import {
     Component,
     EventEmitter,
@@ -39,7 +38,6 @@ import { GameDetailsComponent } from './game-details/game-details.component';
     standalone: true,
     imports: [
         BookDetailsComponent,
-        CommonModule,
         CoverSectionComponent,
         GameDetailsComponent,
         MatButtonModule,

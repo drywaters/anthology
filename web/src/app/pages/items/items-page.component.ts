@@ -1,4 +1,3 @@
-import { NgIf } from '@angular/common';
 import {
     AfterViewInit,
     Component,
@@ -57,7 +56,6 @@ export interface LetterGroup {
     selector: 'app-items-page',
     standalone: true,
     imports: [
-        NgIf,
         MatCardModule,
         MatProgressBarModule,
         AlphaRailComponent,

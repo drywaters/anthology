@@ -3,27 +3,35 @@
         <mat-form-field appearance="outline" class="type-select">
             <mat-label>Type</mat-label>
             <mat-select [value]="typeFilter()" (valueChange)="onTypeChange($event)">
-                <mat-option *ngFor="let option of typeOptions" [value]="option.value">
-                    {{ option.label }}
-                </mat-option>
+                @for (option of typeOptions; track option) {
+                    <mat-option [value]="option.value">
+                        {{ option.label }}
+                    </mat-option>
+                }
             </mat-select>
         </mat-form-field>
 
-        <mat-form-field *ngIf="showStatusFilter()" appearance="outline" class="status-select">
-            <mat-label>Reading status</mat-label>
-            <mat-select [value]="statusFilter()" (valueChange)="onStatusChange($event)">
-                <mat-option *ngFor="let option of statusOptions" [value]="option.value">
-                    {{ option.label }}
-                </mat-option>
-            </mat-select>
-        </mat-form-field>
+        @if (showStatusFilter()) {
+            <mat-form-field appearance="outline" class="status-select">
+                <mat-label>Reading status</mat-label>
+                <mat-select [value]="statusFilter()" (valueChange)="onStatusChange($event)">
+                    @for (option of statusOptions; track option) {
+                        <mat-option [value]="option.value">
+                            {{ option.label }}
+                        </mat-option>
+                    }
+                </mat-select>
+            </mat-form-field>
+        }
 
         <mat-form-field appearance="outline" class="shelf-status-select">
             <mat-label>Shelf status</mat-label>
             <mat-select [value]="shelfStatusFilter()" (valueChange)="onShelfStatusChange($event)">
-                <mat-option *ngFor="let option of shelfStatusOptions" [value]="option.value">
-                    {{ option.label }}
-                </mat-option>
+                @for (option of shelfStatusOptions; track option) {
+                    <mat-option [value]="option.value">
+                        {{ option.label }}
+                    </mat-option>
+                }
             </mat-select>
         </mat-form-field>
 

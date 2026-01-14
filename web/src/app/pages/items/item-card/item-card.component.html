@@ -5,16 +5,15 @@
     (keydown)="handleCardKeydown($event)"
 >
     <div class="card-cover" [class.card-cover--empty]="!item.coverImage">
-        <img
-            *ngIf="item.coverImage"
-            [src]="item.coverImage | thumbnail"
-            [alt]="item.title + ' cover'"
-            loading="lazy"
-        />
-        <div *ngIf="!item.coverImage" class="card-cover-placeholder">
-            <mat-icon aria-hidden="true">book</mat-icon>
-            <span>Tap to edit</span>
-        </div>
+        @if (item.coverImage) {
+            <img [src]="item.coverImage | thumbnail" [alt]="item.title + ' cover'" loading="lazy" />
+        }
+        @if (!item.coverImage) {
+            <div class="card-cover-placeholder">
+                <mat-icon aria-hidden="true">book</mat-icon>
+                <span>Tap to edit</span>
+            </div>
+        }
     </div>
     <div class="card-body">
         <div class="card-title-row">
@@ -26,49 +25,60 @@
         <p class="card-meta">
             {{ item.creator || 'Unknown creator' }}
         </p>
-        <p class="card-sub" *ngIf="item.releaseYear">Released {{ item.releaseYear }}</p>
-        <div class="card-actions" *ngIf="item.shelfPlacement || item.seriesName">
-            <button
-                *ngIf="item.shelfPlacement"
-                type="button"
-                mat-icon-button
-                class="shelf-location-button shelf-location-button--card"
-                (click)="onShelfLocationClick($event)"
-                [attr.aria-label]="
-                    'View shelf slot ' +
-                    (item.shelfPlacement.rowIndex + 1) +
-                    '/' +
-                    (item.shelfPlacement.colIndex + 1) +
-                    ' on ' +
-                    item.shelfPlacement.shelfName
-                "
-            >
-                <mat-icon aria-hidden="true">visibility</mat-icon>
-            </button>
-            <button
-                *ngIf="item.seriesName"
-                type="button"
-                mat-icon-button
-                class="series-button series-button--card"
-                (click)="onSeriesClick($event)"
-                [attr.aria-label]="'View series: ' + item.seriesName"
-            >
-                <mat-icon aria-hidden="true">collections_bookmark</mat-icon>
-            </button>
-        </div>
-        <p class="card-sub" *ngIf="readingStatusLabel(item) as statusLabel">
-            <span class="status-chip">{{ statusLabel }}</span>
-            <ng-container *ngIf="item.readingStatus === BookStatus.Read && item.readAt">
-                • Read {{ item.readAt | date: 'mediumDate' }}
-            </ng-container>
-            <ng-container *ngIf="readingProgress(item) as progress">
-                •
-                <ng-container *ngIf="progress.percent !== undefined; else cardProgressFallback">
-                    {{ progress.percent }}% complete ({{ progress.current }}/{{ progress.total }}
-                    pages)
-                </ng-container>
-                <ng-template #cardProgressFallback>On page {{ progress.current }}</ng-template>
-            </ng-container>
-        </p>
+        @if (item.releaseYear) {
+            <p class="card-sub">Released {{ item.releaseYear }}</p>
+        }
+        @if (item.shelfPlacement || item.seriesName) {
+            <div class="card-actions">
+                @if (item.shelfPlacement) {
+                    <button
+                        type="button"
+                        mat-icon-button
+                        class="shelf-location-button shelf-location-button--card"
+                        (click)="onShelfLocationClick($event)"
+                        [attr.aria-label]="
+                            'View shelf slot ' +
+                            (item.shelfPlacement.rowIndex + 1) +
+                            '/' +
+                            (item.shelfPlacement.colIndex + 1) +
+                            ' on ' +
+                            item.shelfPlacement.shelfName
+                        "
+                    >
+                        <mat-icon aria-hidden="true">visibility</mat-icon>
+                    </button>
+                }
+                @if (item.seriesName) {
+                    <button
+                        type="button"
+                        mat-icon-button
+                        class="series-button series-button--card"
+                        (click)="onSeriesClick($event)"
+                        [attr.aria-label]="'View series: ' + item.seriesName"
+                    >
+                        <mat-icon aria-hidden="true">collections_bookmark</mat-icon>
+                    </button>
+                }
+            </div>
+        }
+        @if (readingStatusLabel(item); as statusLabel) {
+            <p class="card-sub">
+                <span class="status-chip">{{ statusLabel }}</span>
+                @if (item.readingStatus === BookStatus.Read && item.readAt) {
+                    • Read {{ item.readAt | date: 'mediumDate' }}
+                }
+                @if (readingProgress(item); as progress) {
+                    •
+                    @if (progress.percent !== undefined) {
+                        {{ progress.percent }}% complete ({{ progress.current }}/{{
+                            progress.total
+                        }}
+                        pages)
+                    } @else {
+                        On page {{ progress.current }}
+                    }
+                }
+            </p>
+        }
     </div>
 </article>

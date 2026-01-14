@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
-import { NgFor, NgIf } from '@angular/common';
+
 import { RouterLinkActive, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,7 +9,7 @@ import { ActionButton, NavigationItem } from '../../models/navigation';
 @Component({
     selector: 'app-sidebar',
     standalone: true,
-    imports: [NgFor, NgIf, RouterModule, RouterLinkActive, MatIconModule, MatButtonModule],
+    imports: [RouterModule, RouterLinkActive, MatIconModule, MatButtonModule],
     templateUrl: './sidebar.component.html',
     styleUrl: './sidebar.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

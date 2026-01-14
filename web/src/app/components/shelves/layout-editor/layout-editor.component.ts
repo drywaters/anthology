@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { NgFor, NgIf } from '@angular/common';
+
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -21,7 +21,7 @@ export interface SlotSelection {
 @Component({
     selector: 'app-layout-editor',
     standalone: true,
-    imports: [NgFor, NgIf, MatButtonModule, MatCardModule, MatIconModule],
+    imports: [MatButtonModule, MatCardModule, MatIconModule],
     templateUrl: './layout-editor.component.html',
     styleUrl: './layout-editor.component.scss',
 })

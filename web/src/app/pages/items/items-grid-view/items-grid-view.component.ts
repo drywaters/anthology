@@ -1,4 +1,3 @@
-import { NgFor } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
@@ -15,7 +14,7 @@ import { LetterGroup } from '../items-page.component';
 @Component({
     selector: 'app-items-grid-view',
     standalone: true,
-    imports: [NgFor, ItemCardComponent],
+    imports: [ItemCardComponent],
     templateUrl: './items-grid-view.component.html',
     styleUrl: './items-grid-view.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

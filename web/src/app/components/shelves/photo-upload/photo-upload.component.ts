@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
-import { NgIf } from '@angular/common';
+
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -11,7 +11,7 @@ export interface PhotoUploadResult {
 @Component({
     selector: 'app-photo-upload',
     standalone: true,
-    imports: [NgIf, MatButtonModule, MatIconModule],
+    imports: [MatButtonModule, MatIconModule],
     templateUrl: './photo-upload.component.html',
     styleUrl: './photo-upload.component.scss',
 })

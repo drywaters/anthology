@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { A11yModule } from '@angular/cdk/a11y';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,7 +17,6 @@ export type EditSeriesDialogResult = { action: 'save'; newName: string } | { act
     selector: 'app-edit-series-dialog',
     standalone: true,
     imports: [
-        CommonModule,
         ReactiveFormsModule,
         A11yModule,
         MatButtonModule,

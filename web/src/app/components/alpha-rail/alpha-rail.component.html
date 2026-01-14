@@ -1,14 +1,15 @@
 <nav class="alpha-rail" role="navigation" aria-label="Alphabetical index">
-    <button
-        *ngFor="let letter of visibleLetters(); let i = index"
-        type="button"
-        class="rail-letter"
-        [class.rail-letter--active]="isActive(letter)"
-        (click)="selectLetter(letter)"
-        (keydown)="handleKeydown($event, visibleLetters(), i)"
-        [attr.aria-label]="letter + ', ' + getCount(letter) + ' items'"
-        [attr.aria-pressed]="isActive(letter)"
-    >
-        {{ letter }}
-    </button>
+    @for (letter of visibleLetters(); track letter; let i = $index) {
+        <button
+            type="button"
+            class="rail-letter"
+            [class.rail-letter--active]="isActive(letter)"
+            (click)="selectLetter(letter)"
+            (keydown)="handleKeydown($event, visibleLetters(), i)"
+            [attr.aria-label]="letter + ', ' + getCount(letter) + ' items'"
+            [attr.aria-pressed]="isActive(letter)"
+        >
+            {{ letter }}
+        </button>
+    }
 </nav>

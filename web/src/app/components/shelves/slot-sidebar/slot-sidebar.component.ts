@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output, signal, ViewChild } from '@angular/core';
-import { NgFor, NgIf } from '@angular/common';
+
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
@@ -14,8 +14,6 @@ import { BarcodeScannerPanelComponent } from '../barcode-scanner-panel/barcode-s
     selector: 'app-slot-sidebar',
     standalone: true,
     imports: [
-        NgFor,
-        NgIf,
         MatCardModule,
         MatChipsModule,
         MatIconModule,

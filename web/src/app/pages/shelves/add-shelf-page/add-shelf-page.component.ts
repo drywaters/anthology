@@ -1,5 +1,5 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
-import { NgIf } from '@angular/common';
+
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -20,7 +20,6 @@ import { NotificationService } from '../../../services/notification.service';
     standalone: true,
     imports: [
         ReactiveFormsModule,
-        NgIf,
         RouterModule,
         MatButtonModule,
         MatCardModule,
