@@ -1,7 +1,7 @@
 @if (items.length > 0) {
     <div class="assigned-items">
         <div class="assigned-items__container">
-            @for (placement of items; track placement) {
+            @for (placement of items; track placement.item.id) {
                 <div
                     class="assigned-item"
                     [ngClass]="{
