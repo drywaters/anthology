@@ -1,7 +1,9 @@
 <div class="page">
-    <mat-progress-bar *ngIf="loading()" mode="indeterminate"></mat-progress-bar>
+    @if (loading()) {
+        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    }
 
-    <ng-container *ngIf="series() as s">
+    @if (series(); as s) {
         <header class="page-header">
             <button mat-icon-button type="button" (click)="goBack()" aria-label="Go back">
                 <mat-icon>arrow_back</mat-icon>
@@ -34,7 +36,6 @@
                 </mat-chip>
             </div>
         </header>
-
         <div class="content">
             <mat-card class="summary-card">
                 <mat-card-header>
@@ -46,67 +47,63 @@
                             <span class="stat-value">{{ s.ownedCount }}</span>
                             <span class="stat-label">Owned</span>
                         </div>
-                        <div
-                            class="stat"
-                            *ngIf="s.missingCount !== null && s.missingCount !== undefined"
-                        >
-                            <span class="stat-value missing">{{ s.missingCount }}</span>
-                            <span class="stat-label">Missing</span>
-                        </div>
-                        <div
-                            class="stat"
-                            *ngIf="s.totalVolumes !== null && s.totalVolumes !== undefined"
-                        >
-                            <span class="stat-value">{{ s.totalVolumes }}</span>
-                            <span class="stat-label">Total Volumes</span>
-                        </div>
+                        @if (s.missingCount !== null && s.missingCount !== undefined) {
+                            <div class="stat">
+                                <span class="stat-value missing">{{ s.missingCount }}</span>
+                                <span class="stat-label">Missing</span>
+                            </div>
+                        }
+                        @if (s.totalVolumes !== null && s.totalVolumes !== undefined) {
+                            <div class="stat">
+                                <span class="stat-value">{{ s.totalVolumes }}</span>
+                                <span class="stat-label">Total Volumes</span>
+                            </div>
+                        }
                     </div>
                 </mat-card-content>
             </mat-card>
-
-            <section class="owned-section" *ngIf="s.items && s.items.length > 0">
-                <h2>Owned Volumes</h2>
-                <div class="items-grid">
-                    <app-item-card
-                        *ngFor="let item of s.items; trackBy: trackById"
-                        [item]="item"
-                        (click)="editItem(item)"
-                    ></app-item-card>
-                </div>
-            </section>
-
-            <section
-                class="missing-section"
-                *ngIf="s.missingVolumes && s.missingVolumes.length > 0"
-            >
-                <h2>Missing Volumes</h2>
-                <div class="missing-grid">
-                    <div
-                        class="missing-volume-card"
-                        *ngFor="let volume of s.missingVolumes; trackBy: trackByVolume"
-                    >
-                        <div class="missing-volume-content">
-                            <span class="volume-label">Volume {{ volume }}</span>
-                            <span class="missing-label">Not in collection</span>
-                        </div>
-                        <button
-                            mat-flat-button
-                            color="primary"
-                            type="button"
-                            (click)="addMissingVolume(volume)"
-                        >
-                            <mat-icon>add</mat-icon>
-                            Add to Collection
-                        </button>
+            @if (s.items && s.items.length > 0) {
+                <section class="owned-section">
+                    <h2>Owned Volumes</h2>
+                    <div class="items-grid">
+                        @for (item of s.items; track trackById($index, item)) {
+                            <app-item-card [item]="item" (click)="editItem(item)"></app-item-card>
+                        }
                     </div>
-                </div>
-            </section>
+                </section>
+            }
+            @if (s.missingVolumes && s.missingVolumes.length > 0) {
+                <section class="missing-section">
+                    <h2>Missing Volumes</h2>
+                    <div class="missing-grid">
+                        @for (volume of s.missingVolumes; track trackByVolume($index, volume)) {
+                            <div class="missing-volume-card">
+                                <div class="missing-volume-content">
+                                    <span class="volume-label">Volume {{ volume }}</span>
+                                    <span class="missing-label">Not in collection</span>
+                                </div>
+                                <button
+                                    mat-flat-button
+                                    color="primary"
+                                    type="button"
+                                    (click)="addMissingVolume(volume)"
+                                >
+                                    <mat-icon>add</mat-icon>
+                                    Add to Collection
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </section>
+            }
         </div>
-    </ng-container>
+    }
 
-    <div class="empty-state" *ngIf="!loading() && !series()">
-        <mat-icon>search_off</mat-icon>
-        <p>Series not found</p>
-        <button mat-stroked-button type="button" (click)="goBack()">Back to Library</button>
-    </div>
+    @if (!loading() && !series()) {
+        <div class="empty-state">
+            <mat-icon>search_off</mat-icon>
+            <p>Series not found</p>
+            <button mat-stroked-button type="button" (click)="goBack()">Back to Library</button>
+        </div>
+    }
 </div>

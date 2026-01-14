@@ -11,23 +11,25 @@
             >
                 <mat-tab label="Search">
                     <div class="tab-body search-tab">
-                        <div class="series-prefill-notice" *ngIf="seriesPrefill() as prefill">
-                            <mat-icon aria-hidden="true">library_books</mat-icon>
-                            <span>
-                                Adding to series: <strong>{{ prefill.seriesName }}</strong>
-                                <span *ngIf="prefill.volumeNumber !== null">
-                                    (Volume {{ prefill.volumeNumber }})
+                        @if (seriesPrefill(); as prefill) {
+                            <div class="series-prefill-notice">
+                                <mat-icon aria-hidden="true">library_books</mat-icon>
+                                <span>
+                                    Adding to series: <strong>{{ prefill.seriesName }}</strong>
+                                    @if (prefill.volumeNumber !== null) {
+                                        <span> (Volume {{ prefill.volumeNumber }}) </span>
+                                    }
                                 </span>
-                            </span>
-                            <button
-                                mat-icon-button
-                                type="button"
-                                (click)="clearSeriesPrefill()"
-                                aria-label="Clear series prefill"
-                            >
-                                <mat-icon>close</mat-icon>
-                            </button>
-                        </div>
+                                <button
+                                    mat-icon-button
+                                    type="button"
+                                    (click)="clearSeriesPrefill()"
+                                    aria-label="Clear series prefill"
+                                >
+                                    <mat-icon>close</mat-icon>
+                                </button>
+                            </div>
+                        }
                         <form
                             class="search-form"
                             [formGroup]="searchForm"
@@ -39,17 +41,18 @@
                                     formControlName="category"
                                     class="category-options"
                                 >
-                                    <mat-radio-button
-                                        class="category-option"
-                                        *ngFor="let option of searchCategories"
-                                        [value]="option.value"
-                                        [disabled]="option.disabled"
-                                    >
-                                        <span class="category-label">{{ option.label }}</span>
-                                        <span class="category-description">{{
-                                            option.description
-                                        }}</span>
-                                    </mat-radio-button>
+                                    @for (option of searchCategories; track option.value) {
+                                        <mat-radio-button
+                                            class="category-option"
+                                            [value]="option.value"
+                                            [disabled]="option.disabled"
+                                        >
+                                            <span class="category-label">{{ option.label }}</span>
+                                            <span class="category-description">{{
+                                                option.description
+                                            }}</span>
+                                        </mat-radio-button>
+                                    }
                                 </mat-radio-group>
                             </div>
 
@@ -63,30 +66,27 @@
                                         [placeholder]="activeCategory().placeholder"
                                         autocomplete="off"
                                     />
-                                    <button
-                                        mat-icon-button
-                                        matSuffix
-                                        type="button"
-                                        aria-label="Clear search"
-                                        *ngIf="searchForm.get('query')?.value"
-                                        (click)="searchForm.get('query')?.reset('')"
-                                    >
-                                        <mat-icon>close</mat-icon>
-                                    </button>
+                                    @if (searchForm.get('query')?.value) {
+                                        <button
+                                            mat-icon-button
+                                            matSuffix
+                                            type="button"
+                                            aria-label="Clear search"
+                                            (click)="searchForm.get('query')?.reset('')"
+                                        >
+                                            <mat-icon>close</mat-icon>
+                                        </button>
+                                    }
                                     <mat-hint
                                         >At least three characters; ISBN searches work best with
                                         numbers only.</mat-hint
                                     >
-                                    <mat-error
-                                        *ngIf="searchForm.get('query')?.hasError('required')"
-                                    >
-                                        Enter an ISBN or keyword.
-                                    </mat-error>
-                                    <mat-error
-                                        *ngIf="searchForm.get('query')?.hasError('minlength')"
-                                    >
-                                        Use at least three characters.
-                                    </mat-error>
+                                    @if (searchForm.get('query')?.hasError('required')) {
+                                        <mat-error> Enter an ISBN or keyword. </mat-error>
+                                    }
+                                    @if (searchForm.get('query')?.hasError('minlength')) {
+                                        <mat-error> Use at least three characters. </mat-error>
+                                    }
                                 </mat-form-field>
                                 <div class="search-actions">
                                     <button
@@ -95,50 +95,63 @@
                                         type="submit"
                                         [disabled]="lookupBusy() || searchForm.invalid"
                                     >
-                                        <span class="button-label" *ngIf="!lookupBusy()"
-                                            >Search</span
+                                        @if (!lookupBusy()) {
+                                            <span class="button-label">Search</span>
+                                        }
+                                        @if (lookupBusy()) {
+                                            <mat-progress-spinner
+                                                mode="indeterminate"
+                                                diameter="18"
+                                            ></mat-progress-spinner>
+                                        }
+                                    </button>
+                                    @if (activeCategory().value === 'book') {
+                                        <button
+                                            mat-stroked-button
+                                            type="button"
+                                            (click)="
+                                                scannerActive()
+                                                    ? stopBarcodeScanner()
+                                                    : startBarcodeScan()
+                                            "
+                                            [disabled]="lookupBusy()"
                                         >
-                                        <mat-progress-spinner
-                                            *ngIf="lookupBusy()"
-                                            mode="indeterminate"
-                                            diameter="18"
-                                        ></mat-progress-spinner>
-                                    </button>
-                                    <button
-                                        mat-stroked-button
-                                        type="button"
-                                        *ngIf="activeCategory().value === 'book'"
-                                        (click)="
-                                            scannerActive()
-                                                ? stopBarcodeScanner()
-                                                : startBarcodeScan()
-                                        "
-                                        [disabled]="lookupBusy()"
-                                    >
-                                        <mat-icon aria-hidden="true">photo_camera</mat-icon>
-                                        <span *ngIf="!scannerActive()">Scan barcode</span>
-                                        <span *ngIf="scannerActive()">Stop scanning</span>
-                                    </button>
+                                            <mat-icon aria-hidden="true">photo_camera</mat-icon>
+                                            @if (!scannerActive()) {
+                                                <span>Scan barcode</span>
+                                            }
+                                            @if (scannerActive()) {
+                                                <span>Stop scanning</span>
+                                            }
+                                        </button>
+                                    }
                                 </div>
-                                <app-barcode-scanner
-                                    #barcodeScanner
-                                    *ngIf="activeCategory().value === 'book'"
-                                    [scannerActive]="scannerActive()"
-                                    [scannerReady]="scannerReady()"
-                                    [scannerStatus]="scannerStatus()"
-                                    [scannerError]="scannerError()"
-                                    [scannerProcessing]="scannerProcessing()"
-                                    [scannerFlash]="scannerFlash()"
-                                ></app-barcode-scanner>
+                                @if (activeCategory().value === 'book') {
+                                    <app-barcode-scanner
+                                        #barcodeScanner
+                                        [scannerActive]="scannerActive()"
+                                        [scannerReady]="scannerReady()"
+                                        [scannerStatus]="scannerStatus()"
+                                        [scannerError]="scannerError()"
+                                        [scannerProcessing]="scannerProcessing()"
+                                        [scannerFlash]="scannerFlash()"
+                                    ></app-barcode-scanner>
+                                }
                             </div>
                         </form>
 
-                        <div class="lookup-feedback" *ngIf="lookupError() || lastLookupSummary()">
-                            <div class="error" *ngIf="lookupError()">{{ lookupError() }}</div>
-                            <div class="success" *ngIf="!lookupError() && lastLookupSummary()">
-                                {{ lastLookupSummary() }}
+                        @if (lookupError() || lastLookupSummary()) {
+                            <div class="lookup-feedback">
+                                @if (lookupError()) {
+                                    <div class="error">{{ lookupError() }}</div>
+                                }
+                                @if (!lookupError() && lastLookupSummary()) {
+                                    <div class="success">
+                                        {{ lastLookupSummary() }}
+                                    </div>
+                                }
                             </div>
-                        </div>
+                        }
 
                         <app-lookup-results
                             [results]="lookupResults()"
@@ -157,23 +170,27 @@
                                     Fill in each field and save to add the item to your collection.
                                 </p>
                             </div>
-                            <button
-                                mat-stroked-button
-                                type="button"
-                                (click)="clearManualDraft()"
-                                *ngIf="manualDraftSource()"
-                            >
-                                Start fresh
-                            </button>
+                            @if (manualDraftSource()) {
+                                <button
+                                    mat-stroked-button
+                                    type="button"
+                                    (click)="clearManualDraft()"
+                                >
+                                    Start fresh
+                                </button>
+                            }
                         </div>
 
-                        <div class="lookup-summary" *ngIf="manualDraftSource() as source">
-                            <mat-icon aria-hidden="true">check_circle</mat-icon>
-                            <span>
-                                Pre-filled from {{ source.label }} search for “{{ source.query }}”.
-                                Update anything before saving.
-                            </span>
-                        </div>
+                        @if (manualDraftSource(); as source) {
+                            <div class="lookup-summary">
+                                <mat-icon aria-hidden="true">check_circle</mat-icon>
+                                <span>
+                                    Pre-filled from {{ source.label }} search for “{{
+                                        source.query
+                                    }}”. Update anything before saving.
+                                </span>
+                            </div>
+                        }
 
                         <app-item-form
                             [item]="null"

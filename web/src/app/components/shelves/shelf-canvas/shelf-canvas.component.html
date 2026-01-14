@@ -1,31 +1,32 @@
 <div class="canvas__figure">
     <img class="canvas__image" [src]="photoUrl" [alt]="photoAlt" />
     <div class="canvas__overlay" #canvasOverlay>
-        <ng-container *ngIf="mode === 'edit'; else viewOverlay">
-            <app-slot-overlay
-                *ngFor="let slot of layoutSlots"
-                [rowIndex]="slot.rowIndex"
-                [colIndex]="slot.colIndex"
-                [position]="slot.position"
-                [mode]="'edit'"
-                [selected]="isLayoutSlotSelected(slot.rowIndex, slot.colIndex)"
-                [active]="isSlotActive(slot.rowIndex, slot.colIndex)"
-                [slotId]="slot.slotId"
-                (slotClick)="onLayoutSlotClick(slot.rowIndex, slot.colIndex)"
-                (cornerDragStart)="onCornerDragStart(slot.rowIndex, slot.colIndex, $event)"
-            ></app-slot-overlay>
-        </ng-container>
-        <ng-template #viewOverlay>
-            <app-slot-overlay
-                *ngFor="let slot of slots"
-                [rowIndex]="slot.rowIndex"
-                [colIndex]="slot.colIndex"
-                [position]="getSlotPosition(slot)"
-                [mode]="'view'"
-                [selected]="selectedSlotId === slot.id"
-                [slotId]="slot.id"
-                (slotClick)="onViewSlotClick(slot)"
-            ></app-slot-overlay>
-        </ng-template>
+        @if (mode === 'edit') {
+            @for (slot of layoutSlots; track slot.slotId) {
+                <app-slot-overlay
+                    [rowIndex]="slot.rowIndex"
+                    [colIndex]="slot.colIndex"
+                    [position]="slot.position"
+                    [mode]="'edit'"
+                    [selected]="isLayoutSlotSelected(slot.rowIndex, slot.colIndex)"
+                    [active]="isSlotActive(slot.rowIndex, slot.colIndex)"
+                    [slotId]="slot.slotId"
+                    (slotClick)="onLayoutSlotClick(slot.rowIndex, slot.colIndex)"
+                    (cornerDragStart)="onCornerDragStart(slot.rowIndex, slot.colIndex, $event)"
+                ></app-slot-overlay>
+            }
+        } @else {
+            @for (slot of slots; track slot.id) {
+                <app-slot-overlay
+                    [rowIndex]="slot.rowIndex"
+                    [colIndex]="slot.colIndex"
+                    [position]="getSlotPosition(slot)"
+                    [mode]="'view'"
+                    [selected]="selectedSlotId === slot.id"
+                    [slotId]="slot.id"
+                    (slotClick)="onViewSlotClick(slot)"
+                ></app-slot-overlay>
+            }
+        }
     </div>
 </div>

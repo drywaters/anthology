@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, Input, OnInit, signal } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -20,7 +19,6 @@ import { SeriesService } from '../../../services/series.service';
     selector: 'app-book-details',
     standalone: true,
     imports: [
-        CommonModule,
         MatAutocompleteModule,
         MatButtonModule,
         MatDatepickerModule,

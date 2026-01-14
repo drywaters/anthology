@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -11,7 +10,7 @@ import { AuthService } from '../../services/auth.service';
 @Component({
     selector: 'app-login-page',
     standalone: true,
-    imports: [CommonModule, RouterModule, MatButtonModule, MatCardModule, MatIconModule],
+    imports: [RouterModule, MatButtonModule, MatCardModule, MatIconModule],
     templateUrl: './login-page.component.html',
     styleUrl: './login-page.component.scss',
 })

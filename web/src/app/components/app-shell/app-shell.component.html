@@ -16,5 +16,7 @@
         (actionTriggered)="handleAction($event)"
     ></app-sidebar>
 
-    <div class="backdrop" *ngIf="sidebarOpen()" (click)="closeSidebar()"></div>
+    @if (sidebarOpen()) {
+        <div class="backdrop" (click)="closeSidebar()"></div>
+    }
 </div>

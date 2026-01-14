@@ -1,5 +1,5 @@
 import { Component, DestroyRef, computed, inject, signal, ViewChild } from '@angular/core';
-import { NgIf, NgClass } from '@angular/common';
+import { NgClass } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -50,7 +50,6 @@ interface LayoutColumnGroup {
     selector: 'app-shelf-detail-page',
     standalone: true,
     imports: [
-        NgIf,
         NgClass,
         RouterModule,
         MatButtonModule,

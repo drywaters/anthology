@@ -1,26 +1,28 @@
-<div class="assigned-items" *ngIf="items.length > 0; else emptySlot">
-    <div class="assigned-items__container">
-        <div
-            class="assigned-item"
-            [ngClass]="{
-                'assigned-item--recently-scanned': isRecentlyScanned(placement.item.id),
-            }"
-            *ngFor="let placement of items"
-            [matTooltip]="placement.item.title"
-            [matTooltipDisabled]="placement.item.title.length <= 30"
-        >
-            <span class="assigned-item__title">{{ placement.item.title }}</span>
-            <button
-                type="button"
-                class="assigned-item__remove"
-                (click)="onRemove(placement.item.id)"
-                aria-label="Remove item"
-            >
-                <mat-icon>close</mat-icon>
-            </button>
+@if (items.length > 0) {
+    <div class="assigned-items">
+        <div class="assigned-items__container">
+            @for (placement of items; track placement.item.id) {
+                <div
+                    class="assigned-item"
+                    [ngClass]="{
+                        'assigned-item--recently-scanned': isRecentlyScanned(placement.item.id),
+                    }"
+                    [matTooltip]="placement.item.title"
+                    [matTooltipDisabled]="placement.item.title.length <= 30"
+                >
+                    <span class="assigned-item__title">{{ placement.item.title }}</span>
+                    <button
+                        type="button"
+                        class="assigned-item__remove"
+                        (click)="onRemove(placement.item.id)"
+                        aria-label="Remove item"
+                    >
+                        <mat-icon>close</mat-icon>
+                    </button>
+                </div>
+            }
         </div>
     </div>
-</div>
-<ng-template #emptySlot>
+} @else {
     <p class="helper">No items assigned yet.</p>
-</ng-template>
+}

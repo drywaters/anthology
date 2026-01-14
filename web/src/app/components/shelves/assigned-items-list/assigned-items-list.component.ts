@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { NgFor, NgIf, NgClass } from '@angular/common';
+import { NgClass } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
@@ -8,7 +8,7 @@ import { PlacementWithItem } from '../../../models/shelf';
 @Component({
     selector: 'app-assigned-items-list',
     standalone: true,
-    imports: [NgFor, NgIf, NgClass, MatIconModule, MatTooltipModule],
+    imports: [NgClass, MatIconModule, MatTooltipModule],
     templateUrl: './assigned-items-list.component.html',
     styleUrl: './assigned-items-list.component.scss',
 })

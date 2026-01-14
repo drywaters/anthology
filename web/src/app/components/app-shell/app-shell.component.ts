@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NgIf } from '@angular/common';
 
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AppHeaderComponent } from '../app-header/app-header.component';
@@ -13,7 +12,7 @@ import { LibraryActionsService } from '../../services/library-actions.service';
 @Component({
     selector: 'app-shell',
     standalone: true,
-    imports: [RouterOutlet, SidebarComponent, AppHeaderComponent, NgIf],
+    imports: [RouterOutlet, SidebarComponent, AppHeaderComponent],
     templateUrl: './app-shell.component.html',
     styleUrl: './app-shell.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

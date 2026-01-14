@@ -12,49 +12,62 @@
     </div>
 
     <nav class="nav">
-        <div class="nav-section" *ngFor="let item of navItems">
-            <a
-                class="nav-link"
-                [routerLink]="item.route"
-                routerLinkActive="active"
-                [routerLinkActiveOptions]="exactOptions"
-                (click)="handleNavigate(item.route)"
-            >
-                <mat-icon aria-hidden="true" *ngIf="item.icon">{{ item.icon }}</mat-icon>
-                <span>{{ item.label }}</span>
-            </a>
+        @for (item of navItems; track item.id) {
+            <div class="nav-section">
+                <a
+                    class="nav-link"
+                    [routerLink]="item.route"
+                    routerLinkActive="active"
+                    [routerLinkActiveOptions]="exactOptions"
+                    (click)="handleNavigate(item.route)"
+                >
+                    @if (item.icon) {
+                        <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>
+                    }
+                    <span>{{ item.label }}</span>
+                </a>
+                @if (item.actions?.length) {
+                    <div class="nav-section__actions">
+                        @for (action of item.actions; track action.id) {
+                            <button
+                                mat-stroked-button
+                                type="button"
+                                class="action-button action-button--inline"
+                                [routerLink]="action.route || null"
+                                routerLinkActive="action-button--active"
+                                [routerLinkActiveOptions]="exactOptions"
+                                (click)="handleAction(action.id)"
+                            >
+                                @if (action.icon) {
+                                    <mat-icon aria-hidden="true">{{ action.icon }}</mat-icon>
+                                }
+                                <span>{{ action.label }}</span>
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </nav>
 
-            <div class="nav-section__actions" *ngIf="item.actions?.length">
+    @if (actionItems.length) {
+        <div class="actions">
+            @for (action of actionItems; track action.id) {
                 <button
-                    *ngFor="let action of item.actions"
                     mat-stroked-button
                     type="button"
-                    class="action-button action-button--inline"
+                    class="action-button"
                     [routerLink]="action.route || null"
                     routerLinkActive="action-button--active"
                     [routerLinkActiveOptions]="exactOptions"
                     (click)="handleAction(action.id)"
                 >
-                    <mat-icon aria-hidden="true" *ngIf="action.icon">{{ action.icon }}</mat-icon>
+                    @if (action.icon) {
+                        <mat-icon aria-hidden="true">{{ action.icon }}</mat-icon>
+                    }
                     <span>{{ action.label }}</span>
                 </button>
-            </div>
+            }
         </div>
-    </nav>
-
-    <div class="actions" *ngIf="actionItems.length">
-        <button
-            *ngFor="let action of actionItems"
-            mat-stroked-button
-            type="button"
-            class="action-button"
-            [routerLink]="action.route || null"
-            routerLinkActive="action-button--active"
-            [routerLinkActiveOptions]="exactOptions"
-            (click)="handleAction(action.id)"
-        >
-            <mat-icon aria-hidden="true" *ngIf="action.icon">{{ action.icon }}</mat-icon>
-            <span>{{ action.label }}</span>
-        </button>
-    </div>
+    }
 </aside>

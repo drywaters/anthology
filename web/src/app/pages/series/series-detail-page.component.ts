@@ -1,4 +1,4 @@
-import { NgClass, NgFor, NgIf } from '@angular/common';
+import { NgClass } from '@angular/common';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -36,8 +36,6 @@ const STATUS_CLASS_MAP: Record<SeriesStatus, string> = {
     standalone: true,
     imports: [
         NgClass,
-        NgFor,
-        NgIf,
         MatButtonModule,
         MatCardModule,
         MatChipsModule,

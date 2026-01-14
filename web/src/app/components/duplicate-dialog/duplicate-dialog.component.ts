@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { A11yModule } from '@angular/cdk/a11y';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -18,7 +18,7 @@ export type DuplicateDialogResult = 'add' | 'cancel';
 @Component({
     selector: 'app-duplicate-dialog',
     standalone: true,
-    imports: [CommonModule, A11yModule, MatButtonModule, MatDialogModule, MatIconModule],
+    imports: [A11yModule, MatButtonModule, MatDialogModule, MatIconModule],
     templateUrl: './duplicate-dialog.component.html',
     styleUrl: './duplicate-dialog.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

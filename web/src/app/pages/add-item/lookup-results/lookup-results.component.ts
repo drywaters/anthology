@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 
@@ -7,7 +6,7 @@ import { ItemForm } from '../../../models';
 @Component({
     selector: 'app-lookup-results',
     standalone: true,
-    imports: [CommonModule, MatButtonModule],
+    imports: [MatButtonModule],
     templateUrl: './lookup-results.component.html',
     styleUrl: './lookup-results.component.scss',
 })
