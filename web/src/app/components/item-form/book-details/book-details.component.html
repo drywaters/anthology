@@ -8,7 +8,7 @@
         <mat-form-field appearance="fill">
             <mat-label>Reading status</mat-label>
             <mat-select formControlName="readingStatus" (valueChange)="onStatusChange($event)">
-                @for (option of bookStatusOptions; track option) {
+                @for (option of bookStatusOptions; track option.value) {
                     <mat-option [value]="option.value">
                         {{ option.label }}
                     </mat-option>
@@ -89,7 +89,7 @@
         <mat-form-field appearance="fill">
             <mat-label>Format</mat-label>
             <mat-select formControlName="format">
-                @for (option of formatOptions; track option) {
+                @for (option of formatOptions; track option.value) {
                     <mat-option [value]="option.value">
                         {{ option.label }}
                     </mat-option>
@@ -101,7 +101,7 @@
         <mat-form-field appearance="fill">
             <mat-label>Genre</mat-label>
             <mat-select formControlName="genre">
-                @for (option of genreOptions; track option) {
+                @for (option of genreOptions; track option.value) {
                     <mat-option [value]="option.value">
                         {{ option.label }}
                     </mat-option>

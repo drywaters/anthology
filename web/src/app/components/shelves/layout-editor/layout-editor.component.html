@@ -6,7 +6,7 @@
         </p>
     </div>
     <div class="layout-editor__rows">
-        @for (row of rows; track row; let idx = $index) {
+        @for (row of rows; track row.rowIndex; let idx = $index) {
             <div class="layout-row">
                 <div class="layout-row__header">
                     <div>Row {{ idx + 1 }}</div>
@@ -20,7 +20,7 @@
                     </div>
                 </div>
                 <div class="columns">
-                    @for (col of row.columns; track col; let colIdx = $index) {
+                    @for (col of row.columns; track col.colIndex; let colIdx = $index) {
                         <div class="column-card">
                             <div class="column-card__header">
                                 <button

@@ -91,7 +91,7 @@
                 <div class="summary-section">
                     <h5>Skipped duplicates</h5>
                     <ul>
-                        @for (entry of summary.skippedDuplicates; track entry) {
+                        @for (entry of summary.skippedDuplicates; track entry.row) {
                             <li>
                                 Row {{ entry.row }} ·
                                 {{ entry.title || entry.identifier || 'Untitled item' }} —
@@ -105,7 +105,7 @@
                 <div class="summary-section">
                     <h5>Rows with errors</h5>
                     <ul>
-                        @for (entry of summary.failed; track entry) {
+                        @for (entry of summary.failed; track entry.row) {
                             <li>
                                 Row {{ entry.row }} ·
                                 {{ entry.title || entry.identifier || 'Untitled item' }}:

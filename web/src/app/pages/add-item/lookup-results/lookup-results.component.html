@@ -8,7 +8,10 @@
             </p>
         </div>
         <div class="preview-list">
-            @for (preview of results; track preview) {
+            @for (
+                preview of results;
+                track preview.googleVolumeId ?? preview.isbn13 ?? preview.isbn10 ?? $index
+            ) {
                 <article class="preview-card">
                     <div class="preview-grid">
                         <div class="preview-field">

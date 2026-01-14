@@ -2,7 +2,7 @@
     <img class="canvas__image" [src]="photoUrl" [alt]="photoAlt" />
     <div class="canvas__overlay" #canvasOverlay>
         @if (mode === 'edit') {
-            @for (slot of layoutSlots; track slot) {
+            @for (slot of layoutSlots; track slot.slotId) {
                 <app-slot-overlay
                     [rowIndex]="slot.rowIndex"
                     [colIndex]="slot.colIndex"
@@ -16,7 +16,7 @@
                 ></app-slot-overlay>
             }
         } @else {
-            @for (slot of slots; track slot) {
+            @for (slot of slots; track slot.id) {
                 <app-slot-overlay
                     [rowIndex]="slot.rowIndex"
                     [colIndex]="slot.colIndex"

@@ -3,7 +3,7 @@
         <mat-form-field appearance="outline" class="type-select">
             <mat-label>Type</mat-label>
             <mat-select [value]="typeFilter()" (valueChange)="onTypeChange($event)">
-                @for (option of typeOptions; track option) {
+                @for (option of typeOptions; track option.value) {
                     <mat-option [value]="option.value">
                         {{ option.label }}
                     </mat-option>
@@ -15,7 +15,7 @@
             <mat-form-field appearance="outline" class="status-select">
                 <mat-label>Reading status</mat-label>
                 <mat-select [value]="statusFilter()" (valueChange)="onStatusChange($event)">
-                    @for (option of statusOptions; track option) {
+                    @for (option of statusOptions; track option.value) {
                         <mat-option [value]="option.value">
                             {{ option.label }}
                         </mat-option>
@@ -27,7 +27,7 @@
         <mat-form-field appearance="outline" class="shelf-status-select">
             <mat-label>Shelf status</mat-label>
             <mat-select [value]="shelfStatusFilter()" (valueChange)="onShelfStatusChange($event)">
-                @for (option of shelfStatusOptions; track option) {
+                @for (option of shelfStatusOptions; track option.value) {
                     <mat-option [value]="option.value">
                         {{ option.label }}
                     </mat-option>

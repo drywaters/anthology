@@ -1,7 +1,7 @@
 # Gemini Context: Anthology
 
 ## Project Overview
-Anthology is a two-tier catalogue application designed to manage personal libraries of books, games, movies, and music. It features a Go (1.24+) API backend and an Angular (20) Material frontend. The architecture allows for independent deployment of the API and UI.
+Anthology is a two-tier catalogue application designed to manage personal libraries of books, games, movies, and music. It features a Go (1.24+) API backend and an Angular (21) Material frontend. The architecture allows for independent deployment of the API and UI.
 
 ## Architecture
 
@@ -18,7 +18,7 @@ Anthology is a two-tier catalogue application designed to manage personal librar
 
 ### Frontend (Angular)
 -   **Location:** `web/`
--   **Framework:** Angular 20 (Standalone components).
+-   **Framework:** Angular 21 (Standalone components).
 -   **UI Library:** Angular Material 3.
 -   **Key Components:**
     -   `ItemsPageComponent`: Main catalogue view.

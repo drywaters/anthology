@@ -12,7 +12,7 @@
     </div>
 
     <nav class="nav">
-        @for (item of navItems; track item) {
+        @for (item of navItems; track item.id) {
             <div class="nav-section">
                 <a
                     class="nav-link"
@@ -28,7 +28,7 @@
                 </a>
                 @if (item.actions?.length) {
                     <div class="nav-section__actions">
-                        @for (action of item.actions; track action) {
+                        @for (action of item.actions; track action.id) {
                             <button
                                 mat-stroked-button
                                 type="button"
@@ -52,7 +52,7 @@
 
     @if (actionItems.length) {
         <div class="actions">
-            @for (action of actionItems; track action) {
+            @for (action of actionItems; track action.id) {
                 <button
                     mat-stroked-button
                     type="button"

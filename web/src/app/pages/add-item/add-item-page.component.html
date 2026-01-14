@@ -41,7 +41,7 @@
                                     formControlName="category"
                                     class="category-options"
                                 >
-                                    @for (option of searchCategories; track option) {
+                                    @for (option of searchCategories; track option.value) {
                                         <mat-radio-button
                                             class="category-option"
                                             [value]="option.value"

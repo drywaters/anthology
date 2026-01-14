@@ -19,7 +19,7 @@
     <mat-form-field appearance="fill">
         <mat-label>Type</mat-label>
         <mat-select formControlName="itemType" required>
-            @for (option of itemTypeOptions; track option) {
+            @for (option of itemTypeOptions; track option[0]) {
                 <mat-option [value]="option[0]">
                     {{ option[1] }}
                 </mat-option>
