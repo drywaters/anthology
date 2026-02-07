@@ -6,6 +6,10 @@ const path = require('path');
 const { spawn, spawnSync } = require('child_process');
 const readline = require('readline');
 
+// Pin to a known working version for reproducibility.
+// Override if needed (for example, to test an upgrade): PLAYWRIGHT_CLI_PKG='@playwright/cli@0.1.1'
+const PLAYWRIGHT_CLI_PKG = process.env.PLAYWRIGHT_CLI_PKG || '@playwright/cli@0.1.0';
+
 function parseArgs(argv) {
     const out = {};
     for (let i = 0; i < argv.length; i++) {
@@ -84,7 +88,7 @@ function sanitizeFileStem(value) {
 }
 
 function runPlaywrightCLI(args) {
-    const result = spawnSync('npx', ['--yes', '--package', '@playwright/cli', 'playwright-cli', ...args], {
+    const result = spawnSync('npx', ['--yes', '--package', PLAYWRIGHT_CLI_PKG, 'playwright-cli', ...args], {
         stdio: 'inherit',
         env: process.env,
     });
@@ -96,7 +100,7 @@ function runPlaywrightCLI(args) {
 function openPlaywrightCLI(args) {
     // Launch in the background so we can still read from stdin for the "Press Enter" prompt.
     // We intentionally ignore stdin so the user can interact with this script while the browser is open.
-    const child = spawn('npx', ['--yes', '--package', '@playwright/cli', 'playwright-cli', ...args], {
+    const child = spawn('npx', ['--yes', '--package', PLAYWRIGHT_CLI_PKG, 'playwright-cli', ...args], {
         stdio: ['ignore', 'inherit', 'inherit'],
         env: process.env,
     });
