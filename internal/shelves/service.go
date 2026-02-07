@@ -174,6 +174,7 @@ func (s *Service) UpdateLayout(ctx context.Context, shelfID uuid.UUID, ownerID u
 	rowIDs := make(map[int]uuid.UUID)
 	columnIDs := make(map[string]uuid.UUID)
 	slotIDs := make(map[string]uuid.UUID)
+	existingSlotIDSet := make(map[uuid.UUID]struct{})
 	for _, row := range existing.Rows {
 		rowIDs[row.RowIndex] = row.ID
 		for _, col := range row.Columns {
@@ -182,9 +183,10 @@ func (s *Service) UpdateLayout(ctx context.Context, shelfID uuid.UUID, ownerID u
 	}
 	for _, slot := range existing.Slots {
 		slotIDs[slotKey(slot.RowIndex, slot.ColIndex)] = slot.ID
+		existingSlotIDSet[slot.ID] = struct{}{}
 	}
 
-	normalizedRows, normalizedColumns, normalizedSlots, err := normalizeSlots(input.Slots, shelfID, rowIDs, columnIDs, slotIDs)
+	normalizedRows, normalizedColumns, normalizedSlots, err := normalizeSlots(input.Slots, shelfID, rowIDs, columnIDs, slotIDs, existingSlotIDSet)
 	if err != nil {
 		return ShelfWithLayout{}, nil, err
 	}
@@ -306,6 +308,7 @@ func normalizeSlots(
 	existingRowIDs map[int]uuid.UUID,
 	existingColumnIDs map[string]uuid.UUID,
 	existingSlotIDs map[string]uuid.UUID,
+	existingSlotIDSet map[uuid.UUID]struct{},
 ) ([]ShelfRow, []ShelfColumn, []ShelfSlot, error) {
 	if len(slots) == 0 {
 		return nil, nil, nil, fmt.Errorf("%w: at least one slot is required", ErrValidation)
@@ -390,6 +393,9 @@ func normalizeSlots(
 
 			slotID := uuid.New()
 			if slot.SlotID != nil {
+				if _, ok := existingSlotIDSet[*slot.SlotID]; !ok {
+					return nil, nil, nil, fmt.Errorf("%w: slotId %s does not belong to this shelf", ErrValidation, slot.SlotID.String())
+				}
 				slotID = *slot.SlotID
 			} else if existingID, ok := existingSlotIDs[colKey]; ok {
 				slotID = existingID
