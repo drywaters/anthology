@@ -298,3 +298,49 @@ func TestCSVExporter_SpecialCharactersInFields(t *testing.T) {
 		t.Errorf("description newline not preserved: got %s", row[9])
 	}
 }
+
+func TestCSVExporter_EscapesFormulaCells(t *testing.T) {
+	exporter := NewCSVExporter()
+	var buf bytes.Buffer
+
+	createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+	updatedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	testItems := []items.Item{
+		{
+			ID:          uuid.New(),
+			Title:       "=HYPERLINK(\"https://example.com\")",
+			Creator:     "+cmd",
+			ItemType:    items.ItemTypeBook,
+			Description: "@risk",
+			Notes:       "-formula",
+			CreatedAt:   createdAt,
+			UpdatedAt:   updatedAt,
+		},
+	}
+
+	err := exporter.Export(&buf, testItems)
+	if err != nil {
+		t.Fatalf("export failed: %v", err)
+	}
+
+	reader := csv.NewReader(&buf)
+	records, err := reader.ReadAll()
+	if err != nil {
+		t.Fatalf("failed to parse CSV: %v", err)
+	}
+
+	row := records[1]
+	if row[1] != "'=HYPERLINK(\"https://example.com\")" {
+		t.Errorf("expected formula-escaped title, got %q", row[1])
+	}
+	if row[2] != "'+cmd" {
+		t.Errorf("expected formula-escaped creator, got %q", row[2])
+	}
+	if row[9] != "'@risk" {
+		t.Errorf("expected formula-escaped description, got %q", row[9])
+	}
+	if row[21] != "'-formula" {
+		t.Errorf("expected formula-escaped notes, got %q", row[21])
+	}
+}

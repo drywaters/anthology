@@ -2,6 +2,7 @@ package shelves
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -219,5 +220,70 @@ func TestAssignItemUpdatesItemPlacementInMemoryRepo(t *testing.T) {
 	}
 	if stored.ShelfPlacement != nil {
 		t.Fatalf("expected shelf placement to be cleared after removal")
+	}
+}
+
+func TestUpdateLayoutRejectsSlotIDFromDifferentShelf(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	repo := NewInMemoryRepository()
+	now := time.Now().UTC()
+
+	shelfID := uuid.New()
+	rowID := uuid.New()
+	colID := uuid.New()
+	slotID := uuid.New()
+
+	shelf := Shelf{
+		ID:        shelfID,
+		Name:      "Shelf",
+		PhotoURL:  "https://example.com/shelf.jpg",
+		OwnerID:   testOwnerID,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	row := ShelfRow{ID: rowID, ShelfID: shelfID, RowIndex: 0, YStartNorm: 0, YEndNorm: 1}
+	column := ShelfColumn{ID: colID, ShelfRowID: rowID, ColIndex: 0, XStartNorm: 0, XEndNorm: 1}
+	slot := ShelfSlot{
+		ID:            slotID,
+		ShelfID:       shelfID,
+		ShelfRowID:    rowID,
+		ShelfColumnID: colID,
+		RowIndex:      0,
+		ColIndex:      0,
+		XStartNorm:    0,
+		XEndNorm:      1,
+		YStartNorm:    0,
+		YEndNorm:      1,
+	}
+
+	if _, err := repo.CreateShelf(ctx, shelf, []ShelfRow{row}, []ShelfColumn{column}, []ShelfSlot{slot}); err != nil {
+		t.Fatalf("create shelf: %v", err)
+	}
+
+	itemsRepo := items.NewInMemoryRepository(nil)
+	itemSvc := items.NewService(itemsRepo)
+	svc := NewService(repo, itemsRepo, nil, itemSvc)
+
+	foreignSlotID := uuid.New()
+	_, _, err := svc.UpdateLayout(ctx, shelfID, testOwnerID, UpdateLayoutInput{
+		Slots: []LayoutSlotInput{
+			{
+				SlotID:     &foreignSlotID,
+				RowIndex:   0,
+				ColIndex:   0,
+				XStartNorm: 0,
+				XEndNorm:   1,
+				YStartNorm: 0,
+				YEndNorm:   1,
+			},
+		},
+	})
+	if err == nil {
+		t.Fatal("expected validation error")
+	}
+	if !errors.Is(err, ErrValidation) {
+		t.Fatalf("expected ErrValidation, got %v", err)
 	}
 }

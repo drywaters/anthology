@@ -1,7 +1,6 @@
 package http
 
 import (
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -75,8 +74,8 @@ func (h *SeriesHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		NewName string `json:"newName"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if err := decodeJSONBody(w, r, &body); err != nil {
+		writeJSONError(w, err)
 		return
 	}
 

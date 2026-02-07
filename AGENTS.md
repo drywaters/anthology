@@ -51,3 +51,10 @@ Anthology is a two-tier catalogue: a Go 1.24 API (under `cmd/api` + `internal/`)
 
 ## Local Auth
 Local dev runs without auth unless OAuth is configured. To exercise OAuth locally, use Postgres plus the Google OAuth env vars and keep `APP_ENV=development` so cookies stay non-secure.
+
+## Workspace Bootstrap
+- If `local.mk` is missing in a new workspace/worktree, place a `local.mk` file in the project root before running `make run` or `make local`.
+- Create `local.mk` by either:
+  - copying `local.mk.example`, or
+  - copying `local.mk` from the primary Anthology repo/workspace.
+- If the source `local.mk` location is unclear in a new worktree, ask the user where to copy it from.

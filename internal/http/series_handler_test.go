@@ -36,3 +36,22 @@ func TestSeriesHandlerUpdateRejectsEmptyNewName(t *testing.T) {
 		t.Fatalf("expected validation error, got %v", response["error"])
 	}
 }
+
+func TestSeriesHandlerUpdateRejectsOversizedBody(t *testing.T) {
+	repo := &exportRepoStub{}
+	service := items.NewService(repo)
+	handler := NewSeriesHandler(service, slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	hugeName := strings.Repeat("a", int(maxJSONBodyBytes))
+	body := `{"newName":"` + hugeName + `"}`
+
+	req := httptest.NewRequest(http.MethodPut, "/api/series?name=Old", strings.NewReader(body))
+	req = reqWithUser(req)
+	rec := httptest.NewRecorder()
+
+	handler.Update(rec, req)
+
+	if rec.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("expected status 413, got %d", rec.Code)
+	}
+}
