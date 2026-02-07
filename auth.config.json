@@ -1,0 +1,6 @@
+{
+    "appName": "anthology",
+    "baseURL": "http://localhost:4200",
+    "loginURL": "http://localhost:4200/login"
+}
+

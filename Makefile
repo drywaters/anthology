@@ -27,7 +27,7 @@ UI_IMAGE_REPO ?= anthology-ui
 LOG_LEVEL ?= info
 PLATFORMS ?= linux/amd64,linux/arm64/v8
 
-.PHONY: help configure-image ensure-image-tag api-run api-test api-lint api-build api-clean fmt tidy web-install web-start web-test web-lint web-lint-fix web-build lint docker-build docker-build-api docker-build-ui docker-push docker-push-api docker-push-ui docker-publish docker-buildx docker-buildx-api docker-buildx-ui build run local clean
+.PHONY: help configure-image ensure-image-tag api-run api-test api-lint api-build api-clean fmt tidy web-install web-start web-test web-lint web-lint-fix web-build auth-capture lint docker-build docker-build-api docker-build-ui docker-push docker-push-api docker-push-ui docker-publish docker-buildx docker-buildx-api docker-buildx-ui build run local clean
 
 help: ## Show all available targets.
 	@echo "Anthology targets"
@@ -96,6 +96,9 @@ web-lint-fix: ## Run Angular lint checks with auto-fixes and formatting.
 
 web-build: ## Build the Angular production bundle.
 	cd $(WEB_DIR) && npm run build
+
+auth-capture: ## Open a headed browser for manual login, then save Playwright storageState to ./.auth/<appName>.json.
+	node scripts/auth-capture.js
 
 lint: api-lint web-lint ## Run Go and Angular lint checks.
 

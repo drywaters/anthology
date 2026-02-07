@@ -115,6 +115,31 @@ The dev server runs on `http://localhost:4200` and proxies requests directly to 
 
 You will be redirected to the login screen and asked to continue with Google. The OAuth callback sets an HttpOnly session cookie so the browser stays authenticated; use the “Log out” button in the toolbar to clear it at any time. In `APP_ENV=development`, cookies are non-secure for localhost.
 
+### Capture Auth State (Playwright storageState)
+
+If you want a reusable browser auth state for Playwright-based UI verification (cookies + localStorage), capture a Playwright `storageState` file after manually logging in.
+
+Config file (repo-local):
+- `auth.config.json` (`appName`, `baseURL`, optional `loginURL`)
+
+Capture flow (does not automate login):
+
+```bash
+node scripts/auth-capture.js
+```
+
+This opens a headed Chrome window, navigates to `loginURL` (or `baseURL`), and waits for you to complete login. When you return to the terminal and press Enter, it saves:
+
+- `./.auth/<appName>.json`
+
+Refresh it anytime by re-running the same command (it overwrites the file).
+
+Override config values at runtime (optional):
+
+```bash
+node scripts/auth-capture.js --appName anthology --baseURL http://localhost:4200 --loginURL /login
+```
+
 ### Add items faster
 
 The Add Item page exposes three flows:
