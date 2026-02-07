@@ -26,7 +26,8 @@ function parseArgs(argv) {
 
         const key = arg.slice(2);
         const next = argv[i + 1];
-        if (next && !next.startsWith('--')) {
+        // Treat empty string ("") as a valid value. Only omit a value when the arg is truly absent.
+        if (next !== undefined && !next.startsWith('--')) {
             out[key] = next;
             i++;
         } else {
@@ -134,9 +135,9 @@ async function main() {
 
     const config = readJSON(configPath);
 
-    const appName = String(args.appName || config.appName || '').trim();
-    const baseURL = String(args.baseURL || config.baseURL || '').trim();
-    const loginURL = (args.loginURL !== undefined ? String(args.loginURL) : config.loginURL) || '';
+    const appName = String((args.appName !== undefined ? args.appName : config.appName) ?? '').trim();
+    const baseURL = String((args.baseURL !== undefined ? args.baseURL : config.baseURL) ?? '').trim();
+    const loginURL = String((args.loginURL !== undefined ? args.loginURL : config.loginURL) ?? '').trim();
 
     if (!appName) {
         console.error('appName is required (set in auth.config.json or pass --appName).');
