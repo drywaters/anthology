@@ -25,3 +25,9 @@ web/.DS_Store
 # Local development overrides
 local.mk
 .worktree.json
+.local/
+.auth/
+
+# Local browser automation artifacts
+.playwright-cli/
+output/playwright/

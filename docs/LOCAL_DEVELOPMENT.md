@@ -118,6 +118,23 @@ The application will be available at:
 - Frontend: http://localhost:4200
 - API: http://localhost:8080
 
+## Saved auth state for local agent verification
+
+If you want local agents to verify UI behavior without adding auth bypasses, capture a Playwright `storageState` after you log in manually.
+
+1. Start the app (`make local`) and log in normally in the browser.
+2. Run the capture tool:
+
+```bash
+node scripts/auth-capture.js
+```
+
+This opens a headed browser, waits for you to confirm login (press Enter), and saves:
+
+- `./.auth/<appName>.json`
+
+Refresh it anytime by re-running the same command.
+
 ## OAuth Configuration for Production (anthology.bitofobytes.io)
 
 **Authorized JavaScript origins:**
