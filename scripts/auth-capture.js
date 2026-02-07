@@ -92,6 +92,25 @@ function runPlaywrightCLI(args) {
     }
 }
 
+function bestEffortChmod(targetPath, mode) {
+    try {
+        fs.chmodSync(targetPath, mode);
+    } catch {
+        // Best effort only (may fail on some filesystems).
+    }
+}
+
+function bestEffortGitIgnoreCheck(targetPath) {
+    try {
+        const result = spawnSync('git', ['check-ignore', '-q', targetPath], { stdio: 'ignore' });
+        if (result.status === 0) return true; // ignored
+        if (result.status === 1) return false; // not ignored
+        return null; // unknown / error
+    } catch {
+        return null;
+    }
+}
+
 async function waitForEnter(prompt) {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     await new Promise((resolve) => rl.question(prompt, resolve));
@@ -130,7 +149,9 @@ async function main() {
 
     const startURL = resolveURL(baseURL, loginURL);
     const stateDir = path.resolve(process.cwd(), '.auth');
-    fs.mkdirSync(stateDir, { recursive: true });
+    // Create with restrictive permissions; also chmod in case it already existed with wider perms.
+    fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
+    bestEffortChmod(stateDir, 0o700);
 
     const fileStem = sanitizeFileStem(appName) || 'app';
     const statePath = path.join(stateDir, `${fileStem}.json`);
@@ -141,6 +162,11 @@ async function main() {
     console.log(`Base URL: ${baseURL}`);
     console.log(`Start URL: ${startURL}`);
     console.log(`State file: ${statePath}`);
+
+    const ignored = bestEffortGitIgnoreCheck(stateDir);
+    if (ignored === false) {
+        console.warn('WARNING: .auth/ does not appear to be gitignored. This may risk committing auth state.');
+    }
 
     if (args['print-config']) {
         return;
@@ -164,6 +190,7 @@ async function main() {
 
     // Save storage state for reuse by agents/tests.
     runPlaywrightCLI(['--session', sessionName, 'state-save', statePath]);
+    bestEffortChmod(statePath, 0o600);
 
     // Close the browser session to avoid zombie processes.
     runPlaywrightCLI(['--session', sessionName, 'close']);
