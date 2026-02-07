@@ -3,7 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { spawnSync } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const readline = require('readline');
 
 function parseArgs(argv) {
@@ -93,6 +93,16 @@ function runPlaywrightCLI(args) {
     }
 }
 
+function openPlaywrightCLI(args) {
+    // Launch in the background so we can still read from stdin for the "Press Enter" prompt.
+    // We intentionally ignore stdin so the user can interact with this script while the browser is open.
+    const child = spawn('npx', ['--yes', '--package', '@playwright/cli', 'playwright-cli', ...args], {
+        stdio: ['ignore', 'inherit', 'inherit'],
+        env: process.env,
+    });
+    return child;
+}
+
 function bestEffortChmod(targetPath, mode) {
     try {
         fs.chmodSync(targetPath, mode);
@@ -116,6 +126,21 @@ async function waitForEnter(prompt) {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     await new Promise((resolve) => rl.question(prompt, resolve));
     rl.close();
+}
+
+function withTimeout(promise, ms) {
+    return new Promise((resolve, reject) => {
+        const t = setTimeout(() => reject(new Error('timeout')), ms);
+        promise
+            .then((v) => {
+                clearTimeout(t);
+                resolve(v);
+            })
+            .catch((e) => {
+                clearTimeout(t);
+                reject(e);
+            });
+    });
 }
 
 async function main() {
@@ -184,10 +209,20 @@ async function main() {
     console.log('When finished, return to this terminal and press Enter to save the authenticated state.');
     console.log('');
 
-    // Launch headed browser and navigate to start URL.
-    runPlaywrightCLI(['--session', sessionName, 'open', startURL, '--headed', '--browser', 'chrome']);
+    // Launch headed browser and navigate to start URL (non-blocking).
+    const openChild = openPlaywrightCLI(['--session', sessionName, 'open', startURL, '--headed', '--browser', 'chrome']);
+    const openExit = new Promise((resolve) =>
+        openChild.once('exit', (code, signal) => resolve({ code: code ?? 0, signal: signal ?? null })),
+    );
 
-    await waitForEnter('Press Enter to save storageState (cookies + localStorage) ... ');
+    // If the browser session exits before we capture state, fail fast.
+    const raced = await Promise.race([openExit.then((v) => ({ type: 'exit', ...v })), waitForEnter('Press Enter to save storageState (cookies + localStorage) ... ').then(() => ({ type: 'enter' }))]);
+    if (raced.type === 'exit') {
+        console.error('');
+        console.error(`Browser session exited before capture (code=${raced.code}${raced.signal ? ` signal=${raced.signal}` : ''}).`);
+        console.error('Re-run the command and keep the browser window open until after storageState is saved.');
+        process.exit(1);
+    }
 
     // Save storage state for reuse by agents/tests.
     runPlaywrightCLI(['--session', sessionName, 'state-save', statePath]);
@@ -195,6 +230,16 @@ async function main() {
 
     // Close the browser session to avoid zombie processes.
     runPlaywrightCLI(['--session', sessionName, 'close']);
+    try {
+        await withTimeout(openExit, 5000);
+    } catch {
+        // Best effort cleanup: ask the child to terminate if it didn't exit after session close.
+        try {
+            openChild.kill('SIGTERM');
+        } catch {
+            // ignore
+        }
+    }
 
     console.log('');
     console.log(`Saved: ${statePath}`);
