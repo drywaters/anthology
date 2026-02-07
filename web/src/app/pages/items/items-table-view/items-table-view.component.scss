@@ -66,6 +66,15 @@
     text-overflow: clip;
 }
 
+.items-table th.mat-column-itemType,
+.items-table td.mat-column-itemType,
+.items-table th.mat-column-releaseYear,
+.items-table td.mat-column-releaseYear,
+.items-table th.mat-column-updatedAt,
+.items-table td.mat-column-updatedAt {
+    text-align: center;
+}
+
 .items-table tr:last-child td {
     border-bottom: none;
 }

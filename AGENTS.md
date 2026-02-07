@@ -57,3 +57,10 @@ Local dev runs without auth unless OAuth is configured. To exercise OAuth locall
 - For local agent/browser verification, do not add auth bypass routes. Reuse a saved Playwright `storageState` captured after manual login:
   - Capture/refresh: `make auth-capture`
   - Saved state lives in `./.auth/<appName>.json` (gitignored, treat as secret)
+
+## Workspace Bootstrap
+- If `local.mk` is missing in a new workspace/worktree, place a `local.mk` file in the project root before running `make run` or `make local`.
+- Create `local.mk` by either:
+  - copying `local.mk.example`, or
+  - copying `local.mk` from the primary Anthology repo/workspace.
+- If the source `local.mk` location is unclear in a new worktree, ask the user where to copy it from.

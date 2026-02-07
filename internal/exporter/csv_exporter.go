@@ -104,7 +104,24 @@ func (e *CSVExporter) itemToRow(item items.Item) []string {
 	row[22] = formatTime(item.CreatedAt)
 	row[23] = formatTime(item.UpdatedAt)
 
+	for i := range row {
+		row[i] = sanitizeCSVCell(row[i])
+	}
+
 	return row
+}
+
+func sanitizeCSVCell(value string) string {
+	if value == "" {
+		return value
+	}
+
+	switch value[0] {
+	case '=', '+', '-', '@', '\t':
+		return "'" + value
+	default:
+		return value
+	}
 }
 
 // formatOptionalInt formats an optional integer pointer to a string.
